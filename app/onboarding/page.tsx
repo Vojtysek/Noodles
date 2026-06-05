@@ -70,6 +70,12 @@ const RENOVATIONS: RenovationType[] = [
   { id: "photovoltaics", label: "Fotovoltaika", icon: Sun, available: true },
 ]
 
+const ONBOARDING_TO_PROJECT: Record<string, string> = {
+  windows: "okna",
+  insulation: "fasada",
+  roof: "strecha",
+}
+
 // --- Dynamický model nákladů renovace ----------------------------------------
 // Geometrie odvozená z RÚIAN dat. "facade" ≈ zastavěná plocha × počet pater;
 // 15 % fasády tvoří okna, 85 % plná stěna; okno ≈ 2,25 m².
@@ -566,6 +572,15 @@ export default function CalculatorPage() {
       const selectedLabels = selected.map(
         (id) => RENOVATIONS.find((r) => r.id === id)?.label ?? id
       )
+      const geom = buildingGeometry(building)
+      const costsByProject = Object.fromEntries(
+        selected
+          .filter((id) => ONBOARDING_TO_PROJECT[id])
+          .map((id) => [
+            ONBOARDING_TO_PROJECT[id],
+            renovationCost(id, geom, repair.numberOfUnits),
+          ])
+      )
       try {
         const supabase = createClient()
         await supabase
@@ -582,6 +597,7 @@ export default function CalculatorPage() {
           insulated,
           new_windows: newWindows,
           selected_renovations: selectedLabels,
+          costs_by_project: costsByProject,
           monthly_per_unit: Math.round(calc.monthlyPerUnit),
           total_cost: calc.alpha,
           final_rent: calc.finalRent,

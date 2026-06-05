@@ -61,6 +61,7 @@ type BuildingData = {
   selected_renovations: string[]
   total_cost: number
   selected_scenario: "custom" | "sustainability" | null
+  costs_by_project: Record<string, number> | null
 }
 
 const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
@@ -71,46 +72,36 @@ const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
 
 function scaleProjectsToBuilding(
   baseProjects: Project[],
-  selectedRenovations: string[],
-  totalCost: number
+  costsByProject: Record<string, number> | null
 ): Project[] {
-  const selectedIds = selectedRenovations
-    .map((label) => RENOVATION_LABEL_TO_PROJECT[label])
-    .filter(Boolean) as ProjectId[]
-
-  if (selectedIds.length === 0 || totalCost <= 0) return baseProjects
-
-  const mockTotal = baseProjects
-    .filter((p) => selectedIds.includes(p.id))
-    .reduce((sum, p) => sum + p.budget, 0)
-
-  if (mockTotal === 0) return baseProjects
-
-  const scaleFactor = totalCost / mockTotal
+  if (!costsByProject) return baseProjects
 
   return baseProjects.map((p) => {
-    if (!selectedIds.includes(p.id)) return p
+    const projectCost = costsByProject[p.id]
+    if (!projectCost || projectCost <= 0) return p
+
+    const sf = projectCost / p.budget
     return {
       ...p,
-      budget: Math.round(p.budget * scaleFactor),
+      budget: projectCost,
       spent: 0,
-      savingsPerYear: Math.round(p.savingsPerYear * scaleFactor),
-      fundIncreasePerFlat: Math.round(p.fundIncreasePerFlat * scaleFactor),
+      savingsPerYear: Math.round(p.savingsPerYear * sf),
+      fundIncreasePerFlat: Math.round(p.fundIncreasePerFlat * sf),
       baseline: {
         ...p.baseline,
-        annualCost: Math.round(p.baseline.annualCost * scaleFactor),
+        annualCost: Math.round(p.baseline.annualCost * sf),
       },
       costBreakdown: p.costBreakdown.map((cb) => ({
         ...cb,
-        value: Math.round(cb.value * scaleFactor),
+        value: Math.round(cb.value * sf),
       })),
       costItems: p.costItems.map((ci) => ({
         ...ci,
-        amount: Math.round(ci.amount * scaleFactor),
+        amount: Math.round(ci.amount * sf),
       })),
       cashflow: p.cashflow.map((cf) => ({
         ...cf,
-        value: Math.round(cf.value * scaleFactor),
+        value: Math.round(cf.value * sf),
       })),
     }
   })
@@ -168,7 +159,7 @@ export default function FinancialsPage() {
     const supabase = createClient()
     supabase
       .from("buildings")
-      .select("selected_renovations, total_cost, selected_scenario")
+      .select("selected_renovations, total_cost, selected_scenario, costs_by_project")
       .order("created_at", { ascending: false })
       .limit(1)
       .single()
@@ -190,8 +181,7 @@ export default function FinancialsPage() {
     () =>
       scaleProjectsToBuilding(
         projects,
-        buildingData?.selected_renovations ?? [],
-        buildingData?.total_cost ?? 0
+        buildingData?.costs_by_project ?? null
       ),
     [buildingData]
   )
