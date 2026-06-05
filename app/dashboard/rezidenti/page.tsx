@@ -15,6 +15,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   CircleHelp,
+  Pencil,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -112,6 +113,14 @@ export default function RezidentiPage() {
   const [sentimentFilter, setSentimentFilter] = useState<Sentiment | "all">("all")
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>(initialPersonas[0].id)
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0].id)
+  const [editingBrief, setEditingBrief] = useState(false)
+  const [draftBrief, setDraftBrief] = useState("")
+  const [regenerating, setRegenerating] = useState(false)
+
+  useEffect(() => {
+    setEditingBrief(false)
+    setDraftBrief("")
+  }, [selectedPersonaId])
 
   const selectedPersona = personaList.find((p) => p.id === selectedPersonaId)
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? projects[0]
@@ -177,6 +186,47 @@ export default function RezidentiPage() {
       console.error(err)
     } finally {
       setAdding(false)
+    }
+  }
+
+  async function updateBrief() {
+    if (!selectedPersona || regenerating) return
+    const brief = draftBrief.trim()
+    if (!brief || brief === selectedPersona.brief) {
+      setEditingBrief(false)
+      return
+    }
+
+    setRegenerating(true)
+    try {
+      const res = await fetch(`/api/personas/${selectedPersona.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brief }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json() as {
+        id: string
+        name: string
+        role: string
+        unit: string
+        status: "zpracovano" | "ceka"
+        sentiment: Sentiment
+        brief: string
+        structured: Persona["structured"]
+      }
+      setPersonaList((prev) =>
+        prev.map((p) =>
+          p.id === data.id
+            ? { ...p, brief: data.brief, structured: data.structured, sentiment: data.sentiment, status: data.status }
+            : p
+        )
+      )
+      setEditingBrief(false)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setRegenerating(false)
     }
   }
 
@@ -357,7 +407,13 @@ export default function RezidentiPage() {
 
         {/* Right: detail */}
         {selectedPersona ? (
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="relative flex min-w-0 flex-col gap-4">
+            {regenerating && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-lg bg-background/70 text-sm text-muted-foreground backdrop-blur-sm">
+                <Sparkles className="size-4 animate-spin" />
+                Přegenerovávám charakteristiky…
+              </div>
+            )}
             {/* Detail header */}
             <div
               className={cn(
@@ -403,7 +459,49 @@ export default function RezidentiPage() {
                   )}
                 </div>
               </div>
-              <p className="mt-3 text-sm leading-relaxed">{selectedPersona.brief}</p>
+              {editingBrief ? (
+                <div className="mt-3 flex flex-col gap-2">
+                  <textarea
+                    value={draftBrief}
+                    onChange={(e) => setDraftBrief(e.target.value)}
+                    rows={5}
+                    autoFocus
+                    className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingBrief(false)}
+                      disabled={regenerating}
+                    >
+                      Zrušit
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={updateBrief}
+                      disabled={!draftBrief.trim() || regenerating}
+                    >
+                      <Sparkles className={regenerating ? "animate-spin" : ""} />
+                      {regenerating ? "Regeneruji…" : "Uložit a přegenerovat"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group/brief relative mt-3">
+                  <p className="text-sm leading-relaxed">{selectedPersona.brief}</p>
+                  <button
+                    onClick={() => {
+                      setDraftBrief(selectedPersona.brief)
+                      setEditingBrief(true)
+                    }}
+                    className="absolute -top-1 -right-1 hidden rounded-md p-1 text-muted-foreground hover:bg-background hover:text-foreground group-hover/brief:flex"
+                    title="Upravit popis"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Structured output */}
