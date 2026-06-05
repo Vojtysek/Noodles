@@ -35,3 +35,6 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 .idea
+
+# vojtovo bun hovno
+.bun.lock

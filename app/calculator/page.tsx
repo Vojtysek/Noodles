@@ -36,12 +36,6 @@ type BuildingData = {
 
 const TODO_ITEMS = [
   {
-    icon: Calculator,
-    title: "Odhad rekonstrukčních nákladů",
-    desc: "Na základě zastavěné/podlahové plochy a stáří stavby spočítat orientační náklady na rekonstrukci.",
-    tag: "Plánováno",
-  },
-  {
     icon: Zap,
     title: "Energetická kalkulačka",
     desc: "Porovnat způsob vytápění s moderními alternativami a odhadnout roční úspory.",
@@ -68,6 +62,7 @@ export default function CalculatorPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<BuildingData | null>(null)
+  const [pricePerM2, setPricePerM2] = useState("8000")
   const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -272,6 +267,66 @@ export default function CalculatorPage() {
             )}
           </div>
         )}
+
+        {/* Cost estimate */}
+        {result && so && (so.podlahovaplocha != null || so.zastavenaplacha != null) && (() => {
+          const area = Number(so.podlahovaplocha ?? so.zastavenaplacha ?? 0)
+          const units = Number(so.pocetbytu ?? 1)
+          const price = parseInt(pricePerM2.replace(/\s/g, ""), 10) || 0
+          const total = area * price
+          const perUnit = units > 0 ? Math.round(total / units) : null
+          if (area <= 0) return null
+          return (
+            <div>
+              <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Odhad rekonstrukčních nákladů
+              </p>
+              <div className="rounded-lg border px-4 py-4 flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Cena za m²</p>
+                    <div className="mt-1 flex items-center gap-1">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={pricePerM2}
+                        onChange={(e) => setPricePerM2(e.target.value.replace(/[^\d]/g, ""))}
+                        className="h-8 w-28 rounded-md border border-border bg-background px-2 text-sm tabular-nums outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                      />
+                      <span className="text-sm text-muted-foreground">Kč/m²</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Plocha (RÚIAN)</p>
+                    <p className="mt-1 text-sm font-medium tabular-nums">{area.toLocaleString("cs-CZ")} m²</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Počet jednotek (RÚIAN)</p>
+                    <p className="mt-1 text-sm font-medium tabular-nums">{units}</p>
+                  </div>
+                </div>
+                <div className="border-t pt-3 flex items-end justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Orientační celkové náklady</p>
+                    <p className="mt-0.5 text-2xl font-semibold tabular-nums">
+                      {total > 0 ? total.toLocaleString("cs-CZ") : "—"}
+                      {total > 0 && <span className="ml-1.5 text-base font-normal text-muted-foreground">Kč</span>}
+                    </p>
+                  </div>
+                  {perUnit != null && units > 1 && (
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Na jednotku</p>
+                      <p className="mt-0.5 text-lg font-medium tabular-nums">
+                        {perUnit.toLocaleString("cs-CZ")}
+                        <span className="ml-1 text-sm font-normal text-muted-foreground">Kč</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* TODO features */}
         <div>
