@@ -41,6 +41,7 @@ type BuildingCalc = {
   final_rent: number
   rent_years: number
   capped_by_max: boolean
+  costs_by_project: Record<string, number> | null
 }
 
 const HERO_PHOTO =
@@ -96,19 +97,25 @@ function monthLabel(offsetMonths: number): string {
 }
 
 /** Stejná modelace jako ve Financích — náklady obou scénářů v čase. */
-function computeScenario(scenario: Scenario) {
+function computeScenario(scenario: Scenario, projectCostOverrides?: Record<string, number>) {
   const selected = scenario.projectIds
     .map((id) => projects.find((p) => p.id === id)!)
     .filter(Boolean)
 
-  const budget = selected.reduce((sum, p) => sum + p.budget, 0)
-  const savingsPerYear = selected.reduce((sum, p) => sum + p.savingsPerYear, 0)
-  const fundIncreasePerFlat = selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0)
+  const mockBudget = selected.reduce((sum, p) => sum + p.budget, 0)
+  const overrideBudget = projectCostOverrides
+    ? selected.reduce((sum, p) => sum + (projectCostOverrides[p.id] ?? p.budget), 0)
+    : mockBudget
+  const scale = projectCostOverrides && overrideBudget > 0 ? overrideBudget / mockBudget : 1
+
+  const budget = overrideBudget
+  const savingsPerYear = selected.reduce((sum, p) => sum + p.savingsPerYear, 0) * scale
+  const fundIncreasePerFlat = selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0) * scale
   const totalMonths = selected.reduce((sum, p) => sum + p.durationMonths, 0)
-  const annualCost = selected.reduce((sum, p) => sum + p.baseline.annualCost, 0)
+  const annualCost = selected.reduce((sum, p) => sum + p.baseline.annualCost, 0) * scale
   const growth =
     selected.reduce((sum, p) => sum + p.baseline.costGrowthPct * p.baseline.annualCost, 0) /
-    annualCost /
+    (selected.reduce((sum, p) => sum + p.baseline.annualCost, 0)) /
     100
 
   const cumWithout: number[] = [0]
@@ -136,7 +143,7 @@ function computeScenario(scenario: Scenario) {
       title: p.name,
       period: monthLabel(offset),
       duration: fmtDuration(p.durationMonths),
-      cost: fmtCzkShort(p.budget),
+      cost: fmtCzkShort(projectCostOverrides?.[p.id] ?? p.budget),
       months: p.durationMonths,
     }
     offset += p.durationMonths
@@ -194,7 +201,25 @@ export default function PrehledPage() {
   }, [])
 
   const scenario = dynamicScenarios.find((s) => s.id === scenarioId) ?? dynamicScenarios[0]
-  const result = useMemo(() => computeScenario(scenario), [scenario])
+  const result = useMemo(() => {
+    if (scenario.id === "vase-vybrane") {
+      if (buildingCalc?.costs_by_project) {
+        return computeScenario(scenario, buildingCalc.costs_by_project)
+      }
+      if (buildingCalc?.total_cost) {
+        const mockTotal = scenario.projectIds.reduce((sum, id) => {
+          const p = projects.find((p) => p.id === id)
+          return sum + (p?.budget ?? 0)
+        }, 0)
+        const scale = mockTotal > 0 ? buildingCalc.total_cost / mockTotal : 1
+        const overrides = Object.fromEntries(
+          scenario.projectIds.map((id) => [id, (projects.find((p) => p.id === id)?.budget ?? 0) * scale])
+        )
+        return computeScenario(scenario, overrides)
+      }
+    }
+    return computeScenario(scenario)
+  }, [scenario, buildingCalc])
 
   const finishLabel = monthLabel(result.totalMonths).replace("od ", "")
 

@@ -12,10 +12,15 @@ export const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
   "Okna": "okna",
   "Zateplení fasády": "fasada",
   "Zateplení střechy": "strecha",
+  "Venkovní žaluzie": "zaluzie",
+  "Tepelné čerpadlo": "tepelne-cerpadlo",
+  "Vytápění": "vytapeni",
+  "Rekuperace": "rekuperace",
+  "Fotovoltaika": "fotovoltaika",
 }
 
 /**
- * Dva velké scénáře: „Co jste si vybrali" (z kalkulace) + „Kompletní obnova".
+ * Dva velké scénáře: „Váš plán" (z kalkulace) + „Energie nula".
  * Bez kalkulace fallback na oba statické scénáře z mock-data.
  */
 export function buildDynamicScenarios(selectedRenovations: string[]): Scenario[] {
@@ -30,14 +35,14 @@ export function buildDynamicScenarios(selectedRenovations: string[]): Scenario[]
   return [
     {
       id: "vase-vybrane",
-      name: "Jen to nejnutnější",
+      name: "Váš plán",
       tagline: "Scénáře, které jste zvolili v kalkulaci — modelace jejich přínosu.",
       tone: "emerald",
       projectIds: matchedIds,
     },
     {
       id: "kompletni-obnova",
-      name: "Kompletní obnova",
+      name: "Energie nula",
       tagline:
         "Všechny čtyři scénáře najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
       tone: "blue",

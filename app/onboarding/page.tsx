@@ -74,6 +74,11 @@ const ONBOARDING_TO_PROJECT: Record<string, string> = {
   windows: "okna",
   insulation: "fasada",
   roof: "strecha",
+  blinds: "zaluzie",
+  heatpump: "tepelne-cerpadlo",
+  heating: "vytapeni",
+  recuperation: "rekuperace",
+  photovoltaics: "fotovoltaika",
 }
 
 // --- Dynamický model nákladů renovace ----------------------------------------
