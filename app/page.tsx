@@ -8,13 +8,9 @@ import { useGSAP } from "@gsap/react";
 import {
   ArrowRight,
   ArrowUpRight,
-  Bot,
   Building2,
-  Calculator,
-  ChartLine,
   Check,
   ChevronDown,
-  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,13 +19,13 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const heroBenefits = [
   "Spočítejte úspory energií a návratnost",
-  "Získejte podporu sousedů pro hlasování",
-  "Od prvního nápadu po schválení na schůzi",
+  "Argumenty a podpora sousedů pro hlasování",
+  "Od prvního nápadu po schválení na schůzi SVJ",
 ];
 
 const stats = [
   { value: 4, suffix: "", label: "typy renovací v plánu" },
-  { value: 32, suffix: " %", label: "průměrná úspora energií" },
+  { value: 40, suffix: " %", label: "úspora tepla po zateplení fasády" },
   { value: 8, suffix: " let", label: "typická návratnost investice" },
   { value: 24, suffix: "", label: "bytových jednotek v domě" },
 ];
@@ -56,26 +52,29 @@ const projects = [
   {
     name: "Zateplení fasády",
     cost: "4 800 000 Kč",
-    savings: "18 %",
+    savings: "−18 %",
     payback: "9 let",
-    status: "Připraveno k hlasování",
-    dot: "bg-emerald-500",
+    status: "K hlasování",
+    rail: "bg-emerald-500",
+    pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   },
   {
     name: "Výměna oken",
     cost: "2 100 000 Kč",
-    savings: "11 %",
+    savings: "−11 %",
     payback: "7 let",
-    status: "Ve fázi plánování",
-    dot: "bg-amber-500",
+    status: "Plánování",
+    rail: "bg-amber-500",
+    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   {
     name: "Rekonstrukce střechy",
     cost: "1 600 000 Kč",
-    savings: "6 %",
+    savings: "−6 %",
     payback: "11 let",
-    status: "Ve fázi plánování",
-    dot: "bg-amber-500",
+    status: "Plánování",
+    rail: "bg-amber-500",
+    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   {
     name: "Modernizace výtahu",
@@ -83,7 +82,8 @@ const projects = [
     savings: "—",
     payback: "—",
     status: "Sbíráme podporu",
-    dot: "bg-rose-500",
+    rail: "bg-rose-500",
+    pill: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
   },
 ];
 
@@ -91,7 +91,7 @@ const faqs = [
   {
     question: "Co je Noodles?",
     answer:
-      "Noodles je aplikace pro plánování renovací bytových domů. Pomůže vám spočítat náklady a úspory, sledovat názory rezidentů a připravit se na hlasování SVJ.",
+      "Noodles je aplikace, která pomáhá renovace bytových domů nejen naplánovat, ale hlavně prosadit. Spočítá náklady a úspory, sleduje názory rezidentů a připraví vás s argumenty na hlasování SVJ.",
   },
   {
     question: "Pro koho je aplikace určená?",
@@ -145,7 +145,8 @@ export default function Page() {
           )
           .from("[data-hero-card]", { y: 40, autoAlpha: 0, duration: 0.7 }, 1.2);
 
-        // Subtle parallax on the hero photo
+        // Subtle parallax on the hero photo — numeric scrub adds inertia so
+        // the photo glides instead of snapping 1:1 with the wheel
         gsap.to("[data-hero-img]", {
           yPercent: 8,
           ease: "none",
@@ -153,8 +154,26 @@ export default function Page() {
             trigger: "[data-hero]",
             start: "top top",
             end: "bottom top",
-            scrub: true,
+            scrub: 0.8,
           },
+        });
+
+        // The corner cards drift gently after they land
+        gsap.to("[data-hero-blob]", {
+          y: -10,
+          duration: 3.2,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+          delay: 2,
+        });
+        gsap.to("[data-hero-card]", {
+          y: -8,
+          duration: 2.6,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+          delay: 2.2,
         });
 
         // Scroll reveals
@@ -192,13 +211,13 @@ export default function Page() {
     <div ref={root} className="flex min-h-svh flex-col">
       {/* Hero — full-bleed photo tapering off at the bottom */}
       <section data-hero className="relative">
-        <div className="relative min-h-[94svh] overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[4rem] lg:rounded-bl-[4rem] lg:rounded-br-[10rem]">
+        <div className="relative isolate min-h-[94svh] overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[4rem] lg:rounded-bl-[4rem] lg:rounded-br-[10rem]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             data-hero-img
             src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2400&auto=format&fit=crop"
             alt="Bytový dům"
-            className="absolute -top-[8%] left-0 h-[116%] w-full object-cover"
+            className="absolute -top-[8%] left-0 h-[116%] w-full object-cover will-change-transform"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
@@ -238,13 +257,10 @@ export default function Page() {
           <div className="relative z-10 mx-auto flex min-h-[94svh] w-full max-w-6xl flex-col justify-center gap-8 px-6 pt-32 pb-28 sm:px-8">
             <h1 className="max-w-3xl text-5xl leading-[1.08] font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
               <span data-hero-line className="block overflow-hidden">
-                <span className="block">Jednoduché</span>
+                <span className="block">Naplánujte renovaci.</span>
               </span>
               <span data-hero-line className="block overflow-hidden">
-                <span className="block">plánování renovací</span>
-              </span>
-              <span data-hero-line className="block overflow-hidden">
-                <span className="block">vašeho domu</span>
+                <span className="block">Přesvědčte sousedy.</span>
               </span>
             </h1>
             <ul className="flex flex-col gap-3">
@@ -282,32 +298,44 @@ export default function Page() {
             className="bg-primary text-primary-foreground absolute top-32 right-8 z-10 hidden max-w-72 items-start gap-3 rounded-[3rem] p-8 shadow-2xl lg:flex xl:right-16"
           >
             <p className="text-7xl leading-none font-bold tracking-tight">
-              32<span className="align-top text-3xl">%</span>
+              40<span className="align-top text-3xl">%</span>
             </p>
             <p className="pt-1 text-sm leading-snug opacity-90">
-              průměrná úspora energií po renovaci
+              tepla ušetří zateplení fasády staršího bytového domu
             </p>
           </div>
 
-          {/* Floating product card */}
+          {/* Floating product card — a live "new vote" notification from the app */}
           <div
             data-hero-card
-            className="bg-background absolute right-8 bottom-12 z-10 hidden w-80 flex-col gap-3 rounded-2xl p-5 shadow-2xl lg:flex xl:right-16"
+            className="bg-background/95 absolute right-8 bottom-12 z-10 hidden w-80 flex-col gap-3 rounded-xl p-4 ring-1 ring-black/[0.08] backdrop-blur lg:flex xl:right-16 shadow-[0_2px_8px_rgba(0,0,0,0.12),0_20px_48px_-16px_rgba(0,0,0,0.45)]"
           >
+            <div className="flex items-center gap-2">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60" />
+                <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+              </span>
+              <span className="text-xs font-medium">Nový hlas · Byt 3.04</span>
+              <span className="text-muted-foreground ml-auto text-[11px]">teď</span>
+            </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold">Zateplení fasády</span>
-              <span className="text-muted-foreground text-xs">podpora 16 z 24</span>
+              <span className="font-semibold tracking-tight">Zateplení fasády</span>
+              <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 font-mono text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                +1
+              </span>
             </div>
             <div className="bg-muted h-2 overflow-hidden rounded-full">
               <div className="flex h-full">
-                <div className="w-[67%] bg-emerald-500" />
-                <div className="w-[21%] bg-amber-500" />
+                <div className="w-[71%] bg-emerald-500" />
+                <div className="w-[17%] bg-amber-500" />
                 <div className="w-[12%] bg-rose-500" />
               </div>
             </div>
             <div className="text-muted-foreground flex items-center justify-between text-xs">
-              <span>Návratnost 9 let</span>
-              <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
+              <span>
+                Podpora <span className="font-mono tabular-nums">17 z 24</span>
+              </span>
+              <span className="font-mono font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
                 −18 % energií
               </span>
             </div>
@@ -337,143 +365,161 @@ export default function Page() {
         <section id="funkce" className="mx-auto w-full max-w-6xl scroll-mt-8 px-4 py-16 sm:px-6 lg:py-24">
           <div data-reveal className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              Vše pro renovaci na jednom místě
+              Spočítat je snadné. Přesvědčit je těžší.
             </h2>
             <p className="text-muted-foreground mt-3 text-lg text-pretty">
-              Žádné tabulky v Excelu ani nekonečné e-maily. Noodles drží čísla, lidi i plány
-              pohromadě.
+              Renovace neztroskotá na číslech, ale na schůzi. Noodles vám dá čísla, argumenty
+              i přehled o tom, koho ještě musíte získat.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {/* Rezidenti — wide card with sentiment visual */}
+          <div className="grid gap-5 md:grid-cols-3">
+            {/* Rezidenti — anchor card with inset product viewport */}
             <div
               data-reveal
-              className="bg-muted/30 flex flex-col justify-between gap-6 rounded-3xl border p-7 md:col-span-2"
+              className="bg-card flex flex-col rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-16px_rgba(16,24,40,0.14)] md:col-span-2 md:row-span-2 dark:ring-white/[0.06]"
             >
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <Users className="size-5" />
-                </span>
-                <h3 className="text-lg font-semibold">Rezidenti</h3>
-                <p className="text-muted-foreground max-w-md text-sm">
-                  Mějte přehled o tom, kdo renovaci podporuje, kdo váhá a kdo je proti. AI vám
-                  pomůže pochopit námitky a motivace každého souseda.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3">
-                <div className="flex -space-x-2">
-                  {["JN", "MK", "PV", "AH", "TS"].map((initials, i) => (
-                    <span
-                      key={initials}
-                      className={`flex size-9 items-center justify-center rounded-full border-2 border-background text-xs font-semibold text-white ${
-                        ["bg-emerald-500", "bg-emerald-600", "bg-amber-500", "bg-rose-500", "bg-emerald-500"][i]
-                      }`}
-                    >
-                      {initials}
+              <p className="text-primary text-xs font-medium tracking-wider uppercase">
+                Rezidenti
+              </p>
+              <h3 className="mt-1.5 text-xl font-semibold tracking-tight">
+                Víte, kdo bude na schůzi proti — dřív, než se tam postaví
+              </h3>
+              <p className="text-muted-foreground mt-2 max-w-md text-sm">
+                AI z vašich poznámek pochopí námitky a motivace každého souseda, takže víte,
+                s kým a o čem mluvit.
+              </p>
+              <div className="mt-auto pt-6">
+                <div className="bg-muted/40 flex flex-col gap-4 rounded-xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04] ring-inset dark:shadow-none dark:ring-white/[0.04]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex -space-x-2">
+                      {["JN", "MK", "PV", "AH", "TS"].map((initials, i) => (
+                        <span
+                          key={initials}
+                          className={`border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-semibold text-white ${
+                            ["bg-emerald-500", "bg-emerald-600", "bg-amber-500", "bg-rose-500", "bg-emerald-500"][i]
+                          }`}
+                        >
+                          {initials}
+                        </span>
+                      ))}
+                      <span className="bg-muted text-muted-foreground border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-medium">
+                        +19
+                      </span>
+                    </div>
+                    <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                      16 z 24 pro
                     </span>
-                  ))}
-                  <span className="bg-muted text-muted-foreground border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-medium">
-                    +19
-                  </span>
-                </div>
-                <div className="bg-muted h-2.5 overflow-hidden rounded-full">
-                  <div className="flex h-full">
-                    <div className="w-[67%] bg-emerald-500" />
-                    <div className="w-[21%] bg-amber-500" />
-                    <div className="w-[12%] bg-rose-500" />
+                  </div>
+                  <div className="bg-muted h-2.5 overflow-hidden rounded-full">
+                    <div className="flex h-full">
+                      <div className="w-[67%] bg-emerald-500" />
+                      <div className="w-[21%] bg-amber-500" />
+                      <div className="w-[12%] bg-rose-500" />
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      Podporuje
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-amber-500" />
+                      Váhá
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-rose-500" />
+                      Proti
+                    </span>
                   </div>
                 </div>
-                <div className="text-muted-foreground flex items-center gap-4 text-xs">
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-emerald-500" />
-                    Podporuje
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-amber-500" />
-                    Váhá
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-rose-500" />
-                    Proti
-                  </span>
-                </div>
               </div>
             </div>
 
-            {/* AI asistent — chat bubbles */}
-            <div data-reveal className="bg-muted/30 flex flex-col gap-6 rounded-3xl border p-7">
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <Bot className="size-5" />
+            {/* AI asistent — live chat transcript */}
+            <div
+              data-reveal
+              className="bg-card flex flex-col overflow-hidden rounded-2xl ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
+            >
+              <div className="border-border/60 flex items-center gap-2 border-b px-5 py-3">
+                <span className="size-2 rounded-full bg-emerald-500" />
+                <span className="text-muted-foreground text-xs font-medium">
+                  AI asistent · online
                 </span>
-                <h3 className="text-lg font-semibold">AI asistent</h3>
-                <p className="text-muted-foreground text-sm">
-                  Zeptejte se na cokoliv — od technických detailů po argumenty na schůzi SVJ.
-                </p>
               </div>
-              <div className="mt-auto flex flex-col gap-2 text-xs">
-                <p className="bg-primary text-primary-foreground max-w-[85%] self-end rounded-2xl rounded-br-sm px-3 py-2">
-                  Vyplatí se nám zateplit fasádu?
+              <div className="flex flex-1 flex-col gap-2.5 p-5 text-xs">
+                <p className="bg-primary text-primary-foreground max-w-[88%] self-end rounded-2xl rounded-br-md px-3 py-2">
+                  Soused tvrdí, že se zateplení nevyplatí. Co mu mám říct?
                 </p>
-                <p className="bg-muted max-w-[85%] self-start rounded-2xl rounded-bl-sm px-3 py-2">
-                  Při vašich nákladech na teplo ušetříte ~530 tis. Kč ročně…
+                <p className="bg-muted max-w-[88%] self-start rounded-2xl rounded-bl-md px-3 py-2">
+                  Při vašich nákladech na teplo ušetříte ~530 tis. Kč ročně. Tady jsou tři
+                  argumenty…
                 </p>
+                <span className="bg-muted mt-0.5 flex gap-1 self-start rounded-2xl rounded-bl-md px-3 py-2.5">
+                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:0ms]" />
+                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:150ms]" />
+                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:300ms]" />
+                </span>
               </div>
             </div>
 
-            {/* Finanční přehled — mini bar chart */}
-            <div data-reveal className="bg-muted/30 flex flex-col gap-6 rounded-3xl border p-7">
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <ChartLine className="size-5" />
-                </span>
-                <h3 className="text-lg font-semibold">Finanční přehled</h3>
-                <p className="text-muted-foreground text-sm">
-                  Rozpočty, cashflow a úspory na jednom místě. Víte, kdy se vám investice vrátí.
-                </p>
-              </div>
-              <div className="mt-auto flex h-20 items-end gap-2">
+            {/* Finanční přehled — edge-bleed chart with annotation */}
+            <div
+              data-reveal
+              className="bg-card relative overflow-hidden rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
+            >
+              <p className="text-primary text-xs font-medium tracking-wider uppercase">
+                Finance
+              </p>
+              <h3 className="mt-1.5 text-lg font-semibold tracking-tight">
+                Víte, kdy se investice vrátí
+              </h3>
+              <span className="bg-foreground text-background absolute top-7 right-7 rounded-md px-1.5 py-0.5 text-[10px] font-medium">
+                9. rok
+              </span>
+              <div className="border-border/70 -mx-7 -mb-7 mt-6 flex h-28 items-end gap-1.5 border-t border-dashed px-7 pt-4">
                 {[35, 55, 45, 70, 60, 85, 100].map((height, i) => (
                   <div
                     key={i}
-                    className={`flex-1 rounded-t-md ${i >= 5 ? "bg-primary" : "bg-primary/25"}`}
+                    className={`flex-1 rounded-t-[3px] ${i === 6 ? "bg-primary" : "bg-primary/15"}`}
                     style={{ height: `${height}%` }}
                   />
                 ))}
               </div>
             </div>
 
-            {/* Kalkulačka — wide card with sample row */}
+            {/* Kalkulačka — full-width strip with flat metric columns */}
             <div
               data-reveal
-              className="bg-muted/30 flex flex-col justify-between gap-6 rounded-3xl border p-7 md:col-span-2"
+              className="bg-card flex flex-col gap-8 rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] md:col-span-3 md:flex-row md:items-center dark:ring-white/[0.06]"
             >
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <Calculator className="size-5" />
-                </span>
-                <h3 className="text-lg font-semibold">Kalkulačka renovací</h3>
-                <p className="text-muted-foreground max-w-md text-sm">
-                  Zadejte parametry domu a během minuty zjistíte orientační náklady, úspory a
-                  návratnost jednotlivých renovací.
+              <div className="md:max-w-sm md:flex-1">
+                <p className="text-primary text-xs font-medium tracking-wider uppercase">
+                  Kalkulačka
+                </p>
+                <h3 className="mt-1.5 text-lg font-semibold tracking-tight">
+                  Čísla za minutu, ne za měsíc
+                </h3>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Zadejte parametry domu a zjistíte orientační náklady, úspory a návratnost
+                  jednotlivých renovací.
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="bg-background rounded-xl border p-4">
-                  <p className="text-muted-foreground text-xs">Náklady</p>
-                  <p className="font-mono font-semibold">4,8 mil. Kč</p>
+              <dl className="divide-border/60 grid flex-1 grid-cols-3 md:divide-x">
+                <div className="flex flex-col gap-1 md:px-6 md:first:pl-0 md:last:pr-0">
+                  <dt className="text-muted-foreground text-xs">Náklady</dt>
+                  <dd className="font-mono text-lg font-semibold tabular-nums">4,8 mil. Kč</dd>
                 </div>
-                <div className="bg-background rounded-xl border p-4">
-                  <p className="text-muted-foreground text-xs">Úspora ročně</p>
-                  <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                <div className="flex flex-col gap-1 md:px-6">
+                  <dt className="text-muted-foreground text-xs">Úspora ročně</dt>
+                  <dd className="font-mono text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                     530 tis. Kč
-                  </p>
+                  </dd>
                 </div>
-                <div className="bg-background rounded-xl border p-4">
-                  <p className="text-muted-foreground text-xs">Návratnost</p>
-                  <p className="font-mono font-semibold">9 let</p>
+                <div className="flex flex-col gap-1 md:px-6 md:last:pr-0">
+                  <dt className="text-muted-foreground text-xs">Návratnost</dt>
+                  <dd className="font-mono text-lg font-semibold tabular-nums">9 let</dd>
                 </div>
-              </div>
+              </dl>
             </div>
           </div>
         </section>
@@ -510,7 +556,7 @@ export default function Page() {
         <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
           <div data-reveal className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              Jaké renovace s námi naplánujete
+              Jaké renovace s námi naplánujete a prosadíte
             </h2>
             <p className="text-muted-foreground mt-3 text-lg text-pretty">
               Ukázka projektů z typického bytového domu. Čísla jsou orientační — ta vaše si
@@ -522,27 +568,37 @@ export default function Page() {
               <div
                 key={project.name}
                 data-reveal
-                className="bg-card flex flex-col gap-5 rounded-3xl border p-6 transition-transform duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+                className="bg-card group relative overflow-hidden rounded-xl p-5 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_-12px_rgba(16,24,40,0.18)] dark:ring-white/[0.06]"
               >
-                <div className="flex flex-col gap-2">
-                  <p className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-                    <span className={`size-2 rounded-full ${project.dot}`} />
+                <span className={`absolute inset-y-0 left-0 w-1 ${project.rail}`} />
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-[15px] font-semibold tracking-tight">{project.name}</h3>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${project.pill}`}
+                  >
                     {project.status}
-                  </p>
-                  <h3 className="text-lg font-semibold">{project.name}</h3>
+                  </span>
                 </div>
-                <dl className="mt-auto flex flex-col gap-2 border-t pt-4 text-sm">
-                  <div className="flex items-center justify-between">
+                <dl className="mt-4 text-sm">
+                  <div className="border-border/50 flex items-center justify-between border-b py-1.5">
                     <dt className="text-muted-foreground">Náklady</dt>
-                    <dd className="font-mono font-medium">{project.cost}</dd>
+                    <dd className="font-mono tabular-nums">{project.cost}</dd>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="border-border/50 flex items-center justify-between border-b py-1.5">
                     <dt className="text-muted-foreground">Úspora energií</dt>
-                    <dd className="font-mono font-medium">{project.savings}</dd>
+                    <dd
+                      className={`font-mono tabular-nums ${
+                        project.savings !== "—"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : ""
+                      }`}
+                    >
+                      {project.savings}
+                    </dd>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between py-1.5">
                     <dt className="text-muted-foreground">Návratnost</dt>
-                    <dd className="font-mono font-medium">{project.payback}</dd>
+                    <dd className="font-mono font-semibold tabular-nums">{project.payback}</dd>
                   </div>
                 </dl>
               </div>
@@ -586,10 +642,11 @@ export default function Page() {
             />
             <div className="relative flex flex-col items-center gap-6">
               <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-balance sm:text-5xl">
-                Začněte plánovat renovaci ještě dnes
+                Příští schůze SVJ může dopadnout jinak
               </h2>
               <p className="max-w-md text-pretty opacity-90">
-                Stačí pár minut a uvidíte, kolik váš dům může ušetřit.
+                Za pár minut budete vědět, kolik váš dům ušetří — a s čím přesvědčíte
+                i ty, kteří váhají.
               </p>
               <Button
                 size="lg"
@@ -618,7 +675,8 @@ export default function Page() {
               Noodles
             </Link>
             <p className="text-muted-foreground max-w-xs text-sm">
-              Plánování renovací bytových domů — jednoduše a s čísly, kterým rozumí celé SVJ.
+              Naplánujte renovaci bytového domu a získejte pro ni podporu celého SVJ —
+              s čísly a argumenty, kterým rozumí každý soused.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-10 text-sm">

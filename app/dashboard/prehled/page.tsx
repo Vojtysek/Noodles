@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
 import { Roadmap, type RoadmapItem } from "@/components/dashboard/roadmap"
+import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
 import {
   fmtCzk,
   fmtCzkShort,
@@ -138,6 +139,15 @@ function computeScenario(scenario: Scenario) {
 export default function PrehledPage() {
   const [scenarioId, setScenarioId] = useState(scenarios[1].id)
   const [supportCounts, setSupportCounts] = useState(() => countSentiments(initialPersonas))
+  // Splash po onboardingu — logiku napojení řeší onboardingový tým.
+  // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
+  const [splashOpen, setSplashOpen] = useState(false)
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("splash") === "1") {
+      setSplashOpen(true)
+    }
+  }, [])
 
   // Živé počty postojů ze stejného API jako stránka Rezidenti; mock jako záloha.
   useEffect(() => {
@@ -193,13 +203,30 @@ export default function PrehledPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+      {splashOpen && (
+        <ScenarioSplash
+          onClose={() => setSplashOpen(false)}
+          onSelect={(id) => setScenarioId(id)}
+        />
+      )}
+
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold">Přehled</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Vše podstatné o rekonstrukcích SVJ Letná 24 na jednom místě — bez tabulek a odborných
-          pojmů.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">Přehled</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Vše podstatné o rekonstrukcích SVJ Letná 24 na jednom místě — bez tabulek a odborných
+            pojmů.
+          </p>
+        </div>
+        {process.env.NODE_ENV === "development" && (
+          <button
+            onClick={() => setSplashOpen(true)}
+            className="shrink-0 rounded-md border border-dashed px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Dev: splash
+          </button>
+        )}
       </div>
 
       {/* Stav domu — vstupní dlaždice */}
