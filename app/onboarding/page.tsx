@@ -339,7 +339,7 @@ export default function CalculatorPage() {
         units,
         floors: so?.pocetpodlazi ?? null,
         yearBuilt: so?.dokonceni ? new Date(so.dokonceni).getFullYear() : null,
-        zastavenaFlocha: so?.zastavenaPlocha ?? null,
+        zastavenaFlocha: so?.["st_area(shape)"] ? Math.round(so["st_area(shape)"]) : null,
       })
       if (units) setR("numberOfUnits", Math.min(50, Math.max(5, units)))
     } catch (e) {
