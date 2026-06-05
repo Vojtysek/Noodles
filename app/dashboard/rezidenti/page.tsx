@@ -405,9 +405,6 @@ export default function RezidentiPage() {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-white">{persona.name}</p>
-                        <p className={cn("text-xs", cfg.cardMuted)}>
-                          {persona.role} · {persona.unit}
-                        </p>
                         {persona.personaType && (
                           <p className={cn("text-[10px] mt-0.5 opacity-70", cfg.cardMuted)}>
                             {PERSONA_TYPES[persona.personaType].name}
@@ -449,17 +446,6 @@ export default function RezidentiPage() {
                 })()}
                 {SENTIMENTS[selectedPersona.sentiment].label}
               </span>
-              {selectedPersona.status === "zpracovano" ? (
-                <span className="flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                  <Sparkles className="size-3" />
-                  Zpracováno
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  <Clock className="size-3" />
-                  Čeká na zpracování
-                </span>
-              )}
               {selectedPersona.personaType && (
                 <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                   <img
