@@ -314,15 +314,6 @@ export default function PrehledPage() {
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
 
-        {process.env.NODE_ENV === "development" && (
-          <button
-            onClick={() => setSplashOpen(true)}
-            className="absolute top-4 right-5 z-10 rounded-md border border-dashed border-white/30 px-2.5 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-          >
-            Dev: splash
-          </button>
-        )}
-
         <div className="relative flex h-full min-h-[15rem] flex-col justify-between gap-6 p-6 sm:min-h-[17rem] sm:p-8">
           <div>
             <div className="flex items-center gap-2.5">
