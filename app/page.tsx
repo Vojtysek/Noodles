@@ -349,7 +349,7 @@ export default function Page() {
               </nav>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" asChild className="hidden rounded-full sm:inline-flex">
-                  <Link href="/calculator">Kalkulačka</Link>
+                  <Link href="/onboarding">Kalkulačka</Link>
                 </Button>
                 <Button asChild className="h-10 rounded-full px-5">
                   <Link href="/dashboard">Otevřít aplikaci</Link>
@@ -917,7 +917,7 @@ export default function Page() {
               <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                 Dashboard
               </Link>
-              <Link href="/calculator" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/onboarding" className="text-muted-foreground hover:text-foreground transition-colors">
                 Kalkulačka
               </Link>
               <Link href="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
