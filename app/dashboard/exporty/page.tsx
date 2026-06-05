@@ -13,7 +13,6 @@ import {
   Sparkles,
   Building2,
   Users,
-  ChartPie,
   Lightbulb,
 } from "lucide-react"
 
@@ -24,7 +23,7 @@ import {
   exportHistory,
   distributionTips,
   personas as mockPersonas,
-  projects,
+  scenarios,
   fmtCzkShort,
   type Persona,
   type Sentiment,
@@ -43,7 +42,7 @@ export default function ExportyPage() {
   const [selectedTypeId, setSelectedTypeId] = useState(exportTypes[0].id)
   const [personaList, setPersonaList] = useState<Persona[]>(mockPersonas)
   const [personaId, setPersonaId] = useState(mockPersonas[0].id)
-  const [projectId, setProjectId] = useState<string>("all")
+  const [scenarioId, setScenarioId] = useState<string>("all")
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -75,8 +74,7 @@ export default function ExportyPage() {
 
   const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]
   const selectedPersona = personaList.find((p) => p.id === personaId)
-  const scopedProjects = projectId === "all" ? projects : projects.filter((p) => p.id === projectId)
-  const totalBudget = scopedProjects.reduce((sum, p) => sum + p.budget, 0)
+  const selectedScenario = scenarios.find((s) => s.id === scenarioId)
 
   // Mock generování — pouze vizuální stav, žádný skutečný export.
   function generate() {
@@ -129,14 +127,14 @@ export default function ExportyPage() {
           </span>
           <p className="text-sm font-medium">Co exportovat</p>
           <select
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            value={scenarioId}
+            onChange={(e) => setScenarioId(e.target.value)}
             className="h-8 max-w-xs rounded-lg border border-border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <option value="all">Všechny scénáře</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+            <option value="all">Oba scénáře</option>
+            {scenarios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
               </option>
             ))}
           </select>
@@ -145,22 +143,20 @@ export default function ExportyPage() {
           <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
             <Building2 className="size-3.5 shrink-0" />
             <span className="font-medium text-foreground tabular-nums">
-              {scopedProjects.length}
+              {scenarioId === "all" ? scenarios.length : 1}
             </span>
-            <span className="whitespace-nowrap">{scopedProjects.length === 1 ? "scénář" : "scénáře"}</span>
+            <span className="whitespace-nowrap">{scenarioId === "all" ? "scénáře" : "scénář"}</span>
           </span>
           <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
             <Users className="size-3.5 shrink-0" />
             <span className="font-medium text-foreground tabular-nums">{personaList.length}</span>
             <span className="whitespace-nowrap">rezidentů</span>
           </span>
-          <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-            <ChartPie className="size-3.5 shrink-0" />
-            <span className="font-medium text-foreground tabular-nums">
-              {fmtCzkShort(totalBudget)}
+          {selectedScenario && (
+            <span className="flex shrink-0 items-center gap-1.5">
+              <span className="whitespace-nowrap text-[10px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium">{selectedScenario.name}</span>
             </span>
-            <span className="whitespace-nowrap text-[10px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium">mock</span>
-          </span>
+          )}
         </div>
       </div>
 

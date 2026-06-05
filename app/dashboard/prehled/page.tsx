@@ -193,8 +193,8 @@ function computeScenario(scenario: Scenario) {
 }
 
 export default function PrehledPage() {
-  const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>(scenarios.slice(1)) // starts with kompromis + kompletni
-  const [scenarioId, setScenarioId] = useState(scenarios[1].id)
+  const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>(scenarios)
+  const [scenarioId, setScenarioId] = useState(scenarios[0].id)
   const [supportCounts, setSupportCounts] = useState(() => countSentiments(initialPersonas))
   // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
   const [splashOpen, setSplashOpen] = useState(false)

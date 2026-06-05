@@ -50,7 +50,7 @@ const TONE_DOT: Record<ScenarioTone, string> = {
   blue: "bg-blue-500",
 }
 
-const DEFAULT_SCENARIO_ID = "kompromis"
+const DEFAULT_SCENARIO_ID = "nejnutnejsi"
 
 /** Porovná dvě množiny ID projektů bez ohledu na pořadí. */
 function sameIdSet(a: readonly ProjectId[], b: readonly ProjectId[]): boolean {
@@ -427,106 +427,73 @@ export default function FinancialsPage() {
         </span>
 
         {/* Scénář A — bez rekonstrukce */}
-        <div className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm transition-shadow hover:shadow-lg sm:p-5 lg:rounded-bl-[3rem]">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-rose-500/70"
-          />
-          {/* Ručně kreslená stoupající šipka v rohu */}
-          <svg
-            aria-hidden
-            className="pointer-events-none absolute -top-1 right-3 size-16 text-rose-500/20"
-            viewBox="0 0 64 64"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M10 50 L26 34 L36 44 L54 18" />
-            <path d="M42 16 H56 V30" />
-          </svg>
-          <div className="flex items-center gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-rose-500/10">
-              <TrendingUp className="size-4 text-rose-600 dark:text-rose-400" />
-            </span>
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-rose-600 uppercase dark:text-rose-400">
-                Scénář A
+        <div className="relative overflow-hidden rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50/60 via-background to-background transition-shadow hover:shadow-xl dark:border-rose-500/20 dark:from-rose-950/25 dark:via-background dark:to-background lg:rounded-bl-[3rem]">
+          <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 to-rose-500/60" />
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center gap-3.5">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/12 ring-1 ring-rose-500/20">
+                <TrendingUp className="size-5 text-rose-600 dark:text-rose-400" />
+              </span>
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-rose-500 uppercase dark:text-rose-400">
+                  Scénář A
+                </p>
+                <p className="text-base font-bold leading-tight">Bez rekonstrukce</p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-xs text-muted-foreground">Celkem za {horizon} let</p>
+              <p className="mt-0.5 text-3xl font-bold tabular-nums text-rose-600 dark:text-rose-400 sm:text-4xl">
+                {fmtCzkShort(agg.cumWithoutEnd)}
               </p>
-              <p className="text-sm font-semibold">Bez rekonstrukce</p>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <p className="text-[11px] text-muted-foreground">Celkem za {horizon} let</p>
-            <p className="text-2xl font-bold tabular-nums text-rose-600 dark:text-rose-400 sm:text-3xl">
-              {fmtCzkShort(agg.cumWithoutEnd)}
-            </p>
-          </div>
-
-          <div className="mt-4 divide-y divide-border/60 border-t border-border/60 text-sm">
-            <div className="flex items-baseline justify-between gap-2 py-2">
-              <span className="text-muted-foreground">Roční náklady dnes</span>
-              <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithoutNow)}</span>
-            </div>
-            <div className="flex items-baseline justify-between gap-2 py-2">
-              <span className="text-muted-foreground">Roční náklady za {horizon} let</span>
-              <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithoutEnd)}</span>
+            <div className="mt-5 divide-y divide-rose-100/80 border-t border-rose-100/80 text-sm dark:divide-rose-500/10 dark:border-rose-500/10">
+              <div className="flex items-baseline justify-between gap-2 py-2.5">
+                <span className="text-muted-foreground">Roční náklady dnes</span>
+                <span className="font-semibold tabular-nums">{fmtCzkShort(agg.annualWithoutNow)}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2 py-2.5">
+                <span className="text-muted-foreground">Roční náklady za {horizon} let</span>
+                <span className="font-semibold tabular-nums text-rose-600 dark:text-rose-400">{fmtCzkShort(agg.annualWithoutEnd)}</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Scénář B — s rekonstrukcí */}
-        <div className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm transition-shadow hover:shadow-lg sm:p-5 lg:rounded-br-[3rem]">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-emerald-500/70"
-          />
-          {/* Ručně kreslený domeček s kladívkem v rohu */}
-          <svg
-            aria-hidden
-            className="pointer-events-none absolute -top-1 right-3 size-16 text-emerald-500/20"
-            viewBox="0 0 64 64"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 30 L32 14 L52 30" />
-            <path d="M18 28 V50 H46 V28" />
-            <path d="M40 40 L50 30 M46 26 L54 34" />
-          </svg>
-          <div className="flex items-center gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-              <Hammer className="size-4 text-emerald-600 dark:text-emerald-400" />
-            </span>
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
-                Scénář B
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/60 via-background to-background transition-shadow hover:shadow-xl dark:border-emerald-500/20 dark:from-emerald-950/25 dark:via-background dark:to-background lg:rounded-br-[3rem]">
+          <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-500/60" />
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center gap-3.5">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/12 ring-1 ring-emerald-500/20">
+                <Hammer className="size-5 text-emerald-600 dark:text-emerald-400" />
+              </span>
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
+                  Scénář B
+                </p>
+                <p className="text-base font-bold leading-tight">S rekonstrukcí</p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-xs text-muted-foreground">Celkem vč. investice za {horizon} let</p>
+              <p className="mt-0.5 text-3xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 sm:text-4xl">
+                {fmtCzkShort(agg.cumWithEnd)}
               </p>
-              <p className="text-sm font-semibold">S rekonstrukcí</p>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <p className="text-[11px] text-muted-foreground">
-              Celkem vč. investice za {horizon} let
-            </p>
-            <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 sm:text-3xl">
-              {fmtCzkShort(agg.cumWithEnd)}
-            </p>
-          </div>
-
-          <div className="mt-4 divide-y divide-border/60 border-t border-border/60 text-sm">
-            <div className="flex items-baseline justify-between gap-2 py-2">
-              <span className="text-muted-foreground">Jednorázová investice</span>
-              <span className="font-medium tabular-nums">{fmtCzkShort(agg.budget)}</span>
-            </div>
-            <div className="flex items-baseline justify-between gap-2 py-2">
-              <span className="text-muted-foreground">Roční náklady po rekonstrukci</span>
-              <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithNow)}</span>
+            <div className="mt-5 divide-y divide-emerald-100/80 border-t border-emerald-100/80 text-sm dark:divide-emerald-500/10 dark:border-emerald-500/10">
+              <div className="flex items-baseline justify-between gap-2 py-2.5">
+                <span className="text-muted-foreground">Jednorázová investice</span>
+                <span className="font-semibold tabular-nums">{fmtCzkShort(agg.budget)}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2 py-2.5">
+                <span className="text-muted-foreground">Roční náklady po rekonstrukci</span>
+                <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{fmtCzkShort(agg.annualWithNow)}</span>
+              </div>
             </div>
           </div>
         </div>
