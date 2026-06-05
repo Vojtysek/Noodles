@@ -67,7 +67,7 @@ const HORIZON = 20
 const SAMPLES = 6
 
 const WITHOUT_COLOR = "var(--color-rose-500, #f43f5e)"
-const WITH_COLOR = "var(--color-emerald-500, #10b981)"
+const WITH_COLOR = "var(--color-blue-500, #3b82f6)"
 
 // Genitiv pro „od ledna 2026".
 const MONTHS_CS = [
@@ -271,7 +271,7 @@ export default function PrehledPage() {
       {/* Ambient blobs */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-[28rem] rounded-full bg-emerald-500/12 blur-[130px]"
+        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]"
       />
       <div
         aria-hidden
@@ -317,8 +317,8 @@ export default function PrehledPage() {
         <div className="relative flex h-full min-h-[15rem] flex-col justify-between gap-6 p-6 sm:min-h-[17rem] sm:p-8">
           <div>
             <div className="flex items-center gap-2.5">
-              <span aria-hidden className="h-px w-7 bg-emerald-300/70" />
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-300 uppercase">
+              <span aria-hidden className="h-px w-7 bg-blue-300/70" />
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-300 uppercase">
                 {buildingCalc?.address ?? "Vaše SVJ"}
               </p>
             </div>
@@ -341,7 +341,7 @@ export default function PrehledPage() {
                 data-hero-chip
                 className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
               >
-                <Users className="size-4 shrink-0 text-emerald-300" />
+                <Users className="size-4 shrink-0 text-blue-300" />
                 <p className="text-sm text-white/90">
                   <span data-count-chip={buildingCalc.units} className="font-semibold tabular-nums">
                     {buildingCalc.units}
@@ -353,7 +353,7 @@ export default function PrehledPage() {
                 data-hero-chip
                 className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
               >
-                <Wallet className="size-4 shrink-0 text-emerald-300" />
+                <Wallet className="size-4 shrink-0 text-blue-300" />
                 <p className="text-sm text-white/90">
                   <span data-count-chip={buildingCalc.monthly_per_unit} className="font-semibold tabular-nums">
                     {buildingCalc.monthly_per_unit.toLocaleString("cs-CZ")}
@@ -366,7 +366,7 @@ export default function PrehledPage() {
                   data-hero-chip
                   className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
                 >
-                  <Sparkles className="size-4 shrink-0 text-emerald-300" />
+                  <Sparkles className="size-4 shrink-0 text-blue-300" />
                   <p className="text-sm text-white/90">
                     <span className="text-white/60">Vyplatí se od roku</span>{" "}
                     <span data-count-chip={breakEvenYear} className="font-semibold">
@@ -425,7 +425,7 @@ export default function PrehledPage() {
         {/* Ručně kreslený domeček v rohu */}
         <svg
           aria-hidden
-          className="pointer-events-none absolute -top-2 right-3 size-20 text-emerald-500/30"
+          className="pointer-events-none absolute -top-2 right-3 size-20 text-blue-500/30"
           viewBox="0 0 64 64"
           fill="none"
           stroke="currentColor"
@@ -452,7 +452,7 @@ export default function PrehledPage() {
         {/* Ručně kreslené sluníčko v rohu */}
         <svg
           aria-hidden
-          className="pointer-events-none absolute top-3 right-4 size-16 text-emerald-500/30"
+          className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
           viewBox="0 0 64 64"
           fill="none"
           stroke="currentColor"
