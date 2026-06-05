@@ -14,6 +14,7 @@ import {
   ChevronUp,
 } from "lucide-react"
 
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -23,10 +24,10 @@ import {
 } from "@/components/dashboard/charts"
 import {
   projects,
-  projectsByPriority,
   scenarios,
   fmtCzk,
   fmtCzkShort,
+  type Project,
   type ProjectId,
   type Scenario,
   type ScenarioTone,
@@ -54,6 +55,65 @@ function sameIdSet(a: readonly ProjectId[], b: readonly ProjectId[]): boolean {
   if (a.length !== b.length) return false
   const set = new Set(a)
   return b.every((id) => set.has(id))
+}
+
+type BuildingData = {
+  selected_renovations: string[]
+  total_cost: number
+  selected_scenario: "custom" | "sustainability" | null
+}
+
+const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
+  "Okna": "okna",
+  "Zateplení fasády": "fasada",
+  "Zateplení střechy": "strecha",
+}
+
+function scaleProjectsToBuilding(
+  baseProjects: Project[],
+  selectedRenovations: string[],
+  totalCost: number
+): Project[] {
+  const selectedIds = selectedRenovations
+    .map((label) => RENOVATION_LABEL_TO_PROJECT[label])
+    .filter(Boolean) as ProjectId[]
+
+  if (selectedIds.length === 0 || totalCost <= 0) return baseProjects
+
+  const mockTotal = baseProjects
+    .filter((p) => selectedIds.includes(p.id))
+    .reduce((sum, p) => sum + p.budget, 0)
+
+  if (mockTotal === 0) return baseProjects
+
+  const scaleFactor = totalCost / mockTotal
+
+  return baseProjects.map((p) => {
+    if (!selectedIds.includes(p.id)) return p
+    return {
+      ...p,
+      budget: Math.round(p.budget * scaleFactor),
+      spent: 0,
+      savingsPerYear: Math.round(p.savingsPerYear * scaleFactor),
+      fundIncreasePerFlat: Math.round(p.fundIncreasePerFlat * scaleFactor),
+      baseline: {
+        ...p.baseline,
+        annualCost: Math.round(p.baseline.annualCost * scaleFactor),
+      },
+      costBreakdown: p.costBreakdown.map((cb) => ({
+        ...cb,
+        value: Math.round(cb.value * scaleFactor),
+      })),
+      costItems: p.costItems.map((ci) => ({
+        ...ci,
+        amount: Math.round(ci.amount * scaleFactor),
+      })),
+      cashflow: p.cashflow.map((cf) => ({
+        ...cf,
+        value: Math.round(cf.value * scaleFactor),
+      })),
+    }
+  })
 }
 
 /**
@@ -102,8 +162,46 @@ export default function FinancialsPage() {
   const [selectedIds, setSelectedIds] = useState<ProjectId[]>(defaultScenario.projectIds)
   const [horizon, setHorizon] = useState(15)
   const [mixOpen, setMixOpen] = useState(false)
+  const [buildingData, setBuildingData] = useState<BuildingData | null>(null)
 
-  const allSelected = selectedIds.length === projects.length
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from("buildings")
+      .select("selected_renovations, total_cost, selected_scenario")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        setBuildingData(data)
+        const mappedIds = (data.selected_renovations ?? [])
+          .map((label: string) => RENOVATION_LABEL_TO_PROJECT[label])
+          .filter(Boolean) as ProjectId[]
+        if (data.selected_scenario === "sustainability") {
+          setSelectedIds(projects.map((p) => p.id))
+        } else if (mappedIds.length > 0) {
+          setSelectedIds(mappedIds)
+        }
+      })
+  }, [])
+
+  const scaledProjects = useMemo(
+    () =>
+      scaleProjectsToBuilding(
+        projects,
+        buildingData?.selected_renovations ?? [],
+        buildingData?.total_cost ?? 0
+      ),
+    [buildingData]
+  )
+
+  const scaledProjectsByPriority = useMemo(
+    () => [...scaledProjects].sort((a, b) => a.priority - b.priority),
+    [scaledProjects]
+  )
+
+  const allSelected = selectedIds.length === scaledProjects.length
 
   // Aktivní scénář — pokud vybraná množina projektů odpovídá některému scénáři.
   const activeScenario: Scenario | null =
@@ -123,7 +221,7 @@ export default function FinancialsPage() {
     })
   }
 
-  const selected = projectsByPriority.filter((p) => selectedIds.includes(p.id))
+  const selected = scaledProjectsByPriority.filter((p) => selectedIds.includes(p.id))
   const single = selected.length === 1 ? selected[0] : null
 
   const agg = useMemo(() => {
@@ -438,7 +536,7 @@ export default function FinancialsPage() {
             </>
           ) : (
             <>
-              Vlastní kombinace {selected.length} z {projects.length} projektů.{" "}
+              Vlastní kombinace {selected.length} z {scaledProjects.length} projektů.{" "}
               <span className="font-medium text-foreground tabular-nums">
                 Celkem {fmtCzkShort(agg.budget)}.
               </span>
@@ -466,12 +564,12 @@ export default function FinancialsPage() {
             <div className="flex flex-col gap-2.5 rounded-2xl border bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {selected.length} z {projects.length} vybráno
+                  {selected.length} z {scaledProjects.length} vybráno
                 </span>
                 <Button
                   variant="ghost"
                   size="xs"
-                  onClick={() => setSelectedIds(projects.map((p) => p.id))}
+                  onClick={() => setSelectedIds(scaledProjects.map((p) => p.id))}
                   disabled={allSelected}
                 >
                   <Layers />
@@ -479,7 +577,7 @@ export default function FinancialsPage() {
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                {projectsByPriority.map((p) => {
+                {scaledProjectsByPriority.map((p) => {
                   const active = selectedIds.includes(p.id)
                   return (
                     <button

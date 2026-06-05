@@ -592,7 +592,7 @@ export default function CalculatorPage() {
       } catch {
         // continue to dashboard even if save fails
       }
-      router.push("/dashboard")
+      router.push("/dashboard/prehled?from=onboarding")
     }
   }
 

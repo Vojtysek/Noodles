@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
@@ -30,6 +31,7 @@ import {
 } from "@/lib/mock-data"
 
 type BuildingCalc = {
+  id: string
   address: string | null
   units: number
   energy_grade: string | null
@@ -161,6 +163,7 @@ export default function PrehledPage() {
   const [splashOpen, setSplashOpen] = useState(false)
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("splash") === "1") {
@@ -182,6 +185,9 @@ export default function PrehledPage() {
           const built = buildDynamicScenarios((data as BuildingCalc).selected_renovations ?? [])
           setDynamicScenarios(built)
           setScenarioId(built[0].id)
+          if (new URLSearchParams(window.location.search).get("from") === "onboarding") {
+            setSplashOpen(true)
+          }
         }
       } catch {}
     })()
@@ -249,8 +255,22 @@ export default function PrehledPage() {
 
       {splashOpen && (
         <ScenarioSplash
-          onClose={() => setSplashOpen(false)}
+          onClose={() => {
+            setSplashOpen(false)
+            if (new URLSearchParams(window.location.search).get("from") === "onboarding") {
+              router.replace("/dashboard/prehled")
+            }
+          }}
           onSelect={(id) => setScenarioId(id)}
+          buildingData={
+            buildingCalc
+              ? {
+                  selected_renovations: buildingCalc.selected_renovations,
+                  total_cost: buildingCalc.total_cost,
+                }
+              : undefined
+          }
+          buildingId={buildingCalc?.id}
         />
       )}
 

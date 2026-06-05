@@ -6,16 +6,27 @@ import { useGSAP } from "@gsap/react"
 import { ArrowRight, Flag, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
 import {
   fmtCzk,
   fmtCzkShort,
   fmtDuration,
   projects,
   scenarios,
-  type Scenario,
 } from "@/lib/mock-data"
 
 gsap.registerPlugin(useGSAP)
+
+type BuildingData = {
+  selected_renovations: string[]
+  total_cost: number
+}
+
+const RENOVATION_LABEL_TO_PROJECT: Record<string, string> = {
+  "Okna": "okna",
+  "Zateplení fasády": "fasada",
+  "Zateplení střechy": "strecha",
+}
 
 const START_YEAR = 2026
 const START_MONTH = 0 // leden
@@ -50,7 +61,9 @@ type Milestone = {
 }
 
 type SplashCard = {
-  scenario: Scenario
+  id: string
+  name: string
+  tone: "emerald" | "blue"
   kicker: string
   photo: { src: string; alt: string }
   /** Dvě hlavní čísla — tahák každé varianty. */
@@ -65,7 +78,7 @@ type SplashCard = {
 const CONSULTATION_COST = 25_000
 
 function buildCard(
-  scenario: Scenario,
+  scenario: (typeof scenarios)[number],
   kicker: string,
   photo: { src: string; alt: string }
 ): SplashCard {
@@ -106,7 +119,9 @@ function buildCard(
   const isQuick = selected.length === 1
 
   return {
-    scenario,
+    id: scenario.id,
+    name: scenario.name,
+    tone: scenario.tone === "amber" ? "blue" : scenario.tone,
     kicker,
     photo,
     heroStats: isQuick
@@ -145,6 +160,148 @@ function buildCard(
   }
 }
 
+function buildCardFromBuilding(data: BuildingData): SplashCard {
+  const selectedIds = data.selected_renovations
+    .map((label) => RENOVATION_LABEL_TO_PROJECT[label])
+    .filter((id): id is string => Boolean(id))
+
+  const selected = selectedIds
+    .map((id) => projects.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => p !== undefined)
+
+  if (selected.length === 0) {
+    // Fallback to the cheapest mock scenario when renovations can't be mapped.
+    return buildCard(
+      scenarios.find((s) => s.id === "nejnutnejsi")!,
+      "Varianta A — váš plán",
+      {
+        src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
+        alt: "Řemeslníci při opravě domu",
+      }
+    )
+  }
+
+  const mockTotal = selected.reduce((sum, p) => sum + p.budget, 0)
+  const scale = mockTotal > 0 ? data.total_cost / mockTotal : 1
+
+  const scaledSavingsPerYear = selected.reduce((sum, p) => sum + p.savingsPerYear * scale, 0)
+  const scaledFundIncrease = selected.reduce((sum, p) => sum + p.fundIncreasePerFlat * scale, 0)
+
+  const docsMonths = selected.length > 1 ? 3 : 2
+  const docsCost = Math.round((data.total_cost * 0.03) / 10_000) * 10_000
+  const totalCost = CONSULTATION_COST + docsCost + data.total_cost
+
+  let offset = 0
+  let spent = 0
+  const milestones: Milestone[] = []
+
+  const push = (title: string, months: number, cost: number) => {
+    spent += cost
+    milestones.push({
+      title,
+      period: monthLabel(offset),
+      duration: fmtDuration(months),
+      cumulativeSpent: spent,
+    })
+    offset += months
+  }
+
+  push("Konzultace s energetikem", 1, CONSULTATION_COST)
+  push("Projektová dokumentace", docsMonths, docsCost)
+  for (const p of selected) push(p.name, p.durationMonths, Math.round(p.budget * scale))
+
+  const totalMonths = offset
+
+  return {
+    id: "custom",
+    name: "Váš plán",
+    tone: "emerald",
+    kicker: "Varianta A — váš plán",
+    photo: {
+      src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
+      alt: "Řemeslníci při opravě domu",
+    },
+    heroStats: [
+      {
+        label: "Celkem zaplatíte",
+        value: totalCost,
+        format: fmtCzkShort,
+        sub: `navýšení fondu o ${Math.round(scaledFundIncrease).toLocaleString("cs-CZ")} Kč/byt/měs`,
+      },
+      {
+        label: "Dům ušetří ročně",
+        value: Math.round(scaledSavingsPerYear),
+        format: fmtCzkShort,
+        sub: "na energiích a údržbě, každý rok",
+      },
+    ],
+    milestones,
+    totalMonths,
+    totalCost,
+    finishLabel: monthLabel(totalMonths).replace("od ", ""),
+  }
+}
+
+const SUSTAINABILITY_CARD: SplashCard = {
+  id: "sustainability",
+  name: "Energie nula",
+  tone: "blue",
+  kicker: "Varianta B — udržitelnost na prvním místě",
+  photo: {
+    src: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=1600&auto=format&fit=crop",
+    alt: "Solární panely na střeše budovy",
+  },
+  heroStats: [
+    {
+      label: "CO₂ ušetříte ročně",
+      value: 12.4,
+      format: (v) => `${v.toFixed(1)} t`,
+      sub: "méně emisí každý rok",
+    },
+    {
+      label: "Úspora energií",
+      value: 62,
+      format: (v) => `${Math.round(v)} %`,
+      sub: "z třídy D na energeticky soběstačný dům",
+    },
+  ],
+  milestones: [
+    {
+      title: "Energetický audit a konzultace",
+      period: "od ledna 2026",
+      duration: "1 měsíc",
+      cumulativeSpent: 25_000,
+    },
+    {
+      title: "Projekt + PENB certifikát",
+      period: "od února 2026",
+      duration: "3 měsíce",
+      cumulativeSpent: 515_000,
+    },
+    {
+      title: "Zateplení obálky budovy",
+      period: "od května 2026",
+      duration: "9 měsíců",
+      cumulativeSpent: 8_915_000,
+    },
+    {
+      title: "Výměna oken a dveří",
+      period: "od února 2027",
+      duration: "4 měsíce",
+      cumulativeSpent: 13_815_000,
+    },
+    {
+      title: "Zateplení střešního pláště",
+      period: "od června 2027",
+      duration: "5 měsíců",
+      cumulativeSpent: 17_015_000,
+    },
+  ],
+  totalMonths: 22,
+  totalCost: 17_015_000,
+  finishLabel: "listopadu 2027",
+}
+
 const TONE = {
   emerald: {
     wash: "bg-emerald-500/14 dark:bg-emerald-500/10",
@@ -179,27 +336,30 @@ const TONE = {
 export function ScenarioSplash({
   onClose,
   onSelect,
+  buildingData,
+  buildingId,
 }: {
   onClose: () => void
-  /** Volá se s id scénáře z mock dat („nejnutnejsi" / „kompletni"). */
+  /** Volá se s 'custom' nebo 'sustainability'. */
   onSelect?: (scenarioId: string) => void
+  buildingData?: BuildingData
+  buildingId?: string
 }) {
   const root = useRef<HTMLDivElement>(null)
 
   const cards = useMemo(() => {
-    const quick = scenarios.find((s) => s.id === "nejnutnejsi")!
-    const full = scenarios.find((s) => s.id === "kompletni")!
-    return [
-      buildCard(quick, "Varianta A — rychle a levně", {
-        src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
-        alt: "Řemeslníci při opravě domu",
-      }),
-      buildCard(full, "Varianta B — jednou a pořádně", {
-        src: "https://images.unsplash.com/photo-1460317442991-0ec209397118?q=80&w=1600&auto=format&fit=crop",
-        alt: "Zrekonstruovaný bytový dům",
-      }),
-    ]
-  }, [])
+    const variantA = buildingData
+      ? buildCardFromBuilding(buildingData)
+      : buildCard(
+          scenarios.find((s) => s.id === "nejnutnejsi")!,
+          "Varianta A — rychle a levně",
+          {
+            src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
+            alt: "Řemeslníci při opravě domu",
+          }
+        )
+    return [variantA, SUSTAINABILITY_CARD]
+  }, [buildingData])
 
   // Zámek scrollu pozadí + zavření Escapem po dobu zobrazení.
   useEffect(() => {
@@ -310,11 +470,11 @@ export function ScenarioSplash({
         {/* Dvě vertikální karty — jeden grid řádek = vždy stejná výška obou karet */}
         <div className="grid flex-1 grid-cols-1 gap-4 px-4 pb-4 sm:px-6 sm:pb-6 lg:grid-cols-2 lg:gap-5">
         {cards.map((card, cardIdx) => {
-          const tone = TONE[card.scenario.tone === "emerald" ? "emerald" : "blue"]
+          const tone = TONE[card.tone]
           const first = cardIdx === 0
           return (
             <div
-              key={card.scenario.id}
+              key={card.id}
               data-splash-card
               className={cn(
                 "relative flex flex-col overflow-hidden border bg-card shadow-xl",
@@ -340,7 +500,7 @@ export function ScenarioSplash({
                     {card.kicker}
                   </p>
                   <h2 className="mt-1.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                    {card.scenario.name}
+                    {card.name}
                   </h2>
                 </div>
               </div>
@@ -453,7 +613,14 @@ export function ScenarioSplash({
                 <button
                   data-splash-cta
                   onClick={() => {
-                    onSelect?.(card.scenario.id)
+                    onSelect?.(card.id)
+                    if (buildingId) {
+                      createClient()
+                        .from("buildings")
+                        .update({ selected_scenario: card.id })
+                        .eq("id", buildingId)
+                        .then(() => {})
+                    }
                     onClose()
                   }}
                   className={cn(
