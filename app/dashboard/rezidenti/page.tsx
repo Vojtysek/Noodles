@@ -18,8 +18,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { userScenarios, scenarioKey } from "@/lib/scenarios"
+import { ARCHETYPES, isArchetypeId, type Archetype } from "@/lib/archetypes"
+import { buildDynamicScenarios, scenarioKey } from "@/lib/scenarios"
 import {
+  scenarios as staticScenarios,
   type Persona,
   type Scenario,
   type ScenarioTone,
@@ -42,10 +44,15 @@ function initials(name: string): string {
     .slice(0, 2)
 }
 
+/** Vybraný subjekt — vestavěný archetyp, nebo vlastní (řádek v personas). */
+type Subject =
+  | { kind: "builtin"; archetype: Archetype }
+  | { kind: "custom"; persona: Persona }
+
 export default function RezidentiPage() {
   const [customs, setCustoms] = useState<Persona[]>([])
   const [loadingCustoms, setLoadingCustoms] = useState(true)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string>(ARCHETYPES[0].id)
 
   // Vlastní archetyp — formulář + úpravy
   const [showForm, setShowForm] = useState(false)
@@ -57,9 +64,9 @@ export default function RezidentiPage() {
   const [regenerating, setRegenerating] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // Scénáře + strategie — jen uživatelův vlastní plán z kalkulace.
-  const [scenarioList, setScenarioList] = useState<Scenario[]>([])
-  const [scenarioId, setScenarioId] = useState<string | null>(null)
+  // Scénáře + strategie
+  const [scenarioList, setScenarioList] = useState<Scenario[]>(staticScenarios)
+  const [scenarioId, setScenarioId] = useState(staticScenarios[0].id)
   const [strategies, setStrategies] = useState<Record<string, StrategyPoint[]>>({})
   const [generating, setGenerating] = useState(false)
 
@@ -78,25 +85,24 @@ export default function RezidentiPage() {
         structured: Persona["structured"]
       }>) => {
         if (!Array.isArray(rows)) return
-        const mapped = rows.map((r) => ({
-          id: r.id,
-          name: r.name,
-          role: r.role,
-          unit: r.unit,
-          status: r.status,
-          sentiment: r.sentiment,
-          brief: r.brief,
-          structured: r.structured,
-        }))
-        setCustoms(mapped)
-        // Předvyber prvního vlastního rezidenta, pokud existuje.
-        setSelectedId((prev) => prev ?? mapped[0]?.id ?? null)
+        setCustoms(
+          rows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            role: r.role,
+            unit: r.unit,
+            status: r.status,
+            sentiment: r.sentiment,
+            brief: r.brief,
+            structured: r.structured,
+          }))
+        )
       })
       .catch(() => {})
       .finally(() => setLoadingCustoms(false))
   }, [])
 
-  // Jen uživatelův vlastní plán z poslední kalkulace — scoped na user_id.
+  // Dva velké scénáře z poslední kalkulace — scoped na user_id.
   useEffect(() => {
     ;(async () => {
       try {
@@ -113,23 +119,38 @@ export default function RezidentiPage() {
           .limit(1)
           .maybeSingle()
         if (data) {
-          const built = userScenarios(
+          const built = buildDynamicScenarios(
             (data as { selected_renovations: string[] }).selected_renovations ?? []
           )
           setScenarioList(built)
-          setScenarioId(built[0]?.id ?? null)
+          setScenarioId(built[0].id)
         }
       } catch {}
     })()
   }, [])
 
-  // Vybraný rezident — jen vlastní persony uživatele.
-  const persona: Persona | null =
-    (selectedId !== null && customs.find((p) => p.id === selectedId)) || null
+  const subject: Subject = isArchetypeId(selectedId)
+    ? { kind: "builtin", archetype: ARCHETYPES.find((a) => a.id === selectedId)! }
+    : {
+        kind: "custom",
+        persona: customs.find((p) => p.id === selectedId) ?? {
+          id: selectedId,
+          name: "",
+          role: "",
+          unit: "",
+          status: "ceka",
+          sentiment: "vaha",
+          brief: "",
+          structured: null,
+        },
+      }
 
-  const strategiesUrl = persona ? `/api/personas/${persona.id}/strategies` : null
+  const strategiesUrl =
+    subject.kind === "builtin"
+      ? `/api/archetypes/${subject.archetype.id}/strategies`
+      : `/api/personas/${subject.persona.id}/strategies`
 
-  /** Výběr rezidenta — resetuje stav vázaný na předchozí výběr. */
+  /** Výběr subjektu — resetuje stav vázaný na předchozí výběr. */
   function selectSubject(id: string) {
     setSelectedId(id)
     setStrategies({})
@@ -137,9 +158,8 @@ export default function RezidentiPage() {
     setDraftBrief("")
   }
 
-  // Cache strategií vybraného rezidenta — klíčováno scenario_key.
+  // Cache strategií vybraného subjektu — klíčováno scenario_key.
   useEffect(() => {
-    if (!strategiesUrl) return
     const controller = new AbortController()
     fetch(strategiesUrl, { signal: controller.signal })
       .then((r) => {
@@ -158,7 +178,8 @@ export default function RezidentiPage() {
   const activeKey = scenario ? scenarioKey(scenario.projectIds) : null
   const activeStrategies = activeKey ? strategies[activeKey] : undefined
 
-  const profile = persona?.structured ?? null
+  const profile =
+    subject.kind === "builtin" ? subject.archetype.profile : subject.persona.structured
 
   function resetForm() {
     setNewName("")
@@ -190,19 +211,14 @@ export default function RezidentiPage() {
   }
 
   async function deleteCustomArchetype() {
-    if (!persona || deleting) return
-    if (!window.confirm(`Smazat rezidenta „${persona.name}“?`)) return
-    const deletedId = persona.id
+    if (subject.kind !== "custom" || deleting) return
+    if (!window.confirm(`Smazat archetyp „${subject.persona.name}"?`)) return
     setDeleting(true)
     try {
-      const res = await fetch(`/api/personas/${deletedId}`, { method: "DELETE" })
+      const res = await fetch(`/api/personas/${subject.persona.id}`, { method: "DELETE" })
       if (!res.ok) throw new Error(await res.text())
-      const remaining = customs.filter((p) => p.id !== deletedId)
-      setCustoms(remaining)
-      setSelectedId(remaining[0]?.id ?? null)
-      setStrategies({})
-      setEditingBrief(false)
-      setDraftBrief("")
+      setCustoms((prev) => prev.filter((p) => p.id !== subject.persona.id))
+      selectSubject(ARCHETYPES[0].id)
     } catch (err) {
       console.error(err)
     } finally {
@@ -211,15 +227,15 @@ export default function RezidentiPage() {
   }
 
   async function updateBrief() {
-    if (!persona || regenerating) return
+    if (subject.kind !== "custom" || regenerating) return
     const brief = draftBrief.trim()
-    if (!brief || brief === persona.brief) {
+    if (!brief || brief === subject.persona.brief) {
       setEditingBrief(false)
       return
     }
     setRegenerating(true)
     try {
-      const res = await fetch(`/api/personas/${persona.id}`, {
+      const res = await fetch(`/api/personas/${subject.persona.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ brief }),
@@ -242,7 +258,7 @@ export default function RezidentiPage() {
   }
 
   async function generateStrategies() {
-    if (!profile || !strategiesUrl || !scenario || !activeKey || generating) return
+    if (!profile || !scenario || !activeKey || generating) return
     setGenerating(true)
     try {
       const res = await fetch(strategiesUrl, {
@@ -297,7 +313,35 @@ export default function RezidentiPage() {
           S kým budete mluvit?
         </span>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {/* Vlastní rezidenti z DB */}
+          {ARCHETYPES.map((a) => {
+            const active = selectedId === a.id
+            return (
+              <button
+                key={a.id}
+                onClick={() => selectSubject(a.id)}
+                aria-pressed={active}
+                className={cn(
+                  "flex flex-col gap-2.5 rounded-2xl border p-3 text-left transition-all duration-200",
+                  active
+                    ? "scale-[1.02] border-primary/60 bg-primary/5 shadow-lg ring-3 ring-primary/15"
+                    : "bg-background/60 backdrop-blur-sm hover:-translate-y-0.5 hover:shadow-lg"
+                )}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={a.imagePath}
+                  alt={a.name}
+                  className="aspect-square w-full rounded-xl object-cover"
+                />
+                <div>
+                  <p className="text-sm font-semibold">{a.name}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{a.subtitle}</p>
+                </div>
+              </button>
+            )
+          })}
+
+          {/* Vlastní archetypy z DB */}
           {loadingCustoms
             ? Array.from({ length: 2 }).map((_, i) => (
                 <div key={i} className="animate-pulse rounded-2xl border bg-muted/40" />
@@ -323,7 +367,7 @@ export default function RezidentiPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold">{p.name}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">Váš rezident</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Vlastní archetyp</p>
                     </div>
                   </button>
                 )
@@ -351,21 +395,6 @@ export default function RezidentiPage() {
             </div>
           </button>
         </div>
-
-        {/* Prázdný stav — uživatel zatím nemá žádné rezidenty */}
-        {!loadingCustoms && customs.length === 0 && (
-          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed px-6 py-8 text-center">
-            <span className="flex size-10 items-center justify-center rounded-full bg-muted">
-              <User className="size-5 text-muted-foreground" />
-            </span>
-            <p className="text-sm font-medium">Zatím nemáte žádné rezidenty</p>
-            <p className="max-w-md text-xs leading-relaxed text-muted-foreground">
-              Vytvořte si prvního rezidenta tlačítkem „Vlastní archetyp“ výše. Popište
-              typ souseda vlastními slovy a AI z popisu připraví profil i argumentační
-              strategie.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Formulář vlastního archetypu */}
@@ -404,8 +433,7 @@ export default function RezidentiPage() {
         </div>
       )}
 
-      {/* Detail rezidenta */}
-      {persona && (
+      {/* Detail archetypu */}
       <div
         className="anim-in relative overflow-hidden rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:rounded-br-[3rem]"
         style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.2s" } as React.CSSProperties}
@@ -418,33 +446,50 @@ export default function RezidentiPage() {
         )}
 
         <div className="flex flex-col gap-6">
-          {/* Hlavička: iniciály + jméno + akce */}
+          {/* Hlavička: obrázek / iniciály + jméno + akce */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3.5">
-              <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-bold text-primary">
-                {initials(persona.name)}
-              </span>
+              {subject.kind === "builtin" ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={subject.archetype.imagePath}
+                  alt={subject.archetype.name}
+                  className="size-14 shrink-0 rounded-2xl object-cover"
+                />
+              ) : (
+                <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-bold text-primary">
+                  {initials(subject.persona.name)}
+                </span>
+              )}
               <div>
-                <p className="text-lg font-semibold leading-tight">{persona.name}</p>
+                <p className="text-lg font-semibold leading-tight">
+                  {subject.kind === "builtin" ? subject.archetype.name : subject.persona.name}
+                </p>
                 <span className="mt-1 inline-flex rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  Váš rezident
+                  {subject.kind === "builtin" ? "Vestavěný archetyp" : "Vlastní archetyp"}
                 </span>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={deleteCustomArchetype}
-              disabled={deleting}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 />
-              {deleting ? "Mažu…" : "Smazat"}
-            </Button>
+            {subject.kind === "custom" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={deleteCustomArchetype}
+                disabled={deleting}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 />
+                {deleting ? "Mažu…" : "Smazat"}
+              </Button>
+            )}
           </div>
 
-          {/* Popis — editovatelný brief */}
-          {editingBrief ? (
+          {/* Popis — vestavěný read-only, vlastní s editací briefu */}
+          {subject.kind === "builtin" ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {subject.archetype.description}
+            </p>
+          ) : editingBrief ? (
             <div className="flex flex-col gap-2">
               <textarea
                 value={draftBrief}
@@ -471,11 +516,11 @@ export default function RezidentiPage() {
           ) : (
             <div className="group/brief relative">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                {persona.brief}
+                {subject.persona.brief}
               </p>
               <button
                 onClick={() => {
-                  setDraftBrief(persona.brief)
+                  setDraftBrief(subject.persona.brief)
                   setEditingBrief(true)
                 }}
                 className="absolute -top-1 -right-1 hidden rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground group-hover/brief:flex focus-visible:flex"
@@ -540,11 +585,11 @@ export default function RezidentiPage() {
               </Button>
             </div>
 
-            {/* Přepínač scénářů — uživatelův vlastní plán */}
-            {scenarioList.length > 0 && (
+            {/* Přepínač velkých scénářů */}
+            {scenario && (
             <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-muted p-1">
               {scenarioList.map((s) => {
-                const active = s.id === scenario?.id
+                const active = s.id === scenario.id
                 return (
                   <button
                     key={s.id}
@@ -590,7 +635,7 @@ export default function RezidentiPage() {
                     {!scenario
                       ? "Nejdříve si v kalkulaci vyberte renovace — váš plán se pak objeví zde."
                       : profile
-                        ? `Pro scénář „${scenario.name}“ zatím nejsou strategie — vygenerujte je tlačítkem výše.`
+                        ? `Pro scénář „${scenario.name}" zatím nejsou strategie — vygenerujte je tlačítkem výše.`
                         : "Nejdříve počkejte na zpracování profilu AI agentem."}
                   </p>
                 </div>
@@ -599,7 +644,6 @@ export default function RezidentiPage() {
           </div>
         </div>
       </div>
-      )}
     </div>
   )
 }
