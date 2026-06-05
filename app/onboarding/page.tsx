@@ -219,7 +219,7 @@ export default function CalculatorPage() {
   const [insulated, setInsulated] = useState(false)
   const [newWindows, setNewWindows] = useState(false)
   const [showPenb, setShowPenb] = useState(false)
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
 
   const [repair, setRepair] = useState<RepairCalc>({
     numberOfUnits: 20,
@@ -229,7 +229,7 @@ export default function CalculatorPage() {
   })
 
   const calc = calcRepair(repair)
-  const selectedRenovation = RENOVATIONS.find((r) => r.id === selected)
+  const selectedRenovations = RENOVATIONS.filter((r) => selected.includes(r.id))
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -350,7 +350,7 @@ export default function CalculatorPage() {
     } else if (step === 1) {
       setStep(2)
     } else if (step === 2) {
-      if (selected) setStep(3)
+      if (selected.length > 0) setStep(3)
     } else if (step === 3) {
       setStep(4)
     } else if (step === 4) {
@@ -371,7 +371,7 @@ export default function CalculatorPage() {
           ? "Hotovo"
           : "Pokračovat"
 
-  const ctaDisabled = loading || (step === 2 && !selected)
+  const ctaDisabled = loading || (step === 2 && selected.length === 0)
 
   const progressDots = (
     <div className="flex justify-center gap-1.5">
@@ -672,12 +672,18 @@ export default function CalculatorPage() {
             {step === 2 && (
               <div className="grid grid-cols-3 gap-2">
                 {RENOVATIONS.map((r) => {
-                  const isSelected = selected === r.id
+                  const isSelected = selected.includes(r.id)
                   return (
                     <button
                       key={r.id}
                       onClick={() =>
-                        r.available ? setSelected(r.id) : undefined
+                        r.available
+                          ? setSelected((prev) =>
+                              prev.includes(r.id)
+                                ? prev.filter((id) => id !== r.id)
+                                : [...prev, r.id]
+                            )
+                          : undefined
                       }
                       disabled={!r.available}
                       className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
@@ -715,7 +721,7 @@ export default function CalculatorPage() {
 
             {/* Step 3 — Sliders */}
             {step === 3 &&
-              (selected === "windows" ? (
+              (selected.includes("windows") ? (
                 <div className="flex flex-col divide-y divide-border">
                   {(
                     [
