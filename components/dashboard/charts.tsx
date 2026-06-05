@@ -1,6 +1,48 @@
-import { cn } from "@/lib/utils"
+"use client"
 
-const CHART_COLORS = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4", "bg-chart-5"]
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Label,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts"
+
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart"
+
+const CHART_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+]
+
+/** Řádek tooltipu s vlastním formátováním hodnoty (Kč apod.). */
+function tooltipRow(label: React.ReactNode, value: string, color?: string) {
+  return (
+    <>
+      <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: color }} />
+      <div className="flex flex-1 items-center justify-between gap-4 leading-none">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-mono font-medium text-foreground tabular-nums">{value}</span>
+      </div>
+    </>
+  )
+}
 
 /** Horizontální sloupcový rozpad — podíly položek na celku. */
 export function BreakdownBars({
@@ -10,107 +52,229 @@ export function BreakdownBars({
   data: { label: string; value: number }[]
   formatValue: (value: number) => string
 }) {
-  const max = Math.max(...data.map((d) => d.value), 1)
+  const rows = data.map((d, i) => ({ ...d, fill: CHART_COLORS[i % CHART_COLORS.length] }))
+  const config = { value: { label: "Částka" } } satisfies ChartConfig
+
   return (
-    <div className="flex flex-col gap-3">
-      {data.map((d, i) => (
-        <div key={d.label}>
-          <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
-            <span className="truncate text-muted-foreground">{d.label}</span>
-            <span className="shrink-0 font-medium tabular-nums">{formatValue(d.value)}</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn("h-full rounded-full", CHART_COLORS[i % CHART_COLORS.length])}
-              style={{ width: `${(d.value / max) * 100}%` }}
+    <ChartContainer
+      config={config}
+      className="aspect-auto w-full"
+      style={{ height: rows.length * 44 + 8 }}
+    >
+      <BarChart data={rows} layout="vertical" margin={{ left: 0, right: 8 }} accessibilityLayer>
+        <XAxis type="number" hide />
+        <YAxis
+          dataKey="label"
+          type="category"
+          tickLine={false}
+          axisLine={false}
+          width={150}
+          tick={{ fontSize: 11 }}
+        />
+        <ChartTooltip
+          cursor={false}
+          content={
+            <ChartTooltipContent
+              hideLabel
+              formatter={(value, _name, item) =>
+                tooltipRow(item.payload?.label, formatValue(Number(value)), item.payload?.fill)
+              }
             />
-          </div>
-        </div>
-      ))}
-    </div>
+          }
+        />
+        <Bar dataKey="value" radius={6} isAnimationActive={false} />
+      </BarChart>
+    </ChartContainer>
   )
 }
 
-/** Jednoduchý spojnicový graf (SVG) — vývoj hodnoty v čase. */
-export function LineChart({
-  data,
+export type ComparisonSeries = {
+  label: string
+  color: string
+  points: { year: string; value: number }[]
+}
+
+/**
+ * Průsečík dvou vykreslených lomených čar (0–1 podél osy X), interpolovaný
+ * mezi vzorky — značka bodu zlomu tak sedí přesně na vizuální křivce.
+ */
+export function seriesCrossing(a: { value: number }[], b: { value: number }[]): number | null {
+  for (let i = 0; i < a.length - 1; i++) {
+    const d0 = a[i].value - b[i].value
+    const d1 = a[i + 1].value - b[i + 1].value
+    if (d0 > 0 && d1 <= 0) {
+      const frac = d0 / (d0 - d1)
+      return (i + frac) / (a.length - 1)
+    }
+  }
+  return null
+}
+
+/**
+ * Dvouvrstvý spojnicový graf — porovnání vývoje dvou scénářů v čase
+ * (např. s rekonstrukcí vs. bez ní). Obě řady sdílí stejnou osu let.
+ * Najetím myší se zobrazí detail obou hodnot v daném roce.
+ */
+export function ComparisonLineChart({
+  series,
   formatValue,
+  marker,
 }: {
-  data: { year: string; value: number }[]
+  series: [ComparisonSeries, ComparisonSeries]
   formatValue: (value: number) => string
+  /** Svislá značka, např. bod zlomu. `position` je 0–1 podél osy X. */
+  marker?: { position: number; label: string } | null
 }) {
-  const W = 600
-  const H = 180
-  const PAD = 8
-  const min = Math.min(...data.map((d) => d.value))
-  const max = Math.max(...data.map((d) => d.value))
-  const range = max - min || 1
+  const rows = series[0].points.map((p, i) => ({
+    year: Number(p.year),
+    a: series[0].points[i].value,
+    b: series[1].points[i].value,
+  }))
+  const minYear = rows[0].year
+  const maxYear = rows[rows.length - 1].year
+  // Číselná osa X → značka bodu zlomu leží přesně na průsečíku křivek.
+  const markerYear = marker ? minYear + marker.position * (maxYear - minYear) : null
 
-  const x = (i: number) => PAD + (i / (data.length - 1)) * (W - PAD * 2)
-  const y = (v: number) => PAD + (1 - (v - min) / range) * (H - PAD * 2)
-
-  const points = data.map((d, i) => `${x(i)},${y(d.value)}`).join(" ")
-  const area = `${PAD},${H - PAD} ${points} ${W - PAD},${H - PAD}`
-  const zeroY = min < 0 && max > 0 ? y(0) : null
+  const config = {
+    a: { label: series[0].label, color: series[0].color },
+    b: { label: series[1].label, color: series[1].color },
+  } satisfies ChartConfig
 
   return (
-    <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Vývoj hodnoty v čase">
-        {zeroY !== null && (
-          <line
-            x1={PAD}
-            x2={W - PAD}
-            y1={zeroY}
-            y2={zeroY}
-            stroke="var(--border)"
-            strokeWidth="1"
+    <ChartContainer config={config} className="aspect-auto h-56 w-full">
+      <LineChart data={rows} margin={{ left: 8, right: 8, top: 8 }} accessibilityLayer>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="year"
+          type="number"
+          domain={[minYear, maxYear]}
+          ticks={rows.map((r) => r.year)}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tick={{ fontSize: 11 }}
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          width={68}
+          tick={{ fontSize: 11 }}
+          tickFormatter={(v: number) => formatValue(v)}
+        />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              labelFormatter={(_, payload) => `Rok ${payload?.[0]?.payload?.year ?? ""}`}
+              formatter={(value, name, item) =>
+                tooltipRow(
+                  config[name as keyof typeof config]?.label ?? name,
+                  formatValue(Number(value)),
+                  item.color
+                )
+              }
+            />
+          }
+        />
+        {markerYear !== null && marker && (
+          <ReferenceLine
+            x={markerYear}
+            stroke="var(--foreground)"
             strokeDasharray="4 4"
+            opacity={0.35}
+            label={{
+              value: marker.label,
+              position: "insideTopLeft",
+              fontSize: 11,
+              fill: "var(--muted-foreground)",
+            }}
           />
         )}
-        <polygon points={area} fill="var(--chart-2)" opacity="0.12" />
-        <polyline
-          points={points}
-          fill="none"
-          stroke="var(--chart-3)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <Line
+          dataKey="a"
+          type="linear"
+          stroke="var(--color-a)"
+          strokeWidth={2.5}
+          dot={{ r: 3, fill: "var(--color-a)" }}
+          activeDot={{ r: 5 }}
+          isAnimationActive={false}
         />
-        {data.map((d, i) => (
-          <circle key={d.year} cx={x(i)} cy={y(d.value)} r="3.5" fill="var(--chart-4)">
-            <title>{`${d.year}: ${formatValue(d.value)}`}</title>
-          </circle>
-        ))}
-      </svg>
-      <div className="mt-1 flex justify-between px-1 text-xs text-muted-foreground tabular-nums">
-        {data.map((d) => (
-          <span key={d.year}>{d.year}</span>
-        ))}
-      </div>
-    </div>
+        <Line
+          dataKey="b"
+          type="linear"
+          stroke="var(--color-b)"
+          strokeWidth={2.5}
+          dot={{ r: 3, fill: "var(--color-b)" }}
+          activeDot={{ r: 5 }}
+          isAnimationActive={false}
+        />
+        <ChartLegend content={<ChartLegendContent />} />
+      </LineChart>
+    </ChartContainer>
   )
 }
 
 /** Donut — čerpání rozpočtu. */
 export function DonutChart({ percent, label }: { percent: number; label: string }) {
-  const R = 42
-  const C = 2 * Math.PI * R
   const clamped = Math.min(Math.max(percent, 0), 100)
+  const config = {
+    spent: { label: "Vyčerpáno", color: "var(--chart-3)" },
+    rest: { label: "Zbývá", color: "var(--muted)" },
+  } satisfies ChartConfig
+  const data = [
+    { name: "spent", value: clamped, fill: "var(--color-spent)" },
+    { name: "rest", value: 100 - clamped, fill: "var(--color-rest)" },
+  ]
+
   return (
     <div className="flex items-center gap-4">
-      <svg viewBox="0 0 100 100" className="size-24 -rotate-90" role="img" aria-label={label}>
-        <circle cx="50" cy="50" r={R} fill="none" stroke="var(--muted)" strokeWidth="10" />
-        <circle
-          cx="50"
-          cy="50"
-          r={R}
-          fill="none"
-          stroke="var(--chart-3)"
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeDasharray={`${(clamped / 100) * C} ${C}`}
-        />
-      </svg>
+      <ChartContainer config={config} className="aspect-square h-28">
+        <PieChart>
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                hideLabel
+                formatter={(value, name, item) =>
+                  tooltipRow(
+                    config[name as keyof typeof config]?.label ?? name,
+                    `${Number(value).toLocaleString("cs-CZ")} %`,
+                    item.payload?.fill
+                  )
+                }
+              />
+            }
+          />
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={36}
+            outerRadius={50}
+            startAngle={90}
+            endAngle={-270}
+            strokeWidth={0}
+            isAnimationActive={false}
+          >
+            <Label
+              content={({ viewBox }) => {
+                if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                  return (
+                    <text
+                      x={viewBox.cx}
+                      y={viewBox.cy}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      className="fill-foreground text-sm font-semibold tabular-nums"
+                    >
+                      {clamped.toLocaleString("cs-CZ")} %
+                    </text>
+                  )
+                }
+              }}
+            />
+          </Pie>
+        </PieChart>
+      </ChartContainer>
       <div>
         <p className="text-2xl font-semibold tabular-nums">{clamped.toLocaleString("cs-CZ")} %</p>
         <p className="text-sm text-muted-foreground">{label}</p>

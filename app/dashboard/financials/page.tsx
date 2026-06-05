@@ -1,11 +1,32 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Wallet, TrendingDown, CalendarClock, Zap, Layers, Check } from "lucide-react"
+import {
+  Wallet,
+  TrendingDown,
+  CalendarClock,
+  Layers,
+  CircleCheck,
+  Scale,
+  TriangleAlert,
+  Star,
+} from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { BreakdownBars, DonutChart, LineChart } from "@/components/dashboard/charts"
-import { projects, fmtCzk, fmtCzkShort, type ProjectId } from "@/lib/mock-data"
+import {
+  BreakdownBars,
+  ComparisonLineChart,
+  DonutChart,
+  seriesCrossing,
+} from "@/components/dashboard/charts"
+import {
+  projects,
+  projectsByPriority,
+  fmtCzk,
+  fmtCzkShort,
+  type ProjectId,
+} from "@/lib/mock-data"
 
 const STATUS_LABELS: Record<string, string> = {
   navrh: "Návrh",
@@ -13,9 +34,19 @@ const STATUS_LABELS: Record<string, string> = {
   realizace: "Realizace",
 }
 
+const START_YEAR = 2026
+const HORIZONS = [10, 15, 20, 30]
+const SAMPLES = 6
+
+// Barvy scénářů — stejné sémantické odstíny jako u postojů rezidentů.
+const WITHOUT_COLOR = "var(--color-rose-500, #f43f5e)"
+const WITH_COLOR = "var(--color-emerald-500, #10b981)"
+
 export default function FinancialsPage() {
   // Mix & match — lze vybrat libovolnou kombinaci projektů, nebo všechny najednou.
-  const [selectedIds, setSelectedIds] = useState<ProjectId[]>([projects[0].id])
+  // Výchozí výběr: projekt s nejvyšší prioritou (největší dopad).
+  const [selectedIds, setSelectedIds] = useState<ProjectId[]>([projectsByPriority[0].id])
+  const [horizon, setHorizon] = useState(15)
 
   const allSelected = selectedIds.length === projects.length
 
@@ -29,7 +60,7 @@ export default function FinancialsPage() {
     })
   }
 
-  const selected = projects.filter((p) => selectedIds.includes(p.id))
+  const selected = projectsByPriority.filter((p) => selectedIds.includes(p.id))
   const single = selected.length === 1 ? selected[0] : null
 
   const agg = useMemo(() => {
@@ -37,21 +68,46 @@ export default function FinancialsPage() {
     const spent = selected.reduce((sum, p) => sum + p.spent, 0)
     const savingsPerYear = selected.reduce((sum, p) => sum + p.savingsPerYear, 0)
     const fundIncreasePerFlat = selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0)
-    const energySavingPct = selected.reduce((sum, p) => sum + p.energySavingPct, 0)
-    const paybackYears = savingsPerYear > 0 ? budget / savingsPerYear : 0
+    const annualCost = selected.reduce((sum, p) => sum + p.baseline.annualCost, 0)
+    // Růst nákladů vážený podle jejich výše.
+    const growth =
+      selected.reduce((sum, p) => sum + p.baseline.costGrowthPct * p.baseline.annualCost, 0) /
+      annualCost /
+      100
 
-    // Rozpad: u jednoho projektu po položkách, u kombinace po projektech.
+    // Roční modelace obou scénářů: náklady bez rekonstrukce rostou z plné základny,
+    // po rekonstrukci ze snížené (úspora roste s cenami energií).
+    const annualWithout: number[] = []
+    const annualWith: number[] = []
+    const cumWithout: number[] = [0]
+    const cumWith: number[] = [budget]
+    for (let t = 0; t <= horizon; t++) {
+      const factor = Math.pow(1 + growth, t)
+      annualWithout.push(annualCost * factor)
+      annualWith.push((annualCost - savingsPerYear) * factor)
+      if (t > 0) {
+        cumWithout.push(cumWithout[t - 1] + annualWithout[t - 1])
+        cumWith.push(cumWith[t - 1] + annualWith[t - 1])
+      }
+    }
+
+    const lossAtHorizon = cumWithout[horizon] - cumWith[horizon]
+
+    const sample = (values: number[]) =>
+      Array.from({ length: SAMPLES }, (_, i) => {
+        const t = Math.round((i / (SAMPLES - 1)) * horizon)
+        return { year: String(START_YEAR + t), value: values[t] }
+      })
+
+    const annualSeries = { without: sample(annualWithout), with: sample(annualWith) }
+    const cumSeries = { without: sample(cumWithout), with: sample(cumWith) }
+    // Bod zlomu počítaný z vykreslených (vzorkovaných) křivek — značka v grafu
+    // tak sedí přesně na jejich průsečíku.
+    const breakEvenPos = seriesCrossing(cumSeries.with, cumSeries.without)
+
     const costBreakdown = single
       ? single.costBreakdown
       : selected.map((p) => ({ label: p.name, value: p.budget }))
-
-    // Kumulativní bilance: u jednoho projektu autorská data, u kombinace dopočet.
-    const cashflow = single
-      ? single.cashflow
-      : Array.from({ length: 7 }, (_, i) => {
-          const offset = Math.ceil((paybackYears + 2) / 6) * i
-          return { year: String(2026 + offset), value: -budget + savingsPerYear * offset }
-        })
 
     const costItems = selected.flatMap((p) =>
       p.costItems.map((item) => ({
@@ -66,26 +122,57 @@ export default function FinancialsPage() {
       spent,
       savingsPerYear,
       fundIncreasePerFlat,
-      energySavingPct,
-      paybackYears,
+      annualCost,
+      growthPct: growth * 100,
+      annualWithoutNow: annualWithout[0],
+      annualWithNow: annualWith[0],
+      annualWithoutEnd: annualWithout[horizon],
+      annualWithEnd: annualWith[horizon],
+      cumWithoutEnd: cumWithout[horizon],
+      cumWithEnd: cumWith[horizon],
+      breakEvenPos,
+      lossAtHorizon,
+      annualSeries,
+      cumSeries,
       costBreakdown,
-      cashflow,
       costItems,
     }
-  }, [selected, single])
+  }, [selected, single, horizon])
 
   const spentPct = Math.round((agg.spent / agg.budget) * 100)
-  const scopeLabel = single ? single.name : allSelected ? "Všechny projekty" : selected.map((p) => p.shortName).join(" + ")
+  const scopeLabel = single
+    ? single.name
+    : allSelected
+      ? "Všechny projekty"
+      : selected.map((p) => p.shortName).join(" + ")
+  const breakEvenYearNum =
+    agg.breakEvenPos !== null ? Math.round(START_YEAR + agg.breakEvenPos * horizon) : null
+  const breakEvenLabel =
+    breakEvenYearNum !== null ? String(breakEvenYearNum) : `za horizontem ${horizon} let`
 
   const kpis = [
-    { icon: Wallet, label: "Celkový rozpočet", value: fmtCzkShort(agg.budget) },
-    { icon: TrendingDown, label: "Roční úspora", value: fmtCzkShort(agg.savingsPerYear) },
+    { icon: Wallet, label: "Investice", value: fmtCzkShort(agg.budget), accent: null },
+    {
+      icon: TrendingDown,
+      label: "Roční úspora po rekonstrukci",
+      value: fmtCzkShort(agg.savingsPerYear),
+      accent: "text-emerald-600 dark:text-emerald-400",
+    },
     {
       icon: CalendarClock,
-      label: "Návratnost",
-      value: `${agg.paybackYears.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} let`,
+      label: "Bod zlomu",
+      value: breakEvenYearNum !== null ? String(breakEvenYearNum) : `> ${horizon} let`,
+      accent: null,
     },
-    { icon: Zap, label: "Úspora energií", value: `${agg.energySavingPct} %` },
+    {
+      icon: TriangleAlert,
+      label: `Ztráta bez rekonstrukce za ${horizon} let`,
+      value: fmtCzkShort(Math.abs(agg.lossAtHorizon)),
+      accent:
+        agg.lossAtHorizon > 0
+          ? "text-rose-600 dark:text-rose-400"
+          : "text-emerald-600 dark:text-emerald-400",
+    },
   ]
 
   return (
@@ -94,72 +181,279 @@ export default function FinancialsPage() {
       <div>
         <h1 className="text-xl font-semibold">Financials</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Finanční rozpad projektů rekonstrukce. Kombinujte libovolné projekty, nebo zobrazte vše
-          najednou.
+          Co se stane, když rekonstruovat — a když ne. Modelace obou scénářů v čase pro libovolnou
+          kombinaci projektů.
         </p>
       </div>
 
       {/* Project mix & match */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => setSelectedIds(projects.map((p) => p.id))}
-          className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors",
-            allSelected
-              ? "border-primary/50 bg-primary/10 font-medium text-primary"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          )}
-        >
-          <Layers className="size-3.5" />
-          Vše
-        </button>
-        <div className="h-5 w-px bg-border" />
-        {projects.map((p) => {
-          const active = selectedIds.includes(p.id)
-          return (
-            <button
-              key={p.id}
-              onClick={() => toggleProject(p.id)}
-              aria-pressed={active}
-              className={cn(
-                "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                active
-                  ? "border-primary/50 bg-primary/10 font-medium text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Projekty k porovnání
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Seřazeno podle priority — Priorita 1 má největší dopad na dům.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {selected.length} z {projects.length} vybráno
+            </span>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setSelectedIds(projects.map((p) => p.id))}
+              disabled={allSelected}
             >
-              {active && <Check className="size-3.5" />}
-              {p.shortName}
-              <span
+              <Layers />
+              Vybrat vše
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          {projectsByPriority.map((p) => {
+            const active = selectedIds.includes(p.id)
+            return (
+              <button
+                key={p.id}
+                onClick={() => toggleProject(p.id)}
+                aria-pressed={active}
                 className={cn(
-                  "rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-                  active ? "bg-primary/10" : "bg-muted"
+                  "flex flex-col gap-1.5 rounded-lg border p-3 text-left transition-all",
+                  active
+                    ? "border-primary/60 bg-primary/5 ring-3 ring-primary/15"
+                    : "hover:bg-muted/50"
                 )}
               >
-                {STATUS_LABELS[p.status]}
+                <div className="flex items-center justify-between gap-2">
+                  <p className={cn("text-sm font-medium", !active && "text-muted-foreground")}>
+                    {p.shortName}
+                  </p>
+                  {active ? (
+                    <CircleCheck className="size-4 shrink-0 text-primary" />
+                  ) : (
+                    <span className="size-4 shrink-0 rounded-full border-2 border-border" />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {fmtCzkShort(p.budget)}
+                </p>
+                <div className="flex flex-wrap items-center gap-1">
+                  <span
+                    className={cn(
+                      "flex w-fit items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+                      p.priority === 1
+                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {p.priority === 1 && <Star className="size-2.5 fill-current" />}
+                    Priorita {p.priority}
+                  </span>
+                  <span
+                    className={cn(
+                      "w-fit rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+                      active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {STATUS_LABELS[p.status]}
+                  </span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Horizon + KPIs */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Porovnání scénářů — {scopeLabel}
+          </p>
+          <div className="flex items-center gap-1 rounded-lg border p-0.5">
+            {HORIZONS.map((h) => (
+              <button
+                key={h}
+                onClick={() => setHorizon(h)}
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors tabular-nums",
+                  h === horizon
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {h} let
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {kpis.map((kpi) => (
+            <div key={kpi.label} className="rounded-lg border bg-muted/40 px-4 py-3">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <kpi.icon className="size-3.5 shrink-0 text-primary" />
+                {kpi.label}
+              </div>
+              <p className={cn("mt-1 text-lg font-semibold tabular-nums", kpi.accent)}>
+                {kpi.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Scenario side-by-side */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-4">
+          <p className="text-sm font-medium text-rose-600 dark:text-rose-400">Bez rekonstrukce</p>
+          <div className="mt-3 flex flex-col gap-2 text-sm">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-muted-foreground">Roční náklady dnes</span>
+              <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithoutNow)}</span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-muted-foreground">Roční náklady za {horizon} let</span>
+              <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithoutEnd)}</span>
+            </div>
+            <div className="mt-1 flex items-baseline justify-between gap-2 border-t border-rose-500/20 pt-2">
+              <span className="text-muted-foreground">Celkem zaplatíte za {horizon} let</span>
+              <span className="font-semibold text-rose-600 tabular-nums dark:text-rose-400">
+                {fmtCzkShort(agg.cumWithoutEnd)}
               </span>
-            </button>
-          )
-        })}
-        <p className="ml-auto text-xs text-muted-foreground">
-          Zobrazeno: <span className="font-medium text-foreground">{scopeLabel}</span>
+            </div>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            Náklady rostou ~{agg.growthPct.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} %
+            ročně (energie, údržba stárnoucích konstrukcí) a žádná investice je nebrzdí.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+          <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            S rekonstrukcí
+          </p>
+          <div className="mt-3 flex flex-col gap-2 text-sm">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-muted-foreground">Jednorázová investice</span>
+              <span className="font-medium tabular-nums">{fmtCzkShort(agg.budget)}</span>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-muted-foreground">Roční náklady po rekonstrukci</span>
+              <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithNow)}</span>
+            </div>
+            <div className="mt-1 flex items-baseline justify-between gap-2 border-t border-emerald-500/20 pt-2">
+              <span className="text-muted-foreground">
+                Celkem vč. investice za {horizon} let
+              </span>
+              <span className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+                {fmtCzkShort(agg.cumWithEnd)}
+              </span>
+            </div>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            Investice se vrátí v roce {breakEvenLabel}; úspora{" "}
+            {fmtCzkShort(agg.savingsPerYear)} ročně dál roste s cenami energií.
+          </p>
+        </div>
+      </div>
+
+      {/* Delta callout */}
+      <div
+        className={cn(
+          "flex items-center gap-3 rounded-lg border px-4 py-3",
+          agg.lossAtHorizon > 0
+            ? "border-rose-500/30 bg-rose-500/5"
+            : "border-emerald-500/30 bg-emerald-500/5"
+        )}
+      >
+        <Scale
+          className={cn(
+            "size-5 shrink-0",
+            agg.lossAtHorizon > 0
+              ? "text-rose-600 dark:text-rose-400"
+              : "text-emerald-600 dark:text-emerald-400"
+          )}
+        />
+        <p className="text-sm">
+          {agg.lossAtHorizon > 0 ? (
+            <>
+              Pokud se nezrekonstruuje, vyjde to za {horizon} let o{" "}
+              <span className="font-semibold text-rose-600 tabular-nums dark:text-rose-400">
+                {fmtCzkShort(agg.lossAtHorizon)}
+              </span>{" "}
+              dráž — a rozdíl se každým dalším rokem prohlubuje.
+            </>
+          ) : (
+            <>
+              Na horizontu {horizon} let se investice ještě nevrátí — chybí{" "}
+              <span className="font-semibold tabular-nums">
+                {fmtCzkShort(Math.abs(agg.lossAtHorizon))}
+              </span>
+              . Bod zlomu: {breakEvenLabel}. Zkuste delší horizont.
+            </>
+          )}
         </p>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="rounded-lg border bg-muted/40 px-4 py-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <kpi.icon className="size-3.5 text-primary" />
-              {kpi.label}
-            </div>
-            <p className="mt-1 text-lg font-semibold tabular-nums">{kpi.value}</p>
-          </div>
-        ))}
+      {/* Comparison charts */}
+      <div className="rounded-lg border p-4">
+        <p className="text-sm font-medium">Roční náklady v čase</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Kolik bude dům každý rok stát — nůžky mezi scénáři se s růstem cen energií rozevírají
+        </p>
+        <div className="mt-4">
+          <ComparisonLineChart
+            series={[
+              {
+                label: "Bez rekonstrukce",
+                color: WITHOUT_COLOR,
+                points: agg.annualSeries.without,
+              },
+              {
+                label: "S rekonstrukcí",
+                color: WITH_COLOR,
+                points: agg.annualSeries.with,
+              },
+            ]}
+            formatValue={fmtCzkShort}
+          />
+        </div>
       </div>
 
-      {/* Budget usage + breakdown */}
+      <div className="rounded-lg border p-4">
+        <p className="text-sm font-medium">Kumulativní náklady včetně investice</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Celkové výdaje od roku {START_YEAR} — kde se křivky protnou, investice se zaplatila
+        </p>
+        <div className="mt-4">
+          <ComparisonLineChart
+            series={[
+              {
+                label: "Bez rekonstrukce",
+                color: WITHOUT_COLOR,
+                points: agg.cumSeries.without,
+              },
+              {
+                label: "S rekonstrukcí (vč. investice)",
+                color: WITH_COLOR,
+                points: agg.cumSeries.with,
+              },
+            ]}
+            formatValue={fmtCzkShort}
+            marker={
+              agg.breakEvenPos !== null
+                ? { position: agg.breakEvenPos, label: `Bod zlomu ${breakEvenLabel}` }
+                : null
+            }
+          />
+        </div>
+      </div>
+
+      {/* Budget detail */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="rounded-lg border p-4">
           <p className="text-sm font-medium">Čerpání rozpočtu</p>
@@ -186,20 +480,6 @@ export default function FinancialsPage() {
           <div className="mt-4">
             <BreakdownBars data={agg.costBreakdown} formatValue={fmtCzkShort} />
           </div>
-        </div>
-      </div>
-
-      {/* Payback prediction */}
-      <div className="rounded-lg border p-4">
-        <p className="text-sm font-medium">Predikce návratnosti</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Kumulativní bilance investice při roční úspoře {fmtCzkShort(agg.savingsPerYear)} — bod
-          zlomu po{" "}
-          {agg.paybackYears.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} letech
-          {!single && " (kombinace vybraných projektů)"}
-        </p>
-        <div className="mt-4">
-          <LineChart data={agg.cashflow} formatValue={fmtCzkShort} />
         </div>
       </div>
 
