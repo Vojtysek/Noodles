@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -55,7 +55,6 @@ const projects = [
     savings: "−18 %",
     payback: "9 let",
     status: "K hlasování",
-    rail: "bg-emerald-500",
     pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   },
   {
@@ -64,7 +63,6 @@ const projects = [
     savings: "−11 %",
     payback: "7 let",
     status: "Plánování",
-    rail: "bg-amber-500",
     pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   {
@@ -73,7 +71,6 @@ const projects = [
     savings: "−6 %",
     payback: "11 let",
     status: "Plánování",
-    rail: "bg-amber-500",
     pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   {
@@ -82,7 +79,6 @@ const projects = [
     savings: "—",
     payback: "—",
     status: "Sbíráme podporu",
-    rail: "bg-rose-500",
     pill: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
   },
 ];
@@ -115,6 +111,37 @@ const faqs = [
   },
 ];
 
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div data-reveal className="rounded-2xl border px-5 py-4">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center justify-between gap-4 text-left font-medium"
+      >
+        {question}
+        <ChevronDown
+          className={`text-muted-foreground size-4 shrink-0 transition-transform duration-300 ease-out ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <p className="text-muted-foreground pt-3 text-sm">{answer}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   const root = useRef<HTMLDivElement>(null);
 
@@ -143,7 +170,12 @@ export default function Page() {
             { scale: 0.4, autoAlpha: 0, duration: 0.9, ease: "back.out(1.6)" },
             0.9
           )
-          .from("[data-hero-card]", { y: 40, autoAlpha: 0, duration: 0.7 }, 1.2);
+          .from("[data-hero-card]", { y: 40, autoAlpha: 0, duration: 0.7 }, 1.2)
+          .from(
+            "[data-hero-bar]",
+            { scaleX: 0, transformOrigin: "left center", duration: 0.9, ease: "power3.out" },
+            1.6
+          );
 
         // Subtle parallax on the hero photo — numeric scrub adds inertia so
         // the photo glides instead of snapping 1:1 with the wheel
@@ -187,10 +219,11 @@ export default function Page() {
           });
         });
 
-        // Count-up stats
+        // Count-up numbers (supports decimals via data-decimals, Czech comma)
         gsap.utils.toArray<HTMLElement>("[data-count]").forEach((el) => {
           const target = parseFloat(el.dataset.count ?? "0");
           const suffix = el.dataset.suffix ?? "";
+          const decimals = Number(el.dataset.decimals ?? 0);
           const counter = { value: 0 };
           gsap.to(counter, {
             value: target,
@@ -198,10 +231,70 @@ export default function Page() {
             ease: "power2.out",
             scrollTrigger: { trigger: el, start: "top 85%" },
             onUpdate() {
-              el.textContent = `${Math.round(counter.value)}${suffix}`;
+              el.textContent = `${counter.value.toFixed(decimals).replace(".", ",")}${suffix}`;
             },
           });
         });
+
+        // Segmented bars fill from the left
+        gsap.utils.toArray<HTMLElement>("[data-fill-bar]").forEach((bar) => {
+          gsap.from(bar.children, {
+            scaleX: 0,
+            transformOrigin: "left center",
+            duration: 0.9,
+            ease: "power3.out",
+            stagger: 0.12,
+            scrollTrigger: { trigger: bar, start: "top 85%" },
+          });
+        });
+
+        // Chart bars grow from the baseline
+        gsap.utils.toArray<HTMLElement>("[data-bar-chart]").forEach((chart) => {
+          gsap.from(chart.querySelectorAll("[data-bar]"), {
+            scaleY: 0,
+            transformOrigin: "bottom center",
+            duration: 0.7,
+            ease: "power3.out",
+            stagger: 0.08,
+            scrollTrigger: { trigger: chart, start: "top 85%" },
+          });
+        });
+
+        // Avatars pop in one by one
+        gsap.utils.toArray<HTMLElement>("[data-avatar-row]").forEach((row) => {
+          gsap.from(row.children, {
+            scale: 0,
+            duration: 0.5,
+            ease: "back.out(2)",
+            stagger: 0.07,
+            scrollTrigger: { trigger: row, start: "top 85%" },
+          });
+        });
+
+        // Chat bubbles arrive like a real conversation
+        gsap.utils.toArray<HTMLElement>("[data-chat]").forEach((chat) => {
+          gsap.from(chat.children, {
+            y: 12,
+            autoAlpha: 0,
+            duration: 0.5,
+            ease: "power2.out",
+            stagger: 0.35,
+            scrollTrigger: { trigger: chat, start: "top 85%" },
+          });
+        });
+
+        // Draw the curved progress line through the steps
+        const stepsLine = document.querySelector<SVGPathElement>("[data-steps-line]");
+        if (stepsLine) {
+          const length = stepsLine.getTotalLength();
+          gsap.set(stepsLine, { strokeDasharray: length, strokeDashoffset: length });
+          gsap.to(stepsLine, {
+            strokeDashoffset: 0,
+            duration: 1.8,
+            ease: "power2.inOut",
+            scrollTrigger: { trigger: "[data-steps]", start: "top 75%" },
+          });
+        }
       });
     },
     { scope: root }
@@ -295,50 +388,60 @@ export default function Page() {
           {/* Oversized stat blob */}
           <div
             data-hero-blob
-            className="bg-primary text-primary-foreground absolute top-32 right-8 z-10 hidden max-w-72 items-start gap-3 rounded-[3rem] p-8 shadow-2xl lg:flex xl:right-16"
+            className="bg-primary text-primary-foreground absolute top-32 right-8 z-10 hidden w-60 flex-col gap-3 rounded-[2.5rem] p-8 shadow-2xl lg:flex xl:right-16"
           >
             <p className="text-7xl leading-none font-bold tracking-tight">
-              40<span className="align-top text-3xl">%</span>
+              <span data-count="40" data-suffix="">
+                40
+              </span>
+              <span className="align-top text-3xl">%</span>
             </p>
-            <p className="pt-1 text-sm leading-snug opacity-90">
+            <p className="text-sm leading-snug text-pretty opacity-90">
               tepla ušetří zateplení fasády staršího bytového domu
             </p>
           </div>
 
-          {/* Floating product card — a live "new vote" notification from the app */}
+          {/* Floating product card — heating costs before/after, dark glass */}
           <div
             data-hero-card
-            className="bg-background/95 absolute right-8 bottom-12 z-10 hidden w-80 flex-col gap-3 rounded-xl p-4 ring-1 ring-black/[0.08] backdrop-blur lg:flex xl:right-16 shadow-[0_2px_8px_rgba(0,0,0,0.12),0_20px_48px_-16px_rgba(0,0,0,0.45)]"
+            className="absolute right-8 bottom-12 z-10 hidden w-80 flex-col gap-4 rounded-2xl bg-zinc-950/70 p-5 text-white ring-1 ring-white/15 backdrop-blur-md lg:flex xl:right-16 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.6)]"
           >
-            <div className="flex items-center gap-2">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60" />
-                <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-white/70">
+                Roční náklady domu na teplo
               </span>
-              <span className="text-xs font-medium">Nový hlas · Byt 3.04</span>
-              <span className="text-muted-foreground ml-auto text-[11px]">teď</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold tracking-tight">Zateplení fasády</span>
-              <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 font-mono text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                +1
+              <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
+                −18 %
               </span>
             </div>
-            <div className="bg-muted h-2 overflow-hidden rounded-full">
-              <div className="flex h-full">
-                <div className="w-[71%] bg-emerald-500" />
-                <div className="w-[17%] bg-amber-500" />
-                <div className="w-[12%] bg-rose-500" />
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-3">
+                <span className="w-9 shrink-0 text-[11px] text-white/50">Dnes</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full w-full rounded-full bg-white/35" />
+                </div>
+                <span className="w-16 shrink-0 text-right text-xs tabular-nums text-white/70">
+                  2,9 mil. Kč
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-9 shrink-0 text-[11px] text-white/50">Potom</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    data-hero-bar
+                    className="h-full w-[82%] rounded-full bg-emerald-400"
+                  />
+                </div>
+                <span className="w-16 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
+                  2,4 mil. Kč
+                </span>
               </div>
             </div>
-            <div className="text-muted-foreground flex items-center justify-between text-xs">
-              <span>
-                Podpora <span className="font-mono tabular-nums">17 z 24</span>
-              </span>
-              <span className="font-mono font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
-                −18 % energií
-              </span>
-            </div>
+            <p className="text-xs text-pretty text-white/60">
+              Úspora{" "}
+              <span className="font-semibold text-emerald-300">530 000 Kč ročně</span> po
+              zateplení fasády
+            </p>
           </div>
         </div>
       </section>
@@ -391,7 +494,7 @@ export default function Page() {
               <div className="mt-auto pt-6">
                 <div className="bg-muted/40 flex flex-col gap-4 rounded-xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04] ring-inset dark:shadow-none dark:ring-white/[0.04]">
                   <div className="flex items-center justify-between">
-                    <div className="flex -space-x-2">
+                    <div data-avatar-row className="flex -space-x-2">
                       {["JN", "MK", "PV", "AH", "TS"].map((initials, i) => (
                         <span
                           key={initials}
@@ -406,12 +509,16 @@ export default function Page() {
                         +19
                       </span>
                     </div>
-                    <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                    <span
+                      data-count="16"
+                      data-suffix=" z 24 pro"
+                      className="text-muted-foreground text-xs tabular-nums"
+                    >
                       16 z 24 pro
                     </span>
                   </div>
                   <div className="bg-muted h-2.5 overflow-hidden rounded-full">
-                    <div className="flex h-full">
+                    <div data-fill-bar className="flex h-full">
                       <div className="w-[67%] bg-emerald-500" />
                       <div className="w-[21%] bg-amber-500" />
                       <div className="w-[12%] bg-rose-500" />
@@ -446,7 +553,7 @@ export default function Page() {
                   AI asistent · online
                 </span>
               </div>
-              <div className="flex flex-1 flex-col gap-2.5 p-5 text-xs">
+              <div data-chat className="flex flex-1 flex-col gap-2.5 p-5 text-xs">
                 <p className="bg-primary text-primary-foreground max-w-[88%] self-end rounded-2xl rounded-br-md px-3 py-2">
                   Soused tvrdí, že se zateplení nevyplatí. Co mu mám říct?
                 </p>
@@ -473,17 +580,23 @@ export default function Page() {
               <h3 className="mt-1.5 text-lg font-semibold tracking-tight">
                 Víte, kdy se investice vrátí
               </h3>
-              <span className="bg-foreground text-background absolute top-7 right-7 rounded-md px-1.5 py-0.5 text-[10px] font-medium">
-                9. rok
-              </span>
-              <div className="border-border/70 -mx-7 -mb-7 mt-6 flex h-28 items-end gap-1.5 border-t border-dashed px-7 pt-4">
-                {[35, 55, 45, 70, 60, 85, 100].map((height, i) => (
-                  <div
-                    key={i}
-                    className={`flex-1 rounded-t-[3px] ${i === 6 ? "bg-primary" : "bg-primary/15"}`}
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
+              <div className="border-border/70 -mx-7 mt-6 border-t border-dashed px-7 pt-10">
+                <div data-bar-chart className="border-border/60 flex h-24 items-end gap-1.5 border-b pb-px">
+                  {[35, 55, 45, 70, 60, 85, 100].map((height, i) => (
+                    <div key={i} className="relative flex h-full flex-1 items-end">
+                      {i === 6 && (
+                        <span className="bg-foreground text-background absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap">
+                          9. rok
+                        </span>
+                      )}
+                      <div
+                        data-bar
+                        className={`w-full rounded-t-[3px] ${i === 6 ? "bg-primary" : "bg-primary/15"}`}
+                        style={{ height: `${height}%` }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -507,17 +620,27 @@ export default function Page() {
               <dl className="divide-border/60 grid flex-1 grid-cols-3 md:divide-x">
                 <div className="flex flex-col gap-1 md:px-6 md:first:pl-0 md:last:pr-0">
                   <dt className="text-muted-foreground text-xs">Náklady</dt>
-                  <dd className="font-mono text-lg font-semibold tabular-nums">4,8 mil. Kč</dd>
+                  <dd className="text-lg font-semibold tabular-nums">
+                    <span data-count="4.8" data-decimals="1" data-suffix=" mil. Kč">
+                      4,8 mil. Kč
+                    </span>
+                  </dd>
                 </div>
                 <div className="flex flex-col gap-1 md:px-6">
                   <dt className="text-muted-foreground text-xs">Úspora ročně</dt>
-                  <dd className="font-mono text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    530 tis. Kč
+                  <dd className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <span data-count="530" data-suffix=" tis. Kč">
+                      530 tis. Kč
+                    </span>
                   </dd>
                 </div>
                 <div className="flex flex-col gap-1 md:px-6 md:last:pr-0">
                   <dt className="text-muted-foreground text-xs">Návratnost</dt>
-                  <dd className="font-mono text-lg font-semibold tabular-nums">9 let</dd>
+                  <dd className="text-lg font-semibold tabular-nums">
+                    <span data-count="9" data-suffix=" let">
+                      9 let
+                    </span>
+                  </dd>
                 </div>
               </dl>
             </div>
@@ -535,19 +658,38 @@ export default function Page() {
                 Tři kroky od nápadu ke schválené renovaci.
               </p>
             </div>
-            <div className="grid gap-10 md:grid-cols-3 md:gap-8">
-              {steps.map((step, index) => (
-                <div key={step.title} data-reveal className="relative flex flex-col gap-3 pt-10">
-                  <span
-                    className="text-foreground/[7%] pointer-events-none absolute -top-4 left-0 text-8xl font-bold select-none"
-                    aria-hidden
-                  >
-                    {index + 1}
-                  </span>
-                  <h3 className="text-lg font-semibold">{step.title}</h3>
-                  <p className="text-muted-foreground text-sm">{step.description}</p>
-                </div>
-              ))}
+            <div data-steps className="relative">
+              {/* Curved progress line threading the three steps */}
+              <svg
+                className="text-primary pointer-events-none absolute -top-6 left-0 hidden h-28 w-full md:block"
+                viewBox="0 0 1200 112"
+                fill="none"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <path
+                  data-steps-line
+                  d="M 44 72 C 180 8, 300 8, 440 56 S 700 120, 840 60 C 940 18, 1060 24, 1164 56"
+                  stroke="currentColor"
+                  strokeOpacity="0.35"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="relative grid gap-10 md:grid-cols-3 md:gap-8">
+                {steps.map((step, index) => (
+                  <div key={step.title} data-reveal className="relative flex flex-col gap-3 pt-10">
+                    <span
+                      className="text-foreground/[7%] pointer-events-none absolute -top-4 left-0 text-8xl font-bold select-none"
+                      aria-hidden
+                    >
+                      {index + 1}
+                    </span>
+                    <h3 className="text-lg font-semibold">{step.title}</h3>
+                    <p className="text-muted-foreground text-sm">{step.description}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -563,44 +705,69 @@ export default function Page() {
               spočítáte v kalkulačce.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            data-reveal
+            className="bg-card overflow-hidden rounded-2xl ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
+          >
+            <div className="border-border/60 bg-muted/30 flex items-center justify-between border-b px-6 py-3.5">
+              <p className="text-sm font-semibold tracking-tight">Bělohorská 1042/18</p>
+              <p className="text-muted-foreground text-xs">
+                4 projekty · <span className="tabular-nums">24</span> jednotek
+              </p>
+            </div>
+            <div className="text-muted-foreground border-border/60 hidden grid-cols-[1.6fr_1fr_1fr_0.8fr_8.5rem] gap-4 border-b px-6 py-2.5 text-xs md:grid">
+              <span>Projekt</span>
+              <span className="text-right">Náklady</span>
+              <span className="text-right">Úspora energií</span>
+              <span className="text-right">Návratnost</span>
+              <span className="text-right">Stav</span>
+            </div>
             {projects.map((project) => (
               <div
                 key={project.name}
-                data-reveal
-                className="bg-card group relative overflow-hidden rounded-xl p-5 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_-12px_rgba(16,24,40,0.18)] dark:ring-white/[0.06]"
+                className="border-border/40 hover:bg-muted/30 flex flex-col gap-3 border-b px-6 py-4 transition-colors last:border-b-0 md:grid md:grid-cols-[1.6fr_1fr_1fr_0.8fr_8.5rem] md:items-center md:gap-4"
               >
-                <span className={`absolute inset-y-0 left-0 w-1 ${project.rail}`} />
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-[15px] font-semibold tracking-tight">{project.name}</h3>
+                <div className="flex items-center justify-between md:contents">
+                  <h3 className="text-sm font-medium tracking-tight">{project.name}</h3>
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${project.pill}`}
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium md:hidden ${project.pill}`}
                   >
                     {project.status}
                   </span>
                 </div>
-                <dl className="mt-4 text-sm">
-                  <div className="border-border/50 flex items-center justify-between border-b py-1.5">
-                    <dt className="text-muted-foreground">Náklady</dt>
-                    <dd className="font-mono tabular-nums">{project.cost}</dd>
+                <div className="grid grid-cols-3 gap-2 md:contents">
+                  <div className="md:text-right">
+                    <p className="text-muted-foreground text-[11px] md:hidden">Náklady</p>
+                    <p className="text-sm tabular-nums">{project.cost}</p>
                   </div>
-                  <div className="border-border/50 flex items-center justify-between border-b py-1.5">
-                    <dt className="text-muted-foreground">Úspora energií</dt>
-                    <dd
-                      className={`font-mono tabular-nums ${
+                  <div className="md:text-right">
+                    <p className="text-muted-foreground text-[11px] md:hidden">Úspora</p>
+                    <p
+                      className={`text-sm tabular-nums ${
                         project.savings !== "—"
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : ""
+                          ? "font-medium text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground"
                       }`}
                     >
                       {project.savings}
-                    </dd>
+                    </p>
                   </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <dt className="text-muted-foreground">Návratnost</dt>
-                    <dd className="font-mono font-semibold tabular-nums">{project.payback}</dd>
+                  <div className="md:text-right">
+                    <p className="text-muted-foreground text-[11px] md:hidden">Návratnost</p>
+                    <p
+                      className={`text-sm tabular-nums ${
+                        project.payback === "—" ? "text-muted-foreground" : "font-medium"
+                      }`}
+                    >
+                      {project.payback}
+                    </p>
                   </div>
-                </dl>
+                </div>
+                <span
+                  className={`hidden shrink-0 justify-self-end rounded-full px-2 py-0.5 text-[11px] font-medium md:inline-flex ${project.pill}`}
+                >
+                  {project.status}
+                </span>
               </div>
             ))}
           </div>
@@ -614,13 +781,7 @@ export default function Page() {
             </div>
             <div className="flex flex-col gap-3">
               {faqs.map((faq) => (
-                <details key={faq.question} data-reveal className="group rounded-2xl border px-5 py-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden">
-                    {faq.question}
-                    <ChevronDown className="text-muted-foreground size-4 shrink-0 transition-transform group-open:rotate-180" />
-                  </summary>
-                  <p className="text-muted-foreground mt-3 text-sm">{faq.answer}</p>
-                </details>
+                <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
               ))}
             </div>
           </div>

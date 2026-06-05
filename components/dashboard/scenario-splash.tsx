@@ -52,8 +52,6 @@ type Milestone = {
 type SplashCard = {
   scenario: Scenario
   kicker: string
-  /** Generický popis varianty — nezávisí na konkrétních projektech z onboardingu. */
-  description: string
   photo: { src: string; alt: string }
   /** Dvě hlavní čísla — tahák každé varianty. */
   heroStats: { label: string; value: number; format: (v: number) => string; sub: string }[]
@@ -110,9 +108,6 @@ function buildCard(
   return {
     scenario,
     kicker,
-    description: isQuick
-      ? "Opraví se jen to, co opravdu nepočká. Nejnižší náklady, nejkratší doba — dům bude v pořádku, než se nadějete."
-      : "Dům se opraví kompletně a najednou. Větší investice, ale s největším dlouhodobým přínosem pro hodnotu domu i účty za energie.",
     photo,
     heroStats: isQuick
       ? [
@@ -280,37 +275,40 @@ export function ScenarioSplash({
       role="dialog"
       aria-modal="true"
       aria-label="Doporučené scénáře rekonstrukce"
-      className="fixed inset-0 z-50 flex flex-col"
+      className="fixed inset-0 z-50 overflow-y-auto bg-background"
     >
-      {/* Pozadí — jemné barevné nádechy za oběma kartami */}
-      <div data-splash-backdrop className="absolute inset-0 overflow-hidden bg-background">
+      {/* Pozadí — jemné barevné nádechy za oběma kartami (fixní, nescrolluje) */}
+      <div data-splash-backdrop className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-1/4 -left-1/4 size-[70%] rounded-full bg-emerald-500/8 blur-[120px]" />
         <div className="absolute -right-1/4 -bottom-1/4 size-[70%] rounded-full bg-blue-500/8 blur-[120px]" />
       </div>
 
-      {/* Hlavička */}
-      <div data-splash-header className="relative z-10 shrink-0 px-5 pt-6 pb-4 text-center sm:pt-8">
-        <p className="text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
-          SVJ Letná 24
-        </p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Máme to spočítané.
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Dvě cesty, jak dům opravit — vyberte si, nebo si vše projděte v klidu sami.
-        </p>
-        <button
-          onClick={onClose}
-          aria-label="Zavřít a prozkoumat aplikaci"
-          className="absolute top-5 right-5 flex size-10 items-center justify-center rounded-full border bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted hover:text-foreground sm:top-6 sm:right-6"
-        >
-          <X className="size-4" />
-        </button>
-      </div>
+      {/* Zavření — fixně v rohu, viditelné i při scrollu */}
+      <button
+        onClick={onClose}
+        aria-label="Zavřít a prozkoumat aplikaci"
+        className="fixed top-5 right-5 z-20 flex size-10 items-center justify-center rounded-full border bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted hover:text-foreground sm:top-6 sm:right-6"
+      >
+        <X className="size-4" />
+      </button>
 
-      {/* Dvě vertikální karty přes celou výšku — scrolluje celá plocha, ne karty.
-          Grid drží obě karty stejně vysoké (řádek = vyšší z nich). */}
-      <div className="relative z-10 grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 lg:grid-cols-2 lg:gap-5">
+      {/* Obsah — min. celá výška, při delším obsahu scrolluje celá stránka */}
+      <div className="relative z-10 flex min-h-svh flex-col">
+        {/* Hlavička */}
+        <div data-splash-header className="shrink-0 px-5 pt-6 pb-4 text-center sm:pt-8">
+          <p className="text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
+            SVJ Letná 24
+          </p>
+          <h1 className="mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
+            Máme to spočítané.
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Dvě cesty, jak dům opravit — vyberte si, nebo si vše projděte v klidu sami.
+          </p>
+        </div>
+
+        {/* Dvě vertikální karty — jeden grid řádek = vždy stejná výška obou karet */}
+        <div className="grid flex-1 grid-cols-1 gap-4 px-4 pb-4 sm:px-6 sm:pb-6 lg:grid-cols-2 lg:gap-5">
         {cards.map((card, cardIdx) => {
           const tone = TONE[card.scenario.tone === "emerald" ? "emerald" : "blue"]
           const first = cardIdx === 0
@@ -351,10 +349,6 @@ export function ScenarioSplash({
               <div className={cn("pointer-events-none absolute inset-0 opacity-30", tone.wash)} />
 
               <div className="relative flex flex-1 flex-col gap-5 p-5 sm:p-6">
-                <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-                  {card.description}
-                </p>
-
                 {/* Dvě hlavní čísla — bez rámečků, oddělená linkou */}
                 <div className="grid grid-cols-2 divide-x divide-border">
                   {card.heroStats.map((stat, statIdx) => (
@@ -386,13 +380,13 @@ export function ScenarioSplash({
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     Jak to půjde a kolik bude utraceno
                   </p>
-                  <div className="relative mt-4 flex-1">
+                  <div className="relative mt-4 flex flex-1 flex-col">
                     {/* Linka */}
                     <span
                       data-splash-line
                       className={cn("absolute top-3 bottom-3 left-[13px] w-0.5", tone.line)}
                     />
-                    <div className="flex h-full flex-col justify-between gap-4">
+                    <div className="flex flex-1 flex-col justify-between gap-4">
                       {card.milestones.map((m, i) => (
                         <div
                           key={m.title}
@@ -474,6 +468,7 @@ export function ScenarioSplash({
             </div>
           )
         })}
+        </div>
       </div>
     </div>
   )
