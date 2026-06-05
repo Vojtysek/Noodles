@@ -421,7 +421,7 @@ export default function CalculatorPage() {
           ? Math.round(so["st_area(shape)"])
           : null,
       })
-      if (units) setR("numberOfUnits", Math.min(50, Math.max(5, units)))
+      if (units) setR("numberOfUnits", Math.min(500, Math.max(1, units)))
     } catch (e) {
       setSearchError(
         "Chyba: " + (e instanceof Error ? e.message : "neznámá chyba")
@@ -610,7 +610,7 @@ export default function CalculatorPage() {
                             if (key === "units" && val)
                               setR(
                                 "numberOfUnits",
-                                Math.min(50, Math.max(5, val))
+                                Math.min(500, Math.max(1, val))
                               )
                           }}
                           className="w-16 [appearance:textfield] bg-transparent text-center text-sm font-semibold tabular-nums outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -849,6 +849,75 @@ export default function CalculatorPage() {
                         )
                       })}
                     </div>
+
+                    {/* Nastavení výpočtu */}
+                    <div className="flex flex-col divide-y divide-border rounded-xl border">
+                      {/* isFirstRepair toggle */}
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <span className="text-sm">Navýšení fondu oprav</span>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            Maximální povolená výše závisí na historii fondu.
+                          </p>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {([["Poprvé", true], ["Již dříve", false]] as const).map(([label, val]) => {
+                            const active = repair.isFirstRepair === val
+                            return (
+                              <button
+                                key={label}
+                                onClick={() => setR("isFirstRepair", val)}
+                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* rentYears selector */}
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <span className="text-sm">Splácení z fondu oprav</span>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            Délka splácení ovlivňuje výši měsíčního příspěvku.
+                          </p>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {[5, 7, 10, 12, 15].filter((y) => y <= calc.maxRentTime).map((y) => {
+                            const active = repair.rentYears === y
+                            return (
+                              <button
+                                key={y}
+                                onClick={() => setR("rentYears", y)}
+                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                              >
+                                {y} r.
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live preview */}
+                    {selected.length > 0 && (
+                      <div className="flex items-center justify-between rounded-xl border px-4 py-3">
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {Math.round(calc.monthlyPerUnit).toLocaleString("cs-CZ")} Kč
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">Měsíčně / byt</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">
+                            {calc.alpha.toLocaleString("cs-CZ")} Kč
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">Celkem okna</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })()}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import {
@@ -25,10 +25,14 @@ import {
   exportTypes,
   exportHistory,
   distributionTips,
-  personas,
+  personas as mockPersonas,
   projects,
   fmtCzkShort,
+  type Persona,
+  type Sentiment,
 } from "@/lib/mock-data"
+import { PERSONA_TYPES } from "@/lib/persona-types"
+import type { PersonaType } from "@/lib/persona-types"
 
 const TYPE_ICONS: Record<string, typeof FileText> = {
   "overall-brief": FileText,
@@ -39,14 +43,41 @@ const TYPE_ICONS: Record<string, typeof FileText> = {
 
 export default function ExportyPage() {
   const [selectedTypeId, setSelectedTypeId] = useState(exportTypes[0].id)
-  const [personaId, setPersonaId] = useState(personas[0].id)
+  const [personaList, setPersonaList] = useState<Persona[]>(mockPersonas)
+  const [personaId, setPersonaId] = useState(mockPersonas[0].id)
   const [projectId, setProjectId] = useState<string>("all")
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
+  // Fetch real personas from Supabase, merge with mock fallback
+  useEffect(() => {
+    fetch("/api/personas")
+      .then((r) => r.json())
+      .then((rows: Array<{
+        id: string; name: string; role: string; unit: string
+        status: "zpracovano" | "ceka"; sentiment: Sentiment; brief: string
+        structured: Persona["structured"]; persona_type: string | null
+      }>) => {
+        if (!Array.isArray(rows) || rows.length === 0) return
+        const fromDb: Persona[] = rows.map((r) => ({
+          id: r.id, name: r.name, role: r.role, unit: r.unit,
+          status: r.status, sentiment: r.sentiment, brief: r.brief,
+          structured: r.structured,
+          personaType: r.persona_type && r.persona_type in PERSONA_TYPES
+            ? (r.persona_type as PersonaType) : undefined,
+        }))
+        setPersonaList((prev) => {
+          const dbIds = new Set(fromDb.map((p) => p.id))
+          return [...fromDb, ...prev.filter((p) => !dbIds.has(p.id))]
+        })
+        setPersonaId(fromDb[0].id)
+      })
+      .catch(() => {/* keep mock personas on error */})
+  }, [])
+
   const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]
-  const selectedPersona = personas.find((p) => p.id === personaId)
+  const selectedPersona = personaList.find((p) => p.id === personaId)
   const scopedProjects = projectId === "all" ? projects : projects.filter((p) => p.id === projectId)
   const totalBudget = scopedProjects.reduce((sum, p) => sum + p.budget, 0)
 
@@ -102,8 +133,7 @@ export default function ExportyPage() {
         </div>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Exporty</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          PDF a prezentace z agregovaných dat — materiály pro různé situace a publika. Zatím mock
-          bez skutečného generování.
+          PDF a prezentace připravené pro různé situace — nástěnka, osobní jednání i schůze SVJ.
         </p>
       </div>
 
@@ -140,7 +170,7 @@ export default function ExportyPage() {
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Users className="size-3.5" />
-            <span className="font-medium text-foreground tabular-nums">{personas.length}</span>
+            <span className="font-medium text-foreground tabular-nums">{personaList.length}</span>
             rezidentů
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -148,6 +178,7 @@ export default function ExportyPage() {
             <span className="font-medium text-foreground tabular-nums">
               {fmtCzkShort(totalBudget)}
             </span>
+            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium">mock</span>
           </span>
         </div>
       </div>
@@ -232,7 +263,7 @@ export default function ExportyPage() {
               onChange={(e) => setPersonaId(e.target.value)}
               className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              {personas.map((p) => (
+              {personaList.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} — {p.role}
                 </option>
@@ -258,7 +289,7 @@ export default function ExportyPage() {
           {generating
             ? "Generuji…"
             : done
-              ? "Připraveno ke stažení (mock)"
+              ? "Připraveno ke stažení"
               : selectedType.needsPersona && selectedPersona
                 ? `${selectedType.cta} — ${selectedPersona.name}`
                 : selectedType.cta}
@@ -288,9 +319,12 @@ export default function ExportyPage() {
       <div data-ex-block>
         <div className="mb-3 flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Poslední exporty
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              Poslední exporty
+            </p>
+            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1.5 py-0.5 font-medium">ukázková data</span>
+          </div>
         </div>
         <div className="overflow-x-auto rounded-2xl border">
           <table className="w-full text-sm">
