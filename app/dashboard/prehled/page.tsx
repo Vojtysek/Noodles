@@ -277,7 +277,8 @@ export default function PrehledPage() {
             duration: 1.2,
             ease: "power2.out",
             onUpdate() {
-              el.textContent = Math.round(counter.value).toLocaleString("cs-CZ")
+              const rounded = Math.round(counter.value)
+              el.textContent = rounded >= 10000 ? rounded.toLocaleString("cs-CZ") : String(rounded)
             },
           }
         )
@@ -383,7 +384,7 @@ export default function PrehledPage() {
                   <Sparkles className="size-4 shrink-0 text-emerald-300" />
                   <p className="text-sm text-white/90">
                     <span className="text-white/60">Vyplatí se od roku</span>{" "}
-                    <span data-count-chip={breakEvenYear} className="font-semibold tabular-nums">
+                    <span data-count-chip={breakEvenYear} className="font-semibold">
                       {breakEvenYear}
                     </span>
                   </p>

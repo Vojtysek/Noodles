@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 import {
   Users,
   ChartColumn,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
 
 const NAV_ITEMS = [
   { href: "/dashboard/prehled", label: "Přehled", icon: House },
@@ -21,11 +23,21 @@ const NAV_ITEMS = [
 
 export function DashboardSidebar() {
   const pathname = usePathname()
+  const [address, setAddress] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from("buildings")
+      .select("address")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data }) => setAddress(data?.address ?? null))
+  }, [])
 
   return (
-    <aside
-      className="sticky top-0 flex h-svh w-56 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl"
-    >
+    <aside className="sticky top-0 flex h-svh w-56 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl">
       {/* Ambient tint */}
       <div
         aria-hidden
@@ -37,18 +49,21 @@ export function DashboardSidebar() {
       />
 
       <div
-        className="sb-item-in relative flex items-center gap-2.5 px-4 py-5"
+        className="sb-item-in relative flex flex-col items-start gap-2.5 px-4 py-5"
         style={{ "--sb-i": 0 } as React.CSSProperties}
       >
-        <div className="relative flex size-8 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-1 ring-white/15">
-          <Building2 className="size-4" />
-          <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-emerald-400 ring-2 ring-sidebar" />
-        </div>
-        <div className="min-w-0">
+        <div className={"flex flex-row gap-2 items-center"}>
+          <div className="relative flex size-8 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-1 ring-white/15">
+            <Building2 className="size-4" />
+          </div>
           <p className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
             Noodles
           </p>
-          <p className="truncate text-xs text-muted-foreground">SVJ Letná 24</p>
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-xs text-wrap text-muted-foreground">
+            {address ?? "—"}
+          </p>
         </div>
       </div>
 
@@ -95,7 +110,6 @@ export function DashboardSidebar() {
           )
         })}
       </nav>
-
     </aside>
   )
 }
