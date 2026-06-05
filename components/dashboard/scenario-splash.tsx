@@ -1,8 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
+import { useEffect, useMemo } from "react"
 import { ArrowRight, Flag, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -15,11 +13,10 @@ import {
   scenarios,
 } from "@/lib/mock-data"
 
-gsap.registerPlugin(useGSAP)
-
 type BuildingData = {
   selected_renovations: string[]
   total_cost: number
+  address?: string | null
 }
 
 const RENOVATION_LABEL_TO_PROJECT: Record<string, string> = {
@@ -345,8 +342,6 @@ export function ScenarioSplash({
   buildingData?: BuildingData
   buildingId?: string
 }) {
-  const root = useRef<HTMLDivElement>(null)
-
   const cards = useMemo(() => {
     const variantA = buildingData
       ? buildCardFromBuilding(buildingData)
@@ -373,72 +368,15 @@ export function ScenarioSplash({
     }
   }, [onClose])
 
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia()
-
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
-
-        tl.from("[data-splash-backdrop]", { autoAlpha: 0, duration: 0.5 }, 0)
-          .from("[data-splash-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0.2)
-          .from("[data-splash-card]", { y: 64, autoAlpha: 0, duration: 0.8, stagger: 0.16 }, 0.35)
-          .from(
-            "[data-splash-photo]",
-            { scale: 1.15, duration: 1.6, ease: "power2.out", stagger: 0.16 },
-            0.35
-          )
-          .from("[data-splash-stat]", { y: 20, autoAlpha: 0, duration: 0.5, stagger: 0.08 }, 0.8)
-          .from(
-            "[data-splash-line]",
-            {
-              scaleY: 0,
-              transformOrigin: "top",
-              duration: 0.9,
-              stagger: 0.15,
-              ease: "power2.inOut",
-            },
-            1.0
-          )
-          .from(
-            "[data-splash-milestone]",
-            { x: -16, autoAlpha: 0, duration: 0.4, stagger: 0.07 },
-            1.1
-          )
-          .from("[data-splash-cta]", { y: 12, autoAlpha: 0, duration: 0.4 }, 1.6)
-
-        // Count-up hlavních čísel — formatter se dohledá podle indexů karty a statu.
-        gsap.utils.toArray<HTMLElement>("[data-splash-count]").forEach((el) => {
-          const target = parseFloat(el.dataset.splashCount ?? "0")
-          const cardIdx = Number(el.dataset.cardIdx ?? 0)
-          const statIdx = Number(el.dataset.statIdx ?? 0)
-          const format = cards[cardIdx]?.heroStats[statIdx]?.format ?? String
-          const counter = { value: 0 }
-          gsap.to(counter, {
-            value: target,
-            duration: 1.4,
-            delay: 0.9,
-            ease: "power2.out",
-            onUpdate() {
-              el.textContent = format(counter.value)
-            },
-          })
-        })
-      })
-    },
-    { scope: root, dependencies: [cards] }
-  )
-
   return (
     <div
-      ref={root}
       role="dialog"
       aria-modal="true"
       aria-label="Doporučené scénáře rekonstrukce"
       className="fixed inset-0 z-50 overflow-y-auto bg-background"
     >
       {/* Pozadí — jemné barevné nádechy za oběma kartami (fixní, nescrolluje) */}
-      <div data-splash-backdrop className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-1/4 -left-1/4 size-[70%] rounded-full bg-emerald-500/8 blur-[120px]" />
         <div className="absolute -right-1/4 -bottom-1/4 size-[70%] rounded-full bg-blue-500/8 blur-[120px]" />
       </div>
@@ -455,9 +393,9 @@ export function ScenarioSplash({
       {/* Obsah — min. celá výška, při delším obsahu scrolluje celá stránka */}
       <div className="relative z-10 flex min-h-svh flex-col">
         {/* Hlavička */}
-        <div data-splash-header className="shrink-0 px-5 pt-6 pb-4 text-center sm:pt-8">
+        <div className="animate-in fade-in slide-in-from-top-4 fill-mode-both shrink-0 px-5 pt-6 pb-4 text-center duration-500 sm:pt-8">
           <p className="text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
-            SVJ Letná 24
+            {buildingData?.address ?? "Vaše SVJ"}
           </p>
           <h1 className="mt-1.5 text-2xl font-semibold tracking-tight sm:text-3xl">
             Máme to spočítané.
@@ -475,8 +413,9 @@ export function ScenarioSplash({
           return (
             <div
               key={card.id}
-              data-splash-card
+              style={{ animationDelay: `${cardIdx * 150}ms` }}
               className={cn(
+                "animate-in fade-in slide-in-from-bottom-8 fill-mode-both duration-700",
                 "relative flex flex-col overflow-hidden border bg-card shadow-xl",
                 // Asymetrické rohy jako na landingu — karty se „otevírají" od sebe.
                 first
@@ -488,7 +427,6 @@ export function ScenarioSplash({
               <div className="relative h-40 shrink-0 overflow-hidden sm:h-48">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  data-splash-photo
                   src={card.photo.src}
                   alt={card.photo.alt}
                   className="absolute inset-0 h-full w-full object-cover"
@@ -514,14 +452,10 @@ export function ScenarioSplash({
                   {card.heroStats.map((stat, statIdx) => (
                     <div
                       key={stat.label}
-                      data-splash-stat
                       className={cn(statIdx === 0 ? "pr-5" : "pl-5")}
                     >
                       <p className="text-xs text-muted-foreground">{stat.label}</p>
                       <p
-                        data-splash-count={stat.value}
-                        data-card-idx={cardIdx}
-                        data-stat-idx={statIdx}
                         className={cn(
                           "mt-1 text-3xl font-bold tracking-tight tabular-nums sm:text-4xl",
                           tone.accentText
@@ -543,14 +477,12 @@ export function ScenarioSplash({
                   <div className="relative mt-4 flex flex-1 flex-col">
                     {/* Linka */}
                     <span
-                      data-splash-line
                       className={cn("absolute top-3 bottom-3 left-[13px] w-0.5", tone.line)}
                     />
                     <div className="flex flex-1 flex-col justify-between gap-4">
                       {card.milestones.map((m, i) => (
                         <div
                           key={m.title}
-                          data-splash-milestone
                           className="flex items-start gap-3.5"
                         >
                           <span
@@ -579,7 +511,7 @@ export function ScenarioSplash({
                         </div>
                       ))}
                       {/* Cíl */}
-                      <div data-splash-milestone className="flex items-start gap-3.5">
+                      <div className="flex items-start gap-3.5">
                         <span
                           className={cn(
                             "relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full text-white",
@@ -611,7 +543,6 @@ export function ScenarioSplash({
 
                 {/* CTA */}
                 <button
-                  data-splash-cta
                   onClick={() => {
                     onSelect?.(card.id)
                     if (buildingId) {
@@ -624,6 +555,7 @@ export function ScenarioSplash({
                     onClose()
                   }}
                   className={cn(
+                    "animate-in fade-in slide-in-from-bottom-4 fill-mode-both delay-300 duration-500",
                     "group mt-auto flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-semibold transition-colors",
                     tone.cta
                   )}

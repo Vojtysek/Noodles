@@ -267,6 +267,7 @@ export default function PrehledPage() {
               ? {
                   selected_renovations: buildingCalc.selected_renovations,
                   total_cost: buildingCalc.total_cost,
+                  address: buildingCalc.address,
                 }
               : undefined
           }
