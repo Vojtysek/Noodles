@@ -174,10 +174,6 @@ const STEP_META = [
     desc: "Vyberte oblast pro výpočet příspěvku do fondu oprav.",
   },
   {
-    title: "Parametry opravy",
-    desc: "Nastavte počet jednotek a dobu splácení.",
-  },
-  {
     title: "Výsledek kalkulace",
     desc: "Orientační měsíční příspěvek na jednu jednotku.",
   },
@@ -233,17 +229,10 @@ export default function CalculatorPage() {
     isFirstRepair: true,
   })
 
-<<<<<<< HEAD
-  const calc = calcRepair(repair)
-  const selectedRenovations = RENOVATIONS.filter((r) => selected.includes(r.id))
-=======
   const derivedWindowCount = Math.round(
-    ((building?.zastavenaFlocha ?? 400) * (building?.floors ?? 4) * 0.15) /
-      2.25
+    ((building?.zastavenaFlocha ?? 400) * (building?.floors ?? 4) * 0.15) / 2.25
   )
   const calc = calcRepair(repair, derivedWindowCount)
-  const selectedRenovation = RENOVATIONS.find((r) => r.id === selected)
->>>>>>> 204d2da (feat: derive window count automatically from footprint × floors × 0.15 / 2.25)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -339,7 +328,9 @@ export default function CalculatorPage() {
         units,
         floors: so?.pocetpodlazi ?? null,
         yearBuilt: so?.dokonceni ? new Date(so.dokonceni).getFullYear() : null,
-        zastavenaFlocha: so?.["st_area(shape)"] ? Math.round(so["st_area(shape)"]) : null,
+        zastavenaFlocha: so?.["st_area(shape)"]
+          ? Math.round(so["st_area(shape)"])
+          : null,
       })
       if (units) setR("numberOfUnits", Math.min(50, Math.max(5, units)))
     } catch (e) {
@@ -367,8 +358,6 @@ export default function CalculatorPage() {
     } else if (step === 2) {
       if (selected.length > 0) setStep(3)
     } else if (step === 3) {
-      setStep(4)
-    } else if (step === 4) {
       router.push("/dashboard")
     }
   }
@@ -381,16 +370,14 @@ export default function CalculatorPage() {
           ? "Vyhledat"
           : "Přeskočit"
       : step === 3
-        ? "Vypočítat"
-        : step === 4
-          ? "Hotovo"
-          : "Pokračovat"
+        ? "Hotovo"
+        : "Pokračovat"
 
   const ctaDisabled = loading || (step === 2 && selected.length === 0)
 
   const progressDots = (
     <div className="flex justify-center gap-1.5">
-      {[0, 1, 2, 3, 4].map((i) => (
+      {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-primary" : "w-1.5 bg-border"}`}
@@ -734,88 +721,8 @@ export default function CalculatorPage() {
               </div>
             )}
 
-            {/* Step 3 — Sliders */}
-            {step === 3 &&
-              (selected.includes("windows") ? (
-                <div className="flex flex-col divide-y divide-border">
-                  {(
-                    [
-                      {
-                        label: "Počet jednotek",
-                        key: "numberOfUnits" as const,
-                        min: 5,
-                        max: 50,
-                        step: 1,
-                        unit: "ks",
-                      },
-                      {
-                        label: "Doba splácení",
-                        key: "rentYears" as const,
-                        min: 1,
-                        max: calc.maxRentTime,
-                        step: 1,
-                        unit: "let",
-                      },
-                    ] as const
-                  ).map(({ label, key, min, max, step: s, unit }) => {
-                    return (
-                      <div key={key} className="py-3">
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">
-                            {label}
-                          </span>
-                          <span className="text-sm font-semibold tabular-nums">
-                            {(repair[key] as number).toLocaleString("cs-CZ")}
-                            <span className="ml-1 text-xs font-normal text-muted-foreground">
-                              {unit}
-                            </span>
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={min}
-                          max={max}
-                          step={s}
-                          value={repair[key]}
-                          onChange={(e) => setR(key, Number(e.target.value))}
-                          className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
-                        />
-                      </div>
-                    )
-                  })}
-                  <div className="flex items-center justify-between py-3">
-                    <span className="text-xs text-muted-foreground">
-                      Typ opravy
-                    </span>
-                    <div className="flex gap-1.5">
-                      {(["První", "Opakovaná"] as const).map((label) => {
-                        const active =
-                          label === "První"
-                            ? repair.isFirstRepair
-                            : !repair.isFirstRepair
-                        return (
-                          <button
-                            key={label}
-                            onClick={() =>
-                              setR("isFirstRepair", label === "První")
-                            }
-                            className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                          >
-                            {label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  Kalkulačka pro tuto oblast je v přípravě.
-                </p>
-              ))}
-
-            {/* Step 4 — Results */}
-            {step === 4 && (
+            {/* Step 3 — Results */}
+            {step === 3 && (
               <div className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl border">
                 {[
                   { label: "Celková cena opravy", value: calc.alpha },
