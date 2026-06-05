@@ -126,21 +126,25 @@ function renovationBreakdown(
 function calcRepair(c: RepairCalc, totalCost: number) {
   const alpha = totalCost
   const maxRentTime = alpha < 1_500_000 ? 10 : 15
-  // Bezúročná půjčka (SFPI): strop na bytovou jednotku dle rozsahu renovace.
   const maxLoanPerUnit = 750_000
   const loanCap = maxLoanPerUnit * c.numberOfUnits
-  const loan = Math.min(alpha, loanCap) // bezúročná půjčka po zastropování
-  const overCap = Math.max(0, alpha - loan) // nad rámec → vlastní zdroje / fond
+  const loan = Math.min(alpha, loanCap)
+  const n = 12 * c.rentYears
+  const r = 0.0499 / 12
+  const comLoan = ((loan * (r * (1 + r) ** n)) / ((1 + r) ** n - 1)) * n
+  const overCap = Math.max(0, alpha - loan)
   const monthlyPerUnit =
     c.numberOfUnits > 0 && c.rentYears > 0
       ? loan / c.numberOfUnits / c.rentYears / 12
       : 0
+      console.log(monthlyPerUnit);
   return {
     alpha,
     maxRentTime,
     maxLoanPerUnit,
     loanCap,
     loan,
+    comLoan,
     finalRent: loan, // alias pro stávající konzumenty (uložení do Supabase)
     overCap,
     monthlyPerUnit,
@@ -257,21 +261,17 @@ const ENERGY_LABELS = [
 function calcEnergyScore(
   year: number,
   insulated: boolean,
-  newWindows: boolean
+  newWindows: boolean,
+  photovolatic: boolean
 ) {
   const base =
     year < 1980 ? 7 : year < 1990 ? 6 : year < 2002 ? 5 : year < 2013 ? 4 : 3
-  return base - (insulated ? 2 : 0) - (newWindows ? 1 : 0)
+  return (
+    base - (insulated ? 2 : 0) - (newWindows ? 1 : 0) - (photovolatic ? 1 : 0)
+  )
 }
 
 const ENERGY_GRADES = [
-  {
-    maxPts: 0,
-    grade: "A",
-    label: "Mimořádně úsporná",
-    bg: "bg-green-600",
-    text: "text-white",
-  },
   {
     maxPts: 2,
     grade: "B",
@@ -412,6 +412,8 @@ export default function CalculatorPage() {
   const [energyLabel, setEnergyLabel] = useState<string | null>(null) // PENB manual override
   const [insulated, setInsulated] = useState(false)
   const [newWindows, setNewWindows] = useState(false)
+  const [photovolatic, setPhotovolatic] = useState(false)
+  const [heater, setHeater] = useState(true)
   const [showPenb, setShowPenb] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
 
@@ -428,6 +430,7 @@ export default function CalculatorPage() {
   const calc = calcRepair(repair, totalCost)
   const animatedAlpha = useCountUp(calc.alpha)
   const animatedLoan = useCountUp(calc.loan)
+  const animatedComLoan = useCountUp(calc.comLoan)
   const animatedOver = useCountUp(calc.overCap)
   const animatedMonthly = useCountUp(calc.monthlyPerUnit)
 
@@ -555,7 +558,9 @@ export default function CalculatorPage() {
     } else if (step === 2) {
       if (selected.length === 0) return
       const year = building?.yearBuilt ?? null
-      const pts = year ? calcEnergyScore(year, insulated, newWindows) : null
+      const pts = year
+        ? calcEnergyScore(year, insulated, newWindows, photovolatic)
+        : null
       const g = pts != null ? energyGrade(pts) : null
       const displayGrade = energyLabel ?? g?.grade ?? null
       const selectedLabels = selected.map(
@@ -563,7 +568,10 @@ export default function CalculatorPage() {
       )
       try {
         const supabase = createClient()
-        await supabase.from("buildings").delete().neq("id", "00000000-0000-0000-0000-000000000000")
+        await supabase
+          .from("buildings")
+          .delete()
+          .neq("id", "00000000-0000-0000-0000-000000000000")
         await supabase.from("buildings").insert({
           address: building?.address ?? null,
           units: repair.numberOfUnits,
@@ -786,7 +794,7 @@ export default function CalculatorPage() {
               (() => {
                 const year = building?.yearBuilt ?? null
                 const pts = year
-                  ? calcEnergyScore(year, insulated, newWindows)
+                  ? calcEnergyScore(year, insulated, newWindows, photovolatic)
                   : null
                 const g = pts != null ? energyGrade(pts) : null
                 return (
@@ -817,7 +825,12 @@ export default function CalculatorPage() {
                     {/* Toggles */}
                     <div className="flex flex-col divide-y divide-border rounded-xl border">
                       <div className="flex items-center justify-between px-4 py-3">
-                        <span className="text-sm">Zateplení fasády</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm">Zateplení fasády</span>
+                          <span className="text-xs text-gray-400">
+                            Za posledních 15 let
+                          </span>
+                        </div>
                         <div className="flex gap-1.5">
                           {(["Ne", "Ano"] as const).map((label) => {
                             const active =
@@ -844,6 +857,42 @@ export default function CalculatorPage() {
                               <button
                                 key={label}
                                 onClick={() => setNewWindows(label === "Nová")}
+                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-sm">Fotovoltaika</span>
+                        <div className="flex gap-1.5">
+                          {(["Ne", "Ano"] as const).map((label) => {
+                            const active =
+                              label === "Ano" ? photovolatic : !photovolatic
+                            return (
+                              <button
+                                key={label}
+                                onClick={() => setPhotovolatic(label === "Ano")}
+                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-sm">Tepelný zdroj</span>
+                        <div className="flex gap-1.5">
+                          {(["Centrální", "Osobní"] as const).map((label) => {
+                            const active =
+                              label === "Centrální" ? heater : !heater
+                            return (
+                              <button
+                                key={label}
+                                onClick={() => setHeater(label === "Centrální")}
                                 className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
                               >
                                 {label}
@@ -898,7 +947,7 @@ export default function CalculatorPage() {
               (() => {
                 const year = building?.yearBuilt ?? null
                 const pts = year
-                  ? calcEnergyScore(year, insulated, newWindows)
+                  ? calcEnergyScore(year, insulated, newWindows, photovolatic)
                   : null
                 const g = pts != null ? energyGrade(pts) : null
                 const displayGrade = energyLabel ?? g?.grade ?? null
@@ -960,149 +1009,120 @@ export default function CalculatorPage() {
                         )
                       })}
                     </div>
+                    {selected.length > 0 && (
+                      <div className="flex flex-col divide-y divide-border rounded-xl border">
+                        {/* rentYears selector – discrete slider */}
+                        {(() => {
+                          const arr = [5, 7, 10]
 
-                    {/* Nastavení výpočtu */}
-                    <div className="flex flex-col divide-y divide-border rounded-xl border">
-                      {/* Rozsah renovace → strop bezúročné půjčky */}
-                      <div className="flex items-center justify-between px-4 py-3">
-                        <div>
-                          <span className="text-sm">Rozsah renovace</span>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            Dílčí: půjčka max 250 000 Kč/byt · Větší: 750 000
-                            Kč/byt.
-                          </p>
-                        </div>
-                        <div className="flex gap-1.5">
-                          {(
-                            [
-                              ["Dílčí", true],
-                              ["Větší", false],
-                            ] as const
-                          ).map(([label, val]) => {
-                            const active = repair.isPartial === val
-                            return (
-                              <button
-                                key={label}
-                                onClick={() => setR("isPartial", val)}
-                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                              >
-                                {label}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
+                          calc.loan >= 1_500_000 && arr.push(13, 15)
 
-                      {/* rentYears selector */}
-                      <div className="flex items-center justify-between px-4 py-3">
-                        <div>
-                          <span className="text-sm">
-                            Splácení z fondu oprav
-                          </span>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            Délka splácení ovlivňuje výši měsíčního příspěvku.
-                          </p>
-                        </div>
-                        <div className="flex gap-1.5">
-                          {[5, 7, 10, 12, 15]
-                            .filter((y) => y <= calc.maxRentTime)
-                            .map((y) => {
-                              const active = repair.rentYears === y
-                              return (
-                                <button
-                                  key={y}
-                                  onClick={() => setR("rentYears", y)}
-                                  className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                                >
-                                  {y} r.
-                                </button>
-                              )
-                            })}
-                        </div>
+                          const yearOptions = arr.filter(
+                            (y) => y <= calc.maxRentTime
+                          )
+                          const rawIndex = yearOptions.indexOf(repair.rentYears)
+                          const currentIndex =
+                            rawIndex >= 0
+                              ? rawIndex
+                              : Math.min(
+                                  yearOptions.length - 1,
+                                  yearOptions.reduce(
+                                    (best, y, i) =>
+                                      Math.abs(y - repair.rentYears) <
+                                      Math.abs(
+                                        yearOptions[best] - repair.rentYears
+                                      )
+                                        ? i
+                                        : best,
+                                    0
+                                  )
+                                )
+                          const single = yearOptions.length <= 1
+                          const pct = single
+                            ? 50
+                            : (currentIndex / (yearOptions.length - 1)) * 100
+
+                          return (
+                            <div className="flex flex-col gap-4 px-4 py-4">
+                              <span className="text-sm text-muted-foreground">
+                                Doba splácení úvěru
+                              </span>
+                              <div className="flex items-baseline justify-center">
+                                <span className="text-3xl font-semibold text-primary tabular-nums">
+                                  {repair.rentYears} let
+                                </span>
+                              </div>
+
+                              {/* Track + thumb + native range overlay */}
+                              <div className="relative px-2.5">
+                                <div className="relative h-2 w-full rounded-full bg-muted">
+                                  <div
+                                    className="absolute top-0 left-0 h-2 rounded-full bg-primary transition-all duration-150"
+                                    style={{ width: `${single ? 100 : pct}%` }}
+                                  />
+                                  <div
+                                    className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-background shadow transition-all duration-150"
+                                    style={{ left: `${pct}%` }}
+                                  />
+                                  <input
+                                    type="range"
+                                    min={0}
+                                    max={Math.max(0, yearOptions.length - 1)}
+                                    step={1}
+                                    value={currentIndex}
+                                    onChange={(e) =>
+                                      setR(
+                                        "rentYears",
+                                        yearOptions[Number(e.target.value)]
+                                      )
+                                    }
+                                    aria-label="Doba splácení úvěru"
+                                    aria-valuetext={`${repair.rentYears} let`}
+                                    className="absolute inset-0 size-full cursor-pointer opacity-0"
+                                    style={{ height: "20px", top: "-9px" }}
+                                  />
+                                </div>
+
+                                {/* Tick labels */}
+                                <div className="relative mt-3 h-5">
+                                  {yearOptions.map((y, i) => {
+                                    const active = i === currentIndex
+                                    const labelPct = single
+                                      ? 50
+                                      : (i / (yearOptions.length - 1)) * 100
+                                    return (
+                                      <button
+                                        key={y}
+                                        type="button"
+                                        onClick={() => setR("rentYears", y)}
+                                        style={{ left: `${labelPct}%` }}
+                                        className={`absolute -translate-x-1/2 text-sm whitespace-nowrap tabular-nums transition-colors ${active ? "font-medium text-primary" : "text-muted-foreground"}`}
+                                      >
+                                        {y}
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </div>
-                    </div>
+                    )}
 
                     {/* Live preview — dynamický rozpočet podle výběru */}
                     {selected.length > 0 && (
                       <div className="flex animate-in flex-col overflow-hidden rounded-xl border duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] fade-in slide-in-from-bottom-2">
-                        <div className="flex flex-col divide-y divide-border">
-                          {breakdown.map((item, i) => (
-                            <div
-                              key={item.id}
-                              style={{ animationDelay: `${i * 50}ms` }}
-                              className="flex animate-in items-center justify-between px-4 py-2 duration-300 fill-mode-both fade-in slide-in-from-bottom-1"
-                            >
-                              <span className="text-xs text-muted-foreground">
-                                {item.label}
-                              </span>
-                              <span className="text-xs font-medium tabular-nums">
-                                {item.cost.toLocaleString("cs-CZ")} Kč
-                              </span>
-                            </div>
-                          ))}
-                        </div>
                         {/* Souhrn: investice → bezúročná půjčka → měsíční splátka */}
                         <div className="flex flex-col divide-y divide-border border-t">
-                          <div className="flex items-center justify-between px-4 py-2.5">
-                            <span className="text-xs text-muted-foreground">
-                              Celková investice
-                            </span>
-                            <span className="text-sm font-semibold tabular-nums">
-                              {Math.round(animatedAlpha).toLocaleString(
-                                "cs-CZ"
-                              )}{" "}
-                              Kč
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
-                            <div>
-                              <p className="text-xs font-medium text-primary">
-                                Bezúročná půjčka
-                              </p>
-                              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                max{" "}
-                                {calc.maxLoanPerUnit.toLocaleString("cs-CZ")}{" "}
-                                Kč/byt · strop{" "}
-                                {calc.loanCap.toLocaleString("cs-CZ")} Kč
-                              </p>
-                            </div>
-                            <span className="text-sm font-semibold text-primary tabular-nums">
-                              {Math.round(animatedLoan).toLocaleString("cs-CZ")}{" "}
-                              Kč
-                            </span>
-                          </div>
-                          {calc.overCap > 0 && (
-                            <div className="flex items-center justify-between px-4 py-2.5">
-                              <div>
-                                <p className="text-xs text-muted-foreground">
-                                  Nad rámec půjčky
-                                </p>
-                                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                  z vlastních zdrojů / fondu oprav
-                                </p>
-                              </div>
-                              <span className="text-sm font-semibold tabular-nums">
-                                {Math.round(animatedOver).toLocaleString(
-                                  "cs-CZ"
-                                )}{" "}
-                                Kč
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between bg-muted/30 px-4 py-3">
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Měsíční splátka / byt
-                              </p>
-                              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                splátka bezúročné půjčky na {repair.rentYears}{" "}
-                                let
-                              </p>
-                            </div>
-                            <span className="text-sm font-semibold tabular-nums">
-                              {Math.round(animatedMonthly).toLocaleString(
-                                "cs-CZ"
-                              )}{" "}
+                          <div className="flex flex-col items-center justify-between bg-primary/5 px-4 py-2.5">
+                            <p className="mb-4 font-medium text-primary">
+                              NZÚ Vám oproti Komerčnímu úvěru ušetří
+                            </p>
+                            <span className="text-3xl font-semibold text-primary tabular-nums">
+                              {Math.round(
+                                animatedComLoan - animatedLoan
+                              ).toLocaleString("cs-CZ")}{" "}
                               Kč
                             </span>
                           </div>
