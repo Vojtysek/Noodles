@@ -15,6 +15,8 @@ export type Project = {
   paybackYears: number
   fundIncreasePerFlat: number
   energySavingPct: number
+  /** Odhadovaná délka realizace v měsících. */
+  durationMonths: number
   /** Náklady spojené s danou částí domu dnes a jejich růst, pokud se nerekonstruuje. */
   baseline: { annualCost: number; costGrowthPct: number }
   costBreakdown: { label: string; value: number }[]
@@ -35,6 +37,7 @@ export const projects: Project[] = [
     paybackYears: 13.5,
     fundIncreasePerFlat: 850,
     energySavingPct: 32,
+    durationMonths: 9,
     baseline: { annualCost: 1_350_000, costGrowthPct: 6 },
     costBreakdown: [
       { label: "Izolační materiál", value: 3_100_000 },
@@ -73,6 +76,7 @@ export const projects: Project[] = [
     paybackYears: 12,
     fundIncreasePerFlat: 520,
     energySavingPct: 21,
+    durationMonths: 4,
     baseline: { annualCost: 980_000, costGrowthPct: 6 },
     costBreakdown: [
       { label: "Okna a rámy", value: 2_900_000 },
@@ -109,6 +113,7 @@ export const projects: Project[] = [
     paybackYears: 17.8,
     fundIncreasePerFlat: 380,
     energySavingPct: 9,
+    durationMonths: 5,
     baseline: { annualCost: 540_000, costGrowthPct: 5 },
     costBreakdown: [
       { label: "Krytina a izolace", value: 1_700_000 },
@@ -144,6 +149,7 @@ export const projects: Project[] = [
     paybackYears: 27.4,
     fundIncreasePerFlat: 310,
     energySavingPct: 4,
+    durationMonths: 3,
     baseline: { annualCost: 320_000, costGrowthPct: 8 },
     costBreakdown: [
       { label: "Výtahová technologie", value: 1_800_000 },
@@ -171,6 +177,59 @@ export const projects: Project[] = [
 
 /** Projekty seřazené podle dopadu — používat všude, kde se projekty vypisují. */
 export const projectsByPriority = [...projects].sort((a, b) => a.priority - b.priority)
+
+// ---------------------------------------------------------------------------
+// Scénáře — předpřipravené kombinace projektů pro stránku Přehled.
+// Tři srozumitelné varianty místo volného mix & match (ten zůstává ve Financích).
+// ---------------------------------------------------------------------------
+
+export type ScenarioTone = "emerald" | "amber" | "blue"
+
+export type Scenario = {
+  id: string
+  name: string
+  /** Jedna věta lidskou řečí — co scénář znamená. */
+  tagline: string
+  tone: ScenarioTone
+  /** Pořadí určuje harmonogram — projekty se realizují postupně. */
+  projectIds: ProjectId[]
+}
+
+export const scenarios: Scenario[] = [
+  {
+    id: "nejnutnejsi",
+    name: "Jen to nejnutnější",
+    tagline: "Dokončíme rozjetou střechu a nic dalšího. Nejlevnější a nejrychlejší varianta.",
+    tone: "emerald",
+    projectIds: ["strecha"],
+  },
+  {
+    id: "kompromis",
+    name: "Rozumný kompromis",
+    tagline: "Střecha plus nová okna — citelná úspora energií za rozumný měsíční příspěvek.",
+    tone: "amber",
+    projectIds: ["strecha", "okna"],
+  },
+  {
+    id: "kompletni",
+    name: "Kompletní obnova",
+    tagline: "Všechny čtyři projekty najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
+    tone: "blue",
+    projectIds: ["strecha", "okna", "fasada", "vytah"],
+  },
+]
+
+/** Délka v měsících → česky („5 měsíců", „rok a 2 měsíce", „2 roky"). */
+export function fmtDuration(months: number): string {
+  const years = Math.floor(months / 12)
+  const rest = months % 12
+  const monthWord = (n: number) => (n === 1 ? "měsíc" : n < 5 ? "měsíce" : "měsíců")
+  const yearWord = (n: number) => (n === 1 ? "rok" : n < 5 ? "roky" : "let")
+  if (years === 0) return `${rest} ${monthWord(rest)}`
+  const yearPart = years === 1 ? "rok" : `${years} ${yearWord(years)}`
+  if (rest === 0) return yearPart
+  return `${yearPart} a ${rest} ${monthWord(rest)}`
+}
 
 export type Sentiment = "podporuje" | "vaha" | "proti"
 

@@ -72,6 +72,9 @@ export default function ExportyPage() {
       {/* Context: project scope + stats */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-primary/5 px-4 py-3">
         <div className="flex items-center gap-3">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+            1
+          </span>
           <p className="text-sm font-medium">Co exportovat</p>
           <select
             value={projectId}
@@ -109,6 +112,12 @@ export default function ExportyPage() {
       </div>
 
       {/* Export type cards — clickable, selected gets outline */}
+      <div className="flex items-center gap-3">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+          2
+        </span>
+        <p className="text-sm font-medium">Pro koho dokument je</p>
+      </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {exportTypes.map((exp) => {
           const Icon = TYPE_ICONS[exp.id] ?? FileText
@@ -160,9 +169,14 @@ export default function ExportyPage() {
 
       {/* Generate panel */}
       <div className="rounded-lg border p-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="size-4 text-primary" />
-          <p className="text-sm font-medium">Vygenerovat dokument</p>
+        <div className="flex items-center gap-3">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+            3
+          </span>
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-primary" />
+            <p className="text-sm font-medium">Vygenerovat dokument</p>
+          </div>
         </div>
 
         {selectedType.needsPersona && (

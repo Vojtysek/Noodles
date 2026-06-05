@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import {
   Wallet,
   TrendingDown,
@@ -179,10 +180,14 @@ export default function FinancialsPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold">Financials</h1>
+        <h1 className="text-xl font-semibold">Finance</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Co se stane, když rekonstruovat — a když ne. Modelace obou scénářů v čase pro libovolnou
-          kombinaci projektů.
+          kombinaci projektů. Stačí vám rychlý souhrn?{" "}
+          <Link href="/dashboard/prehled" className="font-medium text-primary hover:underline">
+            Zpět na Přehled
+          </Link>
+          .
         </p>
       </div>
 
