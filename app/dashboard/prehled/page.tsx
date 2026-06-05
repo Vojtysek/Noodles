@@ -429,10 +429,6 @@ export default function PrehledPage() {
             })}
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Hotovo za <span className="tabular-nums">{fmtDuration(result.totalMonths)}</span> ·{" "}
-          <span className="tabular-nums">+{fmtCzk(result.fundIncreasePerFlat)}</span> / byt měsíčně
-        </p>
       </div>
 
       {/* Harmonogram vybraného scénáře */}
