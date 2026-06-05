@@ -21,6 +21,12 @@ import {
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
+import {
+  saveBuilding,
+  PENDING_BUILDING_KEY,
+  type BuildingPayload,
+} from "@/lib/onboarding/save-building"
+import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
 import { prices } from "./prices"
 
 const BASE = "https://ags.cuzk.gov.cz/arcgis/rest/services/RUIAN/MapServer"
@@ -410,6 +416,9 @@ function useCountUp(target: number, durationMs = 700) {
 export default function CalculatorPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
+  const [splashPayload, setSplashPayload] = useState<BuildingPayload | null>(
+    null
+  )
 
   const [query, setQuery] = useState("")
   const [suggestions, setSuggestions] = useState<string[]>([])
@@ -577,7 +586,6 @@ export default function CalculatorPage() {
       const selectedLabels = selected.map(
         (id) => RENOVATIONS.find((r) => r.id === id)?.label ?? id
       )
-      const geom = buildingGeometry(building)
       const costsByProject = Object.fromEntries(
         selected
           .filter((id) => ONBOARDING_TO_PROJECT[id])
@@ -586,34 +594,40 @@ export default function CalculatorPage() {
             renovationCost(id, geom, repair.numberOfUnits),
           ])
       )
-      try {
-        const supabase = createClient()
-        await supabase
-          .from("buildings")
-          .delete()
-          .neq("id", "00000000-0000-0000-0000-000000000000")
-        await supabase.from("buildings").insert({
-          address: building?.address ?? null,
-          units: repair.numberOfUnits,
-          floors: building?.floors ?? null,
-          year_built: building?.yearBuilt ?? null,
-          zastavena_plocha: building?.zastavenaFlocha ?? null,
-          energy_grade: displayGrade,
-          insulated,
-          new_windows: newWindows,
-          selected_renovations: selectedLabels,
-          costs_by_project: costsByProject,
-          monthly_per_unit: Math.round(calc.monthlyPerUnit),
-          total_cost: calc.alpha,
-          final_rent: calc.finalRent,
-          rent_years: repair.rentYears,
-          window_count: derivedWindowCount,
-          capped_by_max: calc.cappedByMax,
-        })
-      } catch {
-        // continue to dashboard even if save fails
+      const payload: BuildingPayload = {
+        address: building?.address ?? null,
+        units: repair.numberOfUnits,
+        floors: building?.floors ?? null,
+        year_built: building?.yearBuilt ?? null,
+        zastavena_plocha: building?.zastavenaFlocha ?? null,
+        energy_grade: displayGrade,
+        insulated,
+        new_windows: newWindows,
+        selected_renovations: selectedLabels,
+        costs_by_project: costsByProject,
+        monthly_per_unit: Math.round(calc.monthlyPerUnit),
+        total_cost: calc.alpha,
+        final_rent: calc.finalRent,
+        rent_years: repair.rentYears,
+        window_count: derivedWindowCount,
+        capped_by_max: calc.cappedByMax,
       }
-      router.push("/dashboard/prehled?from=onboarding")
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        try {
+          await saveBuilding(supabase, user.id, payload)
+        } catch {
+          // continue to dashboard even if save fails
+        }
+        router.push("/dashboard/prehled?from=onboarding")
+      } else {
+        // Not logged in → show the scenario splash first; registration
+        // happens only after they pick a path.
+        setSplashPayload(payload)
+      }
     }
   }
 
@@ -1161,6 +1175,29 @@ export default function CalculatorPage() {
             </div>
           </div>
         </>
+      )}
+      {splashPayload && (
+        <ScenarioSplash
+          buildingData={{
+            selected_renovations: splashPayload.selected_renovations,
+            total_cost: splashPayload.total_cost,
+          }}
+          onSelect={(scenarioId) => {
+            try {
+              localStorage.setItem(
+                PENDING_BUILDING_KEY,
+                JSON.stringify({
+                  ...splashPayload,
+                  selected_scenario: scenarioId,
+                })
+              )
+            } catch {
+              // ignore storage failures
+            }
+            router.push("/login?mode=signup&from=onboarding")
+          }}
+          onClose={() => setSplashPayload(null)}
+        />
       )}
     </div>
   )

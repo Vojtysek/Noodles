@@ -21,30 +21,16 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
   exportTypes,
-  exportHistory,
   distributionTips,
-  scenarios,
   fmtCzkShort,
   type Persona,
+  type Scenario,
   type Sentiment,
 } from "@/lib/mock-data"
-import { ARCHETYPES } from "@/lib/archetypes"
+import { userScenarios } from "@/lib/scenarios"
+import { createClient } from "@/lib/supabase/client"
 import { PERSONA_TYPES } from "@/lib/persona-types"
 import type { PersonaType } from "@/lib/persona-types"
-
-// Vestavěné archetypy v podobě person — výchozí nabídka pro personalizovaný
-// export; vlastní archetypy ze Supabase se přidávají před ně.
-const archetypePersonas: Persona[] = ARCHETYPES.map((a) => ({
-  id: a.id,
-  name: a.name,
-  role: a.subtitle,
-  unit: "—",
-  status: "zpracovano",
-  sentiment: "vaha",
-  brief: a.description,
-  structured: a.profile,
-  personaType: a.id,
-}))
 
 const TYPE_ICONS: Record<string, typeof FileText> = {
   "overall-brief": FileText,
@@ -55,13 +41,14 @@ const TYPE_ICONS: Record<string, typeof FileText> = {
 
 export default function ExportyPage() {
   const [selectedTypeId, setSelectedTypeId] = useState(exportTypes[0].id)
-  const [personaList, setPersonaList] = useState<Persona[]>(archetypePersonas)
-  const [personaId, setPersonaId] = useState(archetypePersonas[0].id)
+  const [personaList, setPersonaList] = useState<Persona[]>([])
+  const [personaId, setPersonaId] = useState<string>("")
+  const [scenarios, setScenarios] = useState<Scenario[]>([])
   const [scenarioId, setScenarioId] = useState<string>("all")
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
 
-  // Fetch real personas from Supabase, merge with mock fallback
+  // Fetch only the logged-in user's real personas from Supabase.
   useEffect(() => {
     fetch("/api/personas")
       .then((r) => r.json())
@@ -78,13 +65,35 @@ export default function ExportyPage() {
           personaType: r.persona_type && r.persona_type in PERSONA_TYPES
             ? (r.persona_type as PersonaType) : undefined,
         }))
-        setPersonaList((prev) => {
-          const dbIds = new Set(fromDb.map((p) => p.id))
-          return [...fromDb, ...prev.filter((p) => !dbIds.has(p.id))]
-        })
+        setPersonaList(fromDb)
         setPersonaId(fromDb[0].id)
       })
-      .catch(() => {/* keep built-in archetypes on error */})
+      .catch(() => {/* no personas available */})
+  }, [])
+
+  // Fetch the user's building plan and build their own scenario ("Váš plán").
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) return
+        const { data } = await supabase
+          .from("buildings")
+          .select("selected_renovations")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        const renovations = (data?.selected_renovations as string[] | undefined) ?? []
+        const built = userScenarios(renovations)
+        setScenarios(built)
+        // S jediným scénářem rovnou vyber „Váš plán" (volba „all" se nezobrazuje).
+        if (built.length === 1) setScenarioId(built[0].id)
+      } catch {/* leave scenarios empty */}
+    })()
   }, [])
 
   const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]
@@ -145,55 +154,67 @@ export default function ExportyPage() {
         className="anim-in rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-4"
         style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.18s" } as React.CSSProperties}
       >
-        {/* Segmented switcher */}
-        <div className="flex items-center gap-1 rounded-xl bg-background/70 p-1 shadow-sm backdrop-blur w-full">
-          {/* "All" option */}
-          <button
-            type="button"
-            onClick={() => setScenarioId("all")}
-            aria-pressed={scenarioId === "all"}
-            className={cn(
-              "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
-              scenarioId === "all"
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+        {/* Segmented switcher — pouze scénář(e) přihlášeného uživatele */}
+        {scenarios.length === 0 ? (
+          <div className="flex items-center gap-2.5 rounded-xl bg-background/70 px-4 py-4 text-sm text-muted-foreground shadow-sm backdrop-blur">
+            <Building2 className="size-4 shrink-0 text-muted-foreground/70" />
+            <span>
+              Zatím nemáte žádný plán. Dokončete kalkulaci budovy a váš scénář se
+              tu objeví.
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 rounded-xl bg-background/70 p-1 shadow-sm backdrop-blur w-full">
+            {/* Porovnání všech scénářů — jen pokud jich je víc */}
+            {scenarios.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setScenarioId("all")}
+                aria-pressed={scenarioId === "all"}
+                className={cn(
+                  "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+                  scenarioId === "all"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                )}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="size-3.5 shrink-0" />
+                  Porovnání scénářů
+                </span>
+                <span className={cn(
+                  "text-[10px] font-normal leading-tight",
+                  scenarioId === "all" ? "text-primary-foreground/70" : "text-muted-foreground/60"
+                )}>
+                  side-by-side přehled
+                </span>
+              </button>
             )}
-          >
-            <span className="flex items-center gap-1.5">
-              <Building2 className="size-3.5 shrink-0" />
-              Porovnání scénářů
-            </span>
-            <span className={cn(
-              "text-[10px] font-normal leading-tight",
-              scenarioId === "all" ? "text-primary-foreground/70" : "text-muted-foreground/60"
-            )}>
-              side-by-side přehled
-            </span>
-          </button>
 
-          {scenarios.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setScenarioId(s.id)}
-              aria-pressed={scenarioId === s.id}
-              className={cn(
-                "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
-                scenarioId === s.id
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-              )}
-            >
-              <span>{s.name}</span>
-              <span className={cn(
-                "text-[10px] font-normal leading-tight",
-                scenarioId === s.id ? "text-primary-foreground/70" : "text-muted-foreground/60"
-              )}>
-                {s.projectIds.length} {s.projectIds.length === 1 ? "projekt" : "projekty"}
-              </span>
-            </button>
-          ))}
-        </div>
+            {scenarios.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setScenarioId(s.id)}
+                aria-pressed={scenarioId === s.id}
+                className={cn(
+                  "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+                  scenarioId === s.id
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                )}
+              >
+                <span>{s.name}</span>
+                <span className={cn(
+                  "text-[10px] font-normal leading-tight",
+                  scenarioId === s.id ? "text-primary-foreground/70" : "text-muted-foreground/60"
+                )}>
+                  {s.projectIds.length} {s.projectIds.length === 1 ? "projekt" : "projekty"}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Stats row */}
         <div className="mt-3 flex flex-wrap items-center gap-4 px-1 text-xs text-muted-foreground">
@@ -303,7 +324,16 @@ export default function ExportyPage() {
               Pro rezidenta:
             </span>
 
-            {/* Visual card picker */}
+            {/* Visual card picker — pouze vlastní personas uživatele */}
+            {personaList.length === 0 ? (
+              <div className="flex items-center gap-2.5 rounded-xl border border-dashed bg-background/60 px-3 py-3 text-xs text-muted-foreground">
+                <UserRound className="size-4 shrink-0 text-muted-foreground/70" />
+                <span>
+                  Zatím nemáte žádné rezidenty. Přidejte je v sekci Rezidenti a
+                  pak pro ně vytvoříte materiál na míru.
+                </span>
+              </div>
+            ) : (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {personaList.map((p) => {
                 const selected = p.id === personaId
@@ -351,6 +381,7 @@ export default function ExportyPage() {
                 )
               })}
             </div>
+            )}
 
             {/* Selected persona info chip */}
             {selectedPersona && (
@@ -430,68 +461,18 @@ export default function ExportyPage() {
       >
         <div className="mb-3 flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
-          <div className="flex items-center gap-2">
-            <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-              Poslední exporty
-            </p>
-            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1.5 py-0.5 font-medium">ukázková data</span>
-          </div>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            Poslední exporty
+          </p>
         </div>
-        <div className="overflow-x-auto rounded-2xl border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                <th className="px-4 py-2.5 font-medium">Název</th>
-                <th className="px-4 py-2.5 font-medium">Typ</th>
-                <th className="px-4 py-2.5 font-medium">Scénář</th>
-                <th className="px-4 py-2.5 font-medium">Vytvořeno</th>
-                <th className="px-4 py-2.5 text-right font-medium">Velikost</th>
-                <th className="px-4 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {exportHistory.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b transition-colors last:border-b-0 hover:bg-muted/40"
-                >
-                  <td className="px-4 py-2.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {row.format === "PPTX" ? (
-                        <Presentation className="size-3.5 shrink-0 text-muted-foreground" />
-                      ) : (
-                        <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-                      )}
-                      <span className="font-medium truncate">{row.name}</span>
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap",
-                          row.format === "PPTX"
-                            ? "bg-chart-1/20 text-chart-3"
-                            : "bg-muted text-muted-foreground"
-                        )}
-                      >
-                        {row.format}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground truncate">{row.type}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground truncate">{row.project}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
-                    {new Date(row.createdAt).toLocaleDateString("cs-CZ")}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-muted-foreground tabular-nums">
-                    {row.size}
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <Button variant="ghost" size="icon-sm" aria-label={`Stáhnout ${row.name}`}>
-                      <Download />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed bg-background/60 px-6 py-10 text-center">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <Download className="size-5" />
+          </div>
+          <p className="text-sm font-medium">Zatím jste nic nevyexportovali</p>
+          <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+            Až vygenerujete dokument výše, najdete ho tady připravený ke stažení.
+          </p>
         </div>
       </div>
     </div>

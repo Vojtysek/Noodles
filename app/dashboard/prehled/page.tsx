@@ -20,12 +20,11 @@ import { cn } from "@/lib/utils"
 import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
 import { Roadmap, type RoadmapItem } from "@/components/dashboard/roadmap"
 import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
-import { buildDynamicScenarios } from "@/lib/scenarios"
+import { userScenarios } from "@/lib/scenarios"
 import {
   fmtCzkShort,
   fmtDuration,
   projects,
-  scenarios,
   type Scenario,
   type ScenarioTone,
 } from "@/lib/mock-data"
@@ -164,8 +163,8 @@ function computeScenario(scenario: Scenario, projectCostOverrides?: Record<strin
 }
 
 export default function PrehledPage() {
-  const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>(scenarios)
-  const [scenarioId, setScenarioId] = useState(scenarios[0].id)
+  const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>([])
+  const [scenarioId, setScenarioId] = useState<string | null>(null)
   // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
   const [splashOpen, setSplashOpen] = useState(false)
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
@@ -181,17 +180,23 @@ export default function PrehledPage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const { data } = await createClient()
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) return
+        const { data } = await supabase
           .from("buildings")
           .select("*")
+          .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
-          .single()
+          .maybeSingle()
         if (data) {
           setBuildingCalc(data as BuildingCalc)
-          const built = buildDynamicScenarios((data as BuildingCalc).selected_renovations ?? [])
+          const built = userScenarios((data as BuildingCalc).selected_renovations ?? [])
           setDynamicScenarios(built)
-          setScenarioId(built[0].id)
+          setScenarioId(built[0]?.id ?? null)
           if (new URLSearchParams(window.location.search).get("from") === "onboarding") {
             setSplashOpen(true)
           }
@@ -200,8 +205,9 @@ export default function PrehledPage() {
     })()
   }, [])
 
-  const scenario = dynamicScenarios.find((s) => s.id === scenarioId) ?? dynamicScenarios[0]
+  const scenario = dynamicScenarios.find((s) => s.id === scenarioId) ?? dynamicScenarios[0] ?? null
   const result = useMemo(() => {
+    if (!scenario) return null
     if (scenario.id === "vase-vybrane") {
       if (buildingCalc?.costs_by_project) {
         return computeScenario(scenario, buildingCalc.costs_by_project)
@@ -221,10 +227,12 @@ export default function PrehledPage() {
     return computeScenario(scenario)
   }, [scenario, buildingCalc])
 
-  const finishLabel = monthLabel(result.totalMonths).replace("od ", "")
+  const finishLabel = result ? monthLabel(result.totalMonths).replace("od ", "") : ""
 
   // Hodnoty do plovoucích chipů v hero pruhu.
-  const breakEvenYear = result.breakEvenYear
+  const breakEvenYear = result?.breakEvenYear ?? null
+
+  const hasPlan = scenario !== null && result !== null
 
   // Vstupní reveal (hlavička + sekce). Stejný vzor jako dřív.
   useGSAP(
@@ -387,6 +395,28 @@ export default function PrehledPage() {
         </div>
       </div>
 
+      {!hasPlan && (
+        <div
+          data-pr-reveal
+          className="relative overflow-hidden rounded-2xl border bg-background/60 p-8 text-center backdrop-blur-sm"
+        >
+          <h2 className="text-lg font-semibold">Zatím nemáte uložený plán</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            Spusťte kalkulačku a vyberte rekonstrukce pro váš dům. Hned poté tu uvidíte
+            harmonogram, náklady i to, kdy se investice vyplatí.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <Button asChild className="h-11 rounded-full px-6 text-sm font-semibold shadow-xl">
+              <Link href="/onboarding">
+                {buildingCalc ? "Dokončit kalkulaci" : "Spustit kalkulačku"}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {hasPlan && result && scenario && (
+        <>
       {/* Slim přepínač variant */}
       <div data-pr-reveal className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center gap-3">
@@ -505,6 +535,8 @@ export default function PrehledPage() {
           />
         </div>
       </div>
+        </>
+      )}
 
       {/* Kam dál — slim řádek */}
       <div data-pr-reveal className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1 text-sm">

@@ -25,8 +25,44 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Refresh session so it doesn't expire
-  await supabase.auth.getUser();
+  // IMPORTANT: Do not run code between createServerClient and getUser().
+  // Refresh session so it doesn't expire.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+
+  const isPublic =
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/onboarding" ||
+    pathname.startsWith("/onboarding/") ||
+    pathname.startsWith("/auth");
+
+  // Not logged in + protected route → send to login.
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
+  }
+
+  // Logged in + visiting login → send to dashboard.
+  if (user && pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard/prehled";
+    url.search = "";
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
+  }
 
   return supabaseResponse;
 }

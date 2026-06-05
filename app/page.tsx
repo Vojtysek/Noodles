@@ -1,29 +1,39 @@
-"use client";
+"use client"
 
-import { useRef, useState } from "react";
-import Link from "next/link";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
-import { ArrowUpRight, Building2, Check, ChevronDown, FileDown, FileText, Presentation, UserRound } from "lucide-react";
-import { motion, useAnimation } from "motion/react";
+import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
+import gsap from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { useGSAP } from "@gsap/react"
+import {
+  ArrowUpRight,
+  Building2,
+  Check,
+  ChevronDown,
+  FileDown,
+  FileText,
+  Presentation,
+  UserRound,
+} from "lucide-react"
+import { motion, useAnimation } from "motion/react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/client"
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger)
 
 const heroBenefits = [
   "Spočítejte úspory energií a návratnost",
   "Argumenty a podpora sousedů pro hlasování",
   "Od prvního nápadu po schválení na schůzi SVJ",
-];
+]
 
 const stats = [
   { value: 4, suffix: "", label: "typy renovací v plánu" },
   { value: 40, suffix: " %", label: "tepla může ušetřit zateplení fasády" },
   { value: 50, suffix: " %", label: "nákladů může pokrýt dotace NZÚ" },
   { value: 24, suffix: "", label: "bytových jednotek v domě" },
-];
+]
 
 const steps = [
   {
@@ -46,7 +56,7 @@ const steps = [
     description:
       "Po schválení renovace sledujte harmonogram, čerpání fondu oprav a skutečné úspory v čase.",
   },
-];
+]
 
 const landingScenarios = [
   {
@@ -56,8 +66,14 @@ const landingScenarios = [
       "Zateplení fasády a výměna oken — dvě opatření s největším dopadem na tepelné ztráty domu.",
     tone: "blue" as const,
     renovations: [
-      { label: "Fasáda", color: "bg-blue-500/10 text-blue-700 dark:text-blue-400" },
-      { label: "Okna", color: "bg-blue-500/10 text-blue-700 dark:text-blue-400" },
+      {
+        label: "Fasáda",
+        color: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+      },
+      {
+        label: "Okna",
+        color: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+      },
     ],
     investment: "5,5 mil. Kč",
     savingsPerYear: "200 tis. Kč",
@@ -72,9 +88,18 @@ const landingScenarios = [
       "Fasáda, okna i střecha najednou. Dům připravený na desítky let — a poloviční účty za teplo.",
     tone: "emerald" as const,
     renovations: [
-      { label: "Fasáda", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
-      { label: "Okna", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
-      { label: "Střecha", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+      {
+        label: "Fasáda",
+        color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+      },
+      {
+        label: "Okna",
+        color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+      },
+      {
+        label: "Střecha",
+        color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+      },
     ],
     investment: "21 mil. Kč",
     savingsPerYear: "360 tis. Kč",
@@ -82,7 +107,7 @@ const landingScenarios = [
     subsidy: "10,5 mil. Kč",
     bestFor: "Dlouhodobá hodnota domu",
   },
-];
+]
 
 const faqs = [
   {
@@ -115,10 +140,10 @@ const faqs = [
     answer:
       "Ke každému rezidentovi si zapíšete, jak se k renovaci staví. Noodles z vašich poznámek vytvoří přehled postojů a pomůže vám připravit materiály přizpůsobené každému sousedovi.",
   },
-];
+]
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   return (
     <div data-reveal className="rounded-2xl border px-5 py-4">
@@ -130,7 +155,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
       >
         {question}
         <ChevronDown
-          className={`text-muted-foreground size-4 shrink-0 transition-transform duration-300 ease-out ${
+          className={`size-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-out ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -141,15 +166,15 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
         }`}
       >
         <div className="overflow-hidden">
-          <p className="text-muted-foreground pt-3 text-sm">{answer}</p>
+          <p className="pt-3 text-sm text-muted-foreground">{answer}</p>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-function HeroCta() {
-  const arrowControls = useAnimation();
+function HeroCta({ href }: { href: string }) {
+  const arrowControls = useAnimation()
 
   return (
     <div
@@ -159,7 +184,12 @@ function HeroCta() {
         arrowControls.start({
           x: 3,
           y: -3,
-          transition: { type: "spring", stiffness: 600, damping: 12, mass: 0.6 },
+          transition: {
+            type: "spring",
+            stiffness: 600,
+            damping: 12,
+            mass: 0.6,
+          },
         })
       }
       onMouseLeave={() =>
@@ -172,32 +202,49 @@ function HeroCta() {
     >
       <Button
         asChild
-        className="h-14 rounded-full px-8 text-base font-semibold shadow-xl hover:bg-primary/85 group-hover:bg-primary/85"
+        className="h-14 rounded-full px-8 text-base font-semibold shadow-xl group-hover:bg-primary/85 hover:bg-primary/85"
       >
-        <Link href="/dashboard">Spustit kalkulačku</Link>
+        <Link href={href}>Spustit kalkulačku</Link>
       </Button>
-      <Button asChild className="size-14 rounded-full shadow-xl hover:bg-primary/85 group-hover:bg-primary/85">
-        <Link href="/dashboard" aria-label="Vyzkoušet zdarma">
+      <Button
+        asChild
+        className="size-14 rounded-full shadow-xl group-hover:bg-primary/85 hover:bg-primary/85"
+      >
+        <Link href={href} aria-label="Vyzkoušet zdarma">
           <motion.span animate={arrowControls} className="inline-flex">
             <ArrowUpRight className="size-6" />
           </motion.span>
         </Link>
       </Button>
     </div>
-  );
+  )
 }
 
 export default function Page() {
-  const root = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null)
+
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => setLoggedIn(!!data.user))
+  }, [])
+
+  const appHref = loggedIn ? "/dashboard/prehled" : "/onboarding"
 
   useGSAP(
     () => {
-      const mm = gsap.matchMedia();
+      const mm = gsap.matchMedia()
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         // Hero entrance
-        const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-        tl.from("[data-hero-img]", { scale: 1.12, duration: 1.8, ease: "power2.out" }, 0)
+        const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
+        tl.from(
+          "[data-hero-img]",
+          { scale: 1.12, duration: 1.8, ease: "power2.out" },
+          0
+        )
           .from("[data-hero-nav]", { y: -24, autoAlpha: 0, duration: 0.6 }, 0.2)
           .from(
             "[data-hero-line] > span",
@@ -218,14 +265,19 @@ export default function Page() {
           .from("[data-hero-card]", { y: 40, autoAlpha: 0, duration: 0.7 }, 1.2)
           .from(
             "[data-hero-bar]",
-            { scaleX: 0, transformOrigin: "left center", duration: 0.9, ease: "power3.out" },
+            {
+              scaleX: 0,
+              transformOrigin: "left center",
+              duration: 0.9,
+              ease: "power3.out",
+            },
             1.6
-          );
+          )
 
         // Blob percentage counts up as the blob lands (synced with its entrance)
-        const blobNum = document.querySelector<HTMLElement>("[data-blob-count]");
+        const blobNum = document.querySelector<HTMLElement>("[data-blob-count]")
         if (blobNum) {
-          const blobCounter = { value: 0 };
+          const blobCounter = { value: 0 }
           tl.to(
             blobCounter,
             {
@@ -233,11 +285,11 @@ export default function Page() {
               duration: 1.4,
               ease: "power2.out",
               onUpdate() {
-                blobNum.textContent = String(Math.round(blobCounter.value));
+                blobNum.textContent = String(Math.round(blobCounter.value))
               },
             },
             0.95
-          );
+          )
         }
 
         // Subtle parallax on the hero photo — numeric scrub adds inertia so
@@ -251,7 +303,7 @@ export default function Page() {
             end: "bottom top",
             scrub: 0.8,
           },
-        });
+        })
 
         // The corner cards drift gently after they land
         gsap.to("[data-hero-blob]", {
@@ -261,7 +313,7 @@ export default function Page() {
           yoyo: true,
           repeat: -1,
           delay: 2,
-        });
+        })
         gsap.to("[data-hero-card]", {
           y: -8,
           duration: 2.6,
@@ -269,7 +321,7 @@ export default function Page() {
           yoyo: true,
           repeat: -1,
           delay: 2.2,
-        });
+        })
 
         // Scroll reveals
         gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
@@ -279,25 +331,25 @@ export default function Page() {
             duration: 0.8,
             ease: "power3.out",
             scrollTrigger: { trigger: el, start: "top 85%" },
-          });
-        });
+          })
+        })
 
         // Count-up numbers (supports decimals via data-decimals, Czech comma)
         gsap.utils.toArray<HTMLElement>("[data-count]").forEach((el) => {
-          const target = parseFloat(el.dataset.count ?? "0");
-          const suffix = el.dataset.suffix ?? "";
-          const decimals = Number(el.dataset.decimals ?? 0);
-          const counter = { value: 0 };
+          const target = parseFloat(el.dataset.count ?? "0")
+          const suffix = el.dataset.suffix ?? ""
+          const decimals = Number(el.dataset.decimals ?? 0)
+          const counter = { value: 0 }
           gsap.to(counter, {
             value: target,
             duration: 1.6,
             ease: "power2.out",
             scrollTrigger: { trigger: el, start: "top 85%" },
             onUpdate() {
-              el.textContent = `${counter.value.toFixed(decimals).replace(".", ",")}${suffix}`;
+              el.textContent = `${counter.value.toFixed(decimals).replace(".", ",")}${suffix}`
             },
-          });
-        });
+          })
+        })
 
         // Segmented bars fill from the left
         gsap.utils.toArray<HTMLElement>("[data-fill-bar]").forEach((bar) => {
@@ -308,8 +360,8 @@ export default function Page() {
             ease: "power3.out",
             stagger: 0.12,
             scrollTrigger: { trigger: bar, start: "top 85%" },
-          });
-        });
+          })
+        })
 
         // Chart bars grow from the baseline
         gsap.utils.toArray<HTMLElement>("[data-bar-chart]").forEach((chart) => {
@@ -320,8 +372,8 @@ export default function Page() {
             ease: "power3.out",
             stagger: 0.08,
             scrollTrigger: { trigger: chart, start: "top 85%" },
-          });
-        });
+          })
+        })
 
         // Avatars pop in one by one
         gsap.utils.toArray<HTMLElement>("[data-avatar-row]").forEach((row) => {
@@ -331,32 +383,35 @@ export default function Page() {
             ease: "back.out(2)",
             stagger: 0.07,
             scrollTrigger: { trigger: row, start: "top 85%" },
-          });
-        });
-
+          })
+        })
 
         // Draw the curved progress line through the steps
-        const stepsLine = document.querySelector<SVGPathElement>("[data-steps-line]");
+        const stepsLine =
+          document.querySelector<SVGPathElement>("[data-steps-line]")
         if (stepsLine) {
-          const length = stepsLine.getTotalLength();
-          gsap.set(stepsLine, { strokeDasharray: length, strokeDashoffset: length });
+          const length = stepsLine.getTotalLength()
+          gsap.set(stepsLine, {
+            strokeDasharray: length,
+            strokeDashoffset: length,
+          })
           gsap.to(stepsLine, {
             strokeDashoffset: 0,
             duration: 1.4,
             ease: "power2.inOut",
             scrollTrigger: { trigger: "[data-steps]", start: "top 70%" },
-          });
+          })
         }
-      });
+      })
     },
     { scope: root }
-  );
+  )
 
   return (
     <div ref={root} className="flex min-h-svh flex-col">
       {/* Hero — full-bleed photo tapering off at the bottom */}
       <section data-hero className="relative">
-        <div className="relative isolate min-h-[94svh] overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[4rem] lg:rounded-bl-[4rem] lg:rounded-br-[10rem]">
+        <div className="relative isolate min-h-[94svh] overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[4rem] lg:rounded-br-[10rem] lg:rounded-bl-[4rem]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             data-hero-img
@@ -368,31 +423,49 @@ export default function Page() {
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
 
           {/* Floating pill navbar */}
-          <header data-hero-nav className="absolute inset-x-0 top-0 z-20 px-4 pt-5 sm:px-6">
-            <div className="bg-background/95 mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 rounded-full py-2 pr-2 pl-5 shadow-lg backdrop-blur">
+          <header
+            data-hero-nav
+            className="absolute inset-x-0 top-0 z-20 px-4 pt-5 sm:px-6"
+          >
+            <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 rounded-full bg-background/95 py-2 pr-2 pl-5 shadow-lg backdrop-blur">
               <Link href="/" className="flex items-center gap-2 font-semibold">
-                <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-full">
+                <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Building2 className="size-4" />
                 </span>
                 Noodles
               </Link>
-              <nav className="text-muted-foreground hidden items-center gap-6 text-sm md:flex">
-                <a href="#funkce" className="hover:text-foreground transition-colors">
+              <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+                <a
+                  href="#funkce"
+                  className="transition-colors hover:text-foreground"
+                >
                   Funkce
                 </a>
-                <a href="#jak-to-funguje" className="hover:text-foreground transition-colors">
+                <a
+                  href="#jak-to-funguje"
+                  className="transition-colors hover:text-foreground"
+                >
                   Jak to funguje
                 </a>
-                <a href="#faq" className="hover:text-foreground transition-colors">
+                <a
+                  href="#faq"
+                  className="transition-colors hover:text-foreground"
+                >
                   Časté dotazy
                 </a>
               </nav>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" asChild className="hidden rounded-full sm:inline-flex">
-                  <Link href="/onboarding">Kalkulačka</Link>
-                </Button>
+                {loggedIn === false && (
+                  <Button
+                    variant="ghost"
+                    asChild
+                    className="hidden rounded-full sm:inline-flex"
+                  >
+                    <Link href="/login">Přihlásit se</Link>
+                  </Button>
+                )}
                 <Button asChild className="h-10 rounded-full px-5">
-                  <Link href="/dashboard">Otevřít aplikaci</Link>
+                  <Link href={appHref}>Spustit aplikaci</Link>
                 </Button>
               </div>
             </div>
@@ -422,12 +495,12 @@ export default function Page() {
                 </li>
               ))}
             </ul>
-            <HeroCta />
+            <HeroCta href={appHref} />
 
             {/* Oversized stat blob — anchored to the container's right edge */}
             <div
               data-hero-blob
-              className="bg-primary text-primary-foreground absolute top-32 right-0 z-10 hidden w-60 flex-col gap-3 rounded-[2.5rem] p-8 shadow-2xl lg:flex"
+              className="absolute top-32 right-0 z-10 hidden w-60 flex-col gap-3 rounded-[2.5rem] bg-primary p-8 text-primary-foreground shadow-2xl lg:flex"
             >
               <p className="text-7xl leading-none font-bold tracking-tight">
                 <span data-blob-count>40</span>
@@ -441,43 +514,49 @@ export default function Page() {
             {/* Floating product card — anchored to the container's right edge */}
             <div
               data-hero-card
-              className="absolute right-0 bottom-28 z-10 hidden w-80 flex-col gap-4 rounded-2xl bg-zinc-950/70 p-5 text-white ring-1 ring-white/15 backdrop-blur-md lg:flex shadow-[0_24px_64px_-16px_rgba(0,0,0,0.6)]"
+              className="absolute right-0 bottom-28 z-10 hidden w-80 flex-col gap-4 rounded-2xl bg-zinc-950/70 p-5 text-white shadow-[0_24px_64px_-16px_rgba(0,0,0,0.6)] ring-1 ring-white/15 backdrop-blur-md lg:flex"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-white/70">
                   Roční náklady domu na teplo
                 </span>
-                <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
+                <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium text-emerald-300 tabular-nums">
                   −35 %
                 </span>
               </div>
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center gap-3">
-                  <span className="w-9 shrink-0 text-[11px] text-white/50">Dnes</span>
+                  <span className="w-9 shrink-0 text-[11px] text-white/50">
+                    Dnes
+                  </span>
                   <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full w-full rounded-full bg-white/35" />
                   </div>
-                  <span className="w-16 shrink-0 text-right text-xs tabular-nums text-white/70">
+                  <span className="w-16 shrink-0 text-right text-xs text-white/70 tabular-nums">
                     600 tis. Kč
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="w-9 shrink-0 text-[11px] text-white/50">Potom</span>
+                  <span className="w-9 shrink-0 text-[11px] text-white/50">
+                    Potom
+                  </span>
                   <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
                     <div
                       data-hero-bar
                       className="h-full w-[65%] rounded-full bg-emerald-400"
                     />
                   </div>
-                  <span className="w-16 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
+                  <span className="w-16 shrink-0 text-right text-xs font-medium text-emerald-300 tabular-nums">
                     390 tis. Kč
                   </span>
                 </div>
               </div>
               <p className="text-xs text-pretty text-white/60">
                 Úspora{" "}
-                <span className="font-semibold text-emerald-300">210 000 Kč ročně</span> po
-                zateplení fasády domu s 24 byty
+                <span className="font-semibold text-emerald-300">
+                  210 000 Kč ročně
+                </span>{" "}
+                po zateplení fasády domu s 24 byty
               </p>
             </div>
           </div>
@@ -488,7 +567,11 @@ export default function Page() {
         {/* Stats band with count-up */}
         <section className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-y-10 px-4 py-16 sm:px-6 lg:grid-cols-4 lg:py-20">
           {stats.map((stat) => (
-            <div key={stat.label} data-reveal className="flex flex-col items-center gap-1 text-center">
+            <div
+              key={stat.label}
+              data-reveal
+              className="flex flex-col items-center gap-1 text-center"
+            >
               <p
                 data-count={stat.value}
                 data-suffix={stat.suffix}
@@ -497,36 +580,41 @@ export default function Page() {
                 {stat.value}
                 {stat.suffix}
               </p>
-              <p className="text-muted-foreground text-sm">{stat.label}</p>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </section>
 
         {/* Features — bento grid */}
-        <section id="funkce" className="mx-auto w-full max-w-6xl scroll-mt-8 px-4 py-16 sm:px-6 lg:py-24">
+        <section
+          id="funkce"
+          className="mx-auto w-full max-w-6xl scroll-mt-8 px-4 py-16 sm:px-6 lg:py-24"
+        >
           <div data-reveal className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               Od nápadu po rekonstrukci — na jednom místě.
             </h2>
-            <p className="text-muted-foreground mt-3 text-lg text-pretty">
-              Renovace neztroskotá na číslech, ale na schůzi. A po schválení přichází další výzva — sledovat průběh. Noodles vás provede každým krokem.
+            <p className="mt-3 text-lg text-pretty text-muted-foreground">
+              Renovace neztroskotá na číslech, ale na schůzi. A po schválení
+              přichází další výzva — sledovat průběh. Noodles vás provede každým
+              krokem.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-3">
             {/* Rezidenti — anchor card with inset product viewport */}
             <div
               data-reveal
-              className="bg-card flex flex-col rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-16px_rgba(16,24,40,0.14)] md:col-span-2 md:row-span-2 dark:ring-white/[0.06]"
+              className="flex flex-col rounded-2xl bg-card p-7 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-16px_rgba(16,24,40,0.14)] ring-1 ring-black/[0.06] md:col-span-2 md:row-span-2 dark:ring-white/[0.06]"
             >
-              <p className="text-primary text-xs font-medium tracking-wider uppercase">
+              <p className="text-xs font-medium tracking-wider text-primary uppercase">
                 Rezidenti
               </p>
               <h3 className="mt-1.5 text-xl font-semibold tracking-tight">
                 Víte, kdo bude na schůzi proti — dřív, než se tam postaví
               </h3>
-              <p className="text-muted-foreground mt-2 max-w-md text-sm">
-                AI z vašich poznámek pochopí námitky a motivace každého souseda, takže víte,
-                s kým a o čem mluvit.
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                AI z vašich poznámek pochopí námitky a motivace každého souseda,
+                takže víte, s kým a o čem mluvit.
               </p>
               <div className="mt-6 flex flex-col">
                 {[
@@ -557,7 +645,7 @@ export default function Page() {
                 ].map((resident) => (
                   <div
                     key={resident.initials}
-                    className="border-border/40 flex items-center gap-3 border-b py-2.5 last:border-b-0"
+                    className="flex items-center gap-3 border-b border-border/40 py-2.5 last:border-b-0"
                   >
                     <span
                       className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ${resident.color}`}
@@ -565,8 +653,12 @@ export default function Page() {
                       {resident.initials}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{resident.name}</p>
-                      <p className="text-muted-foreground truncate text-xs">{resident.note}</p>
+                      <p className="truncate text-sm font-medium">
+                        {resident.name}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {resident.note}
+                      </p>
                     </div>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${resident.pill}`}
@@ -576,44 +668,50 @@ export default function Page() {
                   </div>
                 ))}
               </div>
-              <div className="bg-primary/5 text-primary mt-3 rounded-lg px-3.5 py-2.5 text-xs leading-relaxed">
-                ✦ AI tip: Anně ukažte rozpočet s fixními zálohami — její námitka je
-                o cashflow, ne o renovaci samotné.
+              <div className="mt-3 rounded-lg bg-primary/5 px-3.5 py-2.5 text-xs leading-relaxed text-primary">
+                ✦ AI tip: Anně ukažte rozpočet s fixními zálohami — její námitka
+                je o cashflow, ne o renovaci samotné.
               </div>
               <div className="mt-auto pt-6">
-                <div className="bg-muted/40 flex flex-col gap-4 rounded-xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04] ring-inset dark:shadow-none dark:ring-white/[0.04]">
+                <div className="flex flex-col gap-4 rounded-xl bg-muted/40 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04] ring-inset dark:shadow-none dark:ring-white/[0.04]">
                   <div className="flex items-center justify-between">
                     <div data-avatar-row className="flex -space-x-2">
                       {["JN", "MK", "PV", "AH", "TS"].map((initials, i) => (
                         <span
                           key={initials}
-                          className={`border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-semibold text-white ${
-                            ["bg-emerald-500", "bg-emerald-600", "bg-amber-500", "bg-rose-500", "bg-emerald-500"][i]
+                          className={`flex size-9 items-center justify-center rounded-full border-2 border-background text-xs font-semibold text-white ${
+                            [
+                              "bg-emerald-500",
+                              "bg-emerald-600",
+                              "bg-amber-500",
+                              "bg-rose-500",
+                              "bg-emerald-500",
+                            ][i]
                           }`}
                         >
                           {initials}
                         </span>
                       ))}
-                      <span className="bg-muted text-muted-foreground border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-medium">
+                      <span className="flex size-9 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium text-muted-foreground">
                         +19
                       </span>
                     </div>
                     <span
                       data-count="16"
                       data-suffix=" z 24 pro"
-                      className="text-muted-foreground text-xs tabular-nums"
+                      className="text-xs text-muted-foreground tabular-nums"
                     >
                       16 z 24 pro
                     </span>
                   </div>
-                  <div className="bg-muted h-2.5 overflow-hidden rounded-full">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-muted">
                     <div data-fill-bar className="flex h-full">
                       <div className="w-[67%] bg-emerald-500" />
                       <div className="w-[21%] bg-amber-500" />
                       <div className="w-[12%] bg-rose-500" />
                     </div>
                   </div>
-                  <div className="text-muted-foreground flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5">
                       <span className="size-2 rounded-full bg-emerald-500" />
                       Podporuje
@@ -634,35 +732,50 @@ export default function Page() {
             {/* Exporty — materiály pro schůzi SVJ */}
             <div
               data-reveal
-              className="bg-card flex flex-col overflow-hidden rounded-2xl ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
+              className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] ring-1 ring-black/[0.06] dark:ring-white/[0.06]"
             >
-              <div className="border-border/60 flex items-center gap-2 border-b px-5 py-3">
+              <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3">
                 <FileDown className="size-3.5 shrink-0 text-primary" />
-                <span className="text-muted-foreground text-xs font-medium">
+                <span className="text-xs font-medium text-muted-foreground">
                   Exporty · připraveno
                 </span>
               </div>
               <div className="flex flex-1 flex-col gap-2 p-5">
                 {[
-                  { Icon: FileText, label: "Stručný přehled", tag: "PDF · 1 str." },
-                  { Icon: Presentation, label: "Prezentace na schůzi", tag: "PPTX · 8 sl." },
-                  { Icon: UserRound, label: "Dopis sousedovi", tag: "PDF · na míru" },
+                  {
+                    Icon: FileText,
+                    label: "Stručný přehled",
+                    tag: "PDF · 1 str.",
+                  },
+                  {
+                    Icon: Presentation,
+                    label: "Prezentace na schůzi",
+                    tag: "PPTX · 8 sl.",
+                  },
+                  {
+                    Icon: UserRound,
+                    label: "Dopis sousedovi",
+                    tag: "PDF · na míru",
+                  },
                 ].map(({ Icon, label, tag }) => (
                   <div
                     key={label}
                     className="flex items-center gap-3 rounded-xl border bg-muted/40 px-3 py-2.5"
                   >
-                    <div className="bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-lg">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <Icon className="size-3.5" />
                     </div>
-                    <p className="min-w-0 flex-1 truncate text-sm font-medium">{label}</p>
-                    <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
+                    <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {label}
+                    </p>
+                    <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
                       {tag}
                     </span>
                   </div>
                 ))}
-                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                  Materiály přizpůsobené vašim datům — na nástěnku, do e-mailu i na schůzi SVJ.
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Materiály přizpůsobené vašim datům — na nástěnku, do e-mailu i
+                  na schůzi SVJ.
                 </p>
               </div>
             </div>
@@ -670,20 +783,26 @@ export default function Page() {
             {/* Finanční přehled — edge-bleed chart with annotation */}
             <div
               data-reveal
-              className="bg-card relative overflow-hidden rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
+              className="relative overflow-hidden rounded-2xl bg-card p-7 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] ring-1 ring-black/[0.06] dark:ring-white/[0.06]"
             >
-              <p className="text-primary text-xs font-medium tracking-wider uppercase">
+              <p className="text-xs font-medium tracking-wider text-primary uppercase">
                 Finance
               </p>
               <h3 className="mt-1.5 text-lg font-semibold tracking-tight">
                 Víte, kdy se investice vrátí
               </h3>
-              <div className="border-border/70 -mx-7 mt-6 border-t border-dashed px-7 pt-10">
-                <div data-bar-chart className="border-border/60 flex h-24 items-end gap-1.5 border-b pb-px">
+              <div className="-mx-7 mt-6 border-t border-dashed border-border/70 px-7 pt-10">
+                <div
+                  data-bar-chart
+                  className="flex h-24 items-end gap-1.5 border-b border-border/60 pb-px"
+                >
                   {[35, 55, 45, 70, 60, 85, 100].map((height, i) => (
-                    <div key={i} className="relative flex h-full flex-1 items-end">
+                    <div
+                      key={i}
+                      className="relative flex h-full flex-1 items-end"
+                    >
                       {i === 6 && (
-                        <span className="bg-foreground text-background absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap">
+                        <span className="absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-background">
                           9. rok
                         </span>
                       )}
@@ -701,39 +820,47 @@ export default function Page() {
             {/* Kalkulačka — full-width strip with flat metric columns */}
             <div
               data-reveal
-              className="bg-card flex flex-col gap-8 rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] md:col-span-3 md:flex-row md:items-center dark:ring-white/[0.06]"
+              className="flex flex-col gap-8 rounded-2xl bg-card p-7 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] ring-1 ring-black/[0.06] md:col-span-3 md:flex-row md:items-center dark:ring-white/[0.06]"
             >
               <div className="md:max-w-sm md:flex-1">
-                <p className="text-primary text-xs font-medium tracking-wider uppercase">
+                <p className="text-xs font-medium tracking-wider text-primary uppercase">
                   Kalkulačka
                 </p>
                 <h3 className="mt-1.5 text-lg font-semibold tracking-tight">
                   Čísla za minutu, ne za měsíc
                 </h3>
-                <p className="text-muted-foreground mt-2 text-sm">
-                  Zadejte parametry domu a zjistíte orientační náklady, úspory a návratnost
-                  jednotlivých renovací.
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Zadejte parametry domu a zjistíte orientační náklady, úspory a
+                  návratnost jednotlivých renovací.
                 </p>
               </div>
-              <dl className="divide-border/60 grid flex-1 grid-cols-3 md:divide-x">
+              <dl className="grid flex-1 grid-cols-3 divide-border/60 md:divide-x">
                 <div className="flex flex-col gap-1 md:px-6 md:first:pl-0 md:last:pr-0">
-                  <dt className="text-muted-foreground text-xs">Náklady</dt>
+                  <dt className="text-xs text-muted-foreground">Náklady</dt>
                   <dd className="text-lg font-semibold tabular-nums">
-                    <span data-count="4.8" data-decimals="1" data-suffix=" mil. Kč">
+                    <span
+                      data-count="4.8"
+                      data-decimals="1"
+                      data-suffix=" mil. Kč"
+                    >
                       4,8 mil. Kč
                     </span>
                   </dd>
                 </div>
                 <div className="flex flex-col gap-1 md:px-6">
-                  <dt className="text-muted-foreground text-xs">Úspora ročně</dt>
-                  <dd className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  <dt className="text-xs text-muted-foreground">
+                    Úspora ročně
+                  </dt>
+                  <dd className="text-lg font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
                     <span data-count="210" data-suffix=" tis. Kč">
                       210 tis. Kč
                     </span>
                   </dd>
                 </div>
                 <div className="flex flex-col gap-1 md:px-6 md:last:pr-0">
-                  <dt className="text-muted-foreground text-xs">Návratnost s dotací</dt>
+                  <dt className="text-xs text-muted-foreground">
+                    Návratnost s dotací
+                  </dt>
                   <dd className="text-lg font-semibold tabular-nums">
                     <span data-count="11" data-suffix=" let">
                       11 let
@@ -752,14 +879,14 @@ export default function Page() {
               <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
                 Jak to funguje
               </h2>
-              <p className="text-muted-foreground mt-3 text-lg">
+              <p className="mt-3 text-lg text-muted-foreground">
                 Čtyři kroky od prvního nápadu až za schválenou rekonstrukci.
               </p>
             </div>
             <div data-steps className="relative">
               {/* Curved line through the pip centers — dashed track + solid fill */}
               <svg
-                className="text-primary pointer-events-none absolute -top-4 left-0 hidden h-20 w-full md:block"
+                className="pointer-events-none absolute -top-4 left-0 hidden h-20 w-full text-primary md:block"
                 viewBox="0 0 1200 80"
                 fill="none"
                 preserveAspectRatio="none"
@@ -788,11 +915,13 @@ export default function Page() {
                     data-reveal
                     className="flex flex-col items-center gap-3 text-center"
                   >
-                    <span className="bg-primary text-primary-foreground ring-background shadow-primary/30 relative z-10 flex size-12 items-center justify-center rounded-full text-lg font-semibold shadow-lg ring-4">
+                    <span className="relative z-10 flex size-12 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground shadow-lg ring-4 shadow-primary/30 ring-background">
                       {index + 1}
                     </span>
                     <h3 className="mt-3 text-lg font-semibold">{step.title}</h3>
-                    <p className="text-muted-foreground max-w-xs text-sm">{step.description}</p>
+                    <p className="max-w-xs text-sm text-muted-foreground">
+                      {step.description}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -806,8 +935,9 @@ export default function Page() {
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               Porovnejte varianty, vyberte svou cestu
             </h2>
-            <p className="text-muted-foreground mt-3 text-lg text-pretty">
-              Každý dům je jiný. Noodles vám ukáže, jak různé kombinace projektů ovlivní náklady, úspory i hlasování SVJ.
+            <p className="mt-3 text-lg text-pretty text-muted-foreground">
+              Každý dům je jiný. Noodles vám ukáže, jak různé kombinace projektů
+              ovlivní náklady, úspory i hlasování SVJ.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 lg:gap-6">
@@ -815,15 +945,19 @@ export default function Page() {
               <div
                 key={s.id}
                 data-reveal
-                className="bg-card relative flex flex-col rounded-2xl p-6 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] transition-shadow hover:shadow-[0_4px_32px_-8px_rgba(16,24,40,0.16)] dark:ring-white/[0.06]"
+                className="relative flex flex-col rounded-2xl bg-card p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] ring-1 ring-black/[0.06] transition-shadow hover:shadow-[0_4px_32px_-8px_rgba(16,24,40,0.16)] dark:ring-white/[0.06]"
               >
                 {/* Header */}
                 <div className="mb-4">
-                  <p className="text-primary text-xs font-semibold tracking-wider uppercase">
+                  <p className="text-xs font-semibold tracking-wider text-primary uppercase">
                     {s.bestFor}
                   </p>
-                  <h3 className="mt-1 text-lg font-bold tracking-tight">{s.name}</h3>
-                  <p className="text-muted-foreground mt-1.5 text-sm leading-snug">{s.tagline}</p>
+                  <h3 className="mt-1 text-lg font-bold tracking-tight">
+                    {s.name}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-snug text-muted-foreground">
+                    {s.tagline}
+                  </p>
                 </div>
 
                 {/* Renovation tags */}
@@ -839,33 +973,48 @@ export default function Page() {
                 </div>
 
                 {/* Metrics */}
-                <div className="border-border/50 mt-auto flex flex-col gap-3 border-t pt-4">
+                <div className="mt-auto flex flex-col gap-3 border-t border-border/50 pt-4">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-muted-foreground text-xs">Celková investice</span>
-                    <span className="text-sm font-semibold tabular-nums">{s.investment}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Celková investice
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {s.investment}
+                    </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-muted-foreground text-xs">Úspora ročně</span>
-                    <span className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <span className="text-xs text-muted-foreground">
+                      Úspora ročně
+                    </span>
+                    <span className="text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
                       {s.savingsPerYear}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-muted-foreground text-xs">Úspora energie</span>
-                    <span className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <span className="text-xs text-muted-foreground">
+                      Úspora energie
+                    </span>
+                    <span className="text-sm font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
                       {s.energySaving}
                     </span>
                   </div>
-                  <div className="bg-muted/60 mt-1 flex items-center justify-between rounded-xl px-3 py-2">
-                    <span className="text-muted-foreground text-xs">Dotace NZÚ až</span>
-                    <span className="text-sm font-bold tabular-nums">{s.subsidy}</span>
+                  <div className="mt-1 flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">
+                      Dotace NZÚ až
+                    </span>
+                    <span className="text-sm font-bold tabular-nums">
+                      {s.subsidy}
+                    </span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-muted-foreground mt-6 px-1 text-xs">
-            Orientační čísla pro typický panelový dům s 24 byty v ČR. Vycházejí z reálných případových studií renovací (TZB-info, Ekowatt) a podmínek programu Nová zelená úsporám, který kryje až 50 % způsobilých výdajů. Ta vaše si spočítáte v kalkulačce.
+          <p className="mt-6 px-1 text-xs text-muted-foreground">
+            Orientační čísla pro typický panelový dům s 24 byty v ČR. Vycházejí
+            z reálných případových studií renovací (TZB-info, Ekowatt) a
+            podmínek programu Nová zelená úsporám, který kryje až 50 %
+            způsobilých výdajů. Ta vaše si spočítáte v kalkulačce.
           </p>
         </section>
 
@@ -873,11 +1022,17 @@ export default function Page() {
         <section id="faq" className="border-t">
           <div className="mx-auto w-full max-w-3xl scroll-mt-8 px-4 py-16 sm:px-6 lg:py-24">
             <div data-reveal className="mb-10">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Časté dotazy</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Časté dotazy
+              </h2>
             </div>
             <div className="flex flex-col gap-3">
               {faqs.map((faq) => (
-                <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
+                <FaqItem
+                  key={faq.question}
+                  question={faq.question}
+                  answer={faq.answer}
+                />
               ))}
             </div>
           </div>
@@ -887,7 +1042,7 @@ export default function Page() {
         <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 lg:pb-24">
           <div
             data-reveal
-            className="bg-primary text-primary-foreground relative overflow-hidden rounded-[3rem] px-6 py-16 text-center sm:py-20"
+            className="relative overflow-hidden rounded-[3rem] bg-primary px-6 py-16 text-center text-primary-foreground sm:py-20"
           >
             <div
               className="absolute -top-24 -right-24 size-72 rounded-full bg-white/10"
@@ -902,7 +1057,8 @@ export default function Page() {
                 Příští schůze SVJ může dopadnout jinak
               </h2>
               <p className="max-w-md text-pretty opacity-90">
-                Za pár minut budete vědět, kolik váš dům ušetří, koho ještě přesvědčit — a co sledovat, až renovace projde.
+                Za pár minut budete vědět, kolik váš dům ušetří, koho ještě
+                přesvědčit — a co sledovat, až renovace projde.
               </p>
               <Button
                 size="lg"
@@ -910,7 +1066,7 @@ export default function Page() {
                 asChild
                 className="h-14 rounded-full px-8 text-base font-semibold"
               >
-                <Link href="/dashboard">Spustit kalkulačku</Link>
+                <Link href={appHref}>Vyzkoušet zdarma</Link>
               </Button>
             </div>
           </div>
@@ -922,49 +1078,68 @@ export default function Page() {
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-2">
             <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-full">
+              <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <Building2 className="size-4" />
               </span>
               Noodles
             </Link>
-            <p className="text-muted-foreground max-w-xs text-sm">
-              Od výpočtu úspor přes přesvědčení sousedů až po sledování průběhu rekonstrukce — vše na jednom místě.
+            <p className="max-w-xs text-sm text-muted-foreground">
+              Od výpočtu úspor přes přesvědčení sousedů až po sledování průběhu
+              rekonstrukce — vše na jednom místě.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-10 text-sm">
             <div className="flex flex-col gap-2">
-              <p className="text-foreground font-medium">Aplikace</p>
-              <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+              <p className="font-medium text-foreground">Aplikace</p>
+              <Link
+                href="/dashboard"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
                 Dashboard
               </Link>
-              <Link href="/onboarding" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link
+                href="/onboarding"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
                 Kalkulačka
               </Link>
-              <Link href="/dashboard/exporty" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link
+                href="/dashboard/exporty"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
                 Exporty
               </Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="text-foreground font-medium">Informace</p>
-              <a href="#funkce" className="text-muted-foreground hover:text-foreground transition-colors">
+              <p className="font-medium text-foreground">Informace</p>
+              <a
+                href="#funkce"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
                 Funkce
               </a>
-              <a href="#jak-to-funguje" className="text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="#jak-to-funguje"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
                 Jak to funguje
               </a>
-              <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="#faq"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
                 Časté dotazy
               </a>
             </div>
           </div>
         </div>
         <div className="border-t">
-          <p className="text-muted-foreground mx-auto w-full max-w-6xl px-4 py-4 text-xs sm:px-6">
-            © 2026 Noodles. Uvedené výpočty jsou orientační a nenahrazují projektovou dokumentaci
-            ani odborné posouzení.
+          <p className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-muted-foreground sm:px-6">
+            © 2026 Noodles. Uvedené výpočty jsou orientační a nenahrazují
+            projektovou dokumentaci ani odborné posouzení.
           </p>
         </div>
       </footer>
     </div>
-  );
+  )
 }

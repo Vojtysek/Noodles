@@ -1,4 +1,4 @@
-create table buildings (
+create table if not exists buildings (
   id uuid primary key default gen_random_uuid(),
   address text,
   units integer,

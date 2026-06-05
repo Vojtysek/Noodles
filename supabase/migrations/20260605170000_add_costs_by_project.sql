@@ -1,1 +1,1 @@
-alter table buildings add column costs_by_project jsonb;
+alter table buildings add column if not exists costs_by_project jsonb;

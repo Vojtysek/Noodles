@@ -9,10 +9,12 @@ import {
   FileDown,
   Building2,
   House,
+  LogOut,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
+import { signout } from "@/app/login/actions"
 
 const NAV_ITEMS = [
   { href: "/dashboard/prehled", label: "Přehled", icon: House },
@@ -24,16 +26,22 @@ const NAV_ITEMS = [
 export function DashboardSidebar() {
   const pathname = usePathname()
   const [address, setAddress] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from("buildings")
-      .select("address")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
-      .then(({ data }) => setAddress(data?.address ?? null))
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setEmail(user?.email ?? null)
+      if (!user) return
+      supabase
+        .from("buildings")
+        .select("address")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => setAddress(data?.address ?? null))
+    })
   }, [])
 
   return (
@@ -110,6 +118,28 @@ export function DashboardSidebar() {
           )
         })}
       </nav>
+
+      <div
+        aria-hidden
+        className="mx-4 h-px bg-gradient-to-r from-sidebar-border via-sidebar-border/40 to-transparent"
+      />
+
+      <div className="relative flex flex-col gap-1 px-2 py-3">
+        {email && (
+          <p className="truncate px-2.5 text-xs text-muted-foreground">
+            {email}
+          </p>
+        )}
+        <form action={signout}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+          >
+            <LogOut className="size-4 shrink-0" />
+            Odhlásit se
+          </button>
+        </form>
+      </div>
     </aside>
   )
 }

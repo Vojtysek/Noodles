@@ -1,4 +1,5 @@
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
+import { PendingBuildingBridge } from "@/components/onboarding/pending-building-bridge"
 
 export default function DashboardLayout({
   children,
@@ -7,6 +8,7 @@ export default function DashboardLayout({
 }>) {
   return (
     <div className="relative flex min-h-svh">
+      <PendingBuildingBridge />
       {/* Shared ambient atmosphere behind all dashboard pages */}
       <div
         aria-hidden

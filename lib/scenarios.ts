@@ -51,6 +51,38 @@ export function buildDynamicScenarios(selectedRenovations: string[]): Scenario[]
   ]
 }
 
+/** Project IDs the user actually picked in the calculator (mapped from labels). */
+export function selectedProjectIds(selectedRenovations: string[]): ProjectId[] {
+  return selectedRenovations
+    .map((label) => RENOVATION_LABEL_TO_PROJECT[label])
+    .filter((id): id is ProjectId => id !== undefined)
+}
+
+/** Only the projects the user picked — their linked plan, nothing else. */
+export function userProjects(selectedRenovations: string[]) {
+  const ids = selectedProjectIds(selectedRenovations)
+  return projects.filter((p) => ids.includes(p.id))
+}
+
+/**
+ * A single scenario representing only the user's own selection.
+ * Returns [] when the user has no mapped renovations (no plan yet).
+ */
+export function userScenarios(selectedRenovations: string[]): Scenario[] {
+  const ids = selectedProjectIds(selectedRenovations)
+  if (ids.length === 0) return []
+  return [
+    {
+      id: "vase-vybrane",
+      name: "Váš plán",
+      tagline:
+        "Scénáře, které jste zvolili v kalkulaci — modelace jejich přínosu.",
+      tone: "emerald",
+      projectIds: ids,
+    },
+  ]
+}
+
 export function isProjectId(value: string): value is ProjectId {
   return projects.some((p) => p.id === value)
 }

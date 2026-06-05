@@ -7,7 +7,6 @@ import {
   TrendingDown,
   CalendarClock,
   HandCoins,
-  Layers,
   CircleCheck,
   Star,
   ChevronDown,
@@ -23,15 +22,13 @@ import {
   seriesCrossing,
 } from "@/components/dashboard/charts"
 import {
-  projects,
-  scenarios,
   fmtCzk,
   fmtCzkShort,
   type Project,
-  type ProjectId,
   type Scenario,
   type ScenarioTone,
 } from "@/lib/mock-data"
+import { userProjects, userScenarios } from "@/lib/scenarios"
 
 const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
@@ -48,26 +45,11 @@ const TONE_DOT: Record<ScenarioTone, string> = {
   blue: "bg-blue-500",
 }
 
-const DEFAULT_SCENARIO_ID = "nejnutnejsi"
-
-/** Porovná dvě množiny ID projektů bez ohledu na pořadí. */
-function sameIdSet(a: readonly ProjectId[], b: readonly ProjectId[]): boolean {
-  if (a.length !== b.length) return false
-  const set = new Set(a)
-  return b.every((id) => set.has(id))
-}
-
 type BuildingData = {
   selected_renovations: string[]
   total_cost: number
   selected_scenario: "custom" | "sustainability" | null
   costs_by_project: Record<string, number> | null
-}
-
-const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
-  "Okna": "okna",
-  "Zateplení fasády": "fasada",
-  "Zateplení střechy": "strecha",
 }
 
 function scaleProjectsToBuilding(
@@ -146,44 +128,49 @@ function AnimatedCzk({ value, className }: { value: number; className?: string }
 }
 
 export default function FinancialsPage() {
-  // Hlavní ovládání: předpřipravené scénáře (levný → drahý). Mix & match zůstává
-  // jako skrytá pokročilá možnost. Výchozí scénář: rozumný kompromis.
-  const defaultScenario =
-    scenarios.find((s) => s.id === DEFAULT_SCENARIO_ID) ?? scenarios[0]
-  const [selectedIds, setSelectedIds] = useState<ProjectId[]>(defaultScenario.projectIds)
   const [horizon, setHorizon] = useState(15)
   const [mixOpen, setMixOpen] = useState(false)
   const [buildingData, setBuildingData] = useState<BuildingData | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from("buildings")
-      .select("selected_renovations, total_cost, selected_scenario, costs_by_project")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
-      .then(({ data }) => {
-        if (!data) return
-        setBuildingData(data)
-        const mappedIds = (data.selected_renovations ?? [])
-          .map((label: string) => RENOVATION_LABEL_TO_PROJECT[label])
-          .filter(Boolean) as ProjectId[]
-        if (data.selected_scenario === "sustainability") {
-          setSelectedIds(projects.map((p) => p.id))
-        } else if (mappedIds.length > 0) {
-          setSelectedIds(mappedIds)
-        }
-      })
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setLoaded(true)
+        return
+      }
+      supabase
+        .from("buildings")
+        .select("selected_renovations, total_cost, selected_scenario, costs_by_project")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setBuildingData(data)
+          setLoaded(true)
+        })
+    })
   }, [])
 
+  // Renovace, které uživatel skutečně vybral v kalkulaci — pouze jeho plán.
+  const selectedRenovations = buildingData?.selected_renovations ?? []
+
+  // Scénář uživatele („Váš plán") — prázdné pole, pokud nemá žádný plán.
+  const userScenarioList = useMemo(
+    () => userScenarios(selectedRenovations),
+    [selectedRenovations]
+  )
+
+  // Pouze projekty, které uživatel vybral, naškálované jeho náklady.
   const scaledProjects = useMemo(
     () =>
       scaleProjectsToBuilding(
-        projects,
+        userProjects(selectedRenovations),
         buildingData?.costs_by_project ?? null
       ),
-    [buildingData]
+    [selectedRenovations, buildingData]
   )
 
   const scaledProjectsByPriority = useMemo(
@@ -191,28 +178,13 @@ export default function FinancialsPage() {
     [scaledProjects]
   )
 
-  const allSelected = selectedIds.length === scaledProjects.length
+  const activeScenario: Scenario | null = userScenarioList[0] ?? null
 
-  // Aktivní scénář — pokud vybraná množina projektů odpovídá některému scénáři.
-  const activeScenario: Scenario | null =
-    scenarios.find((s) => sameIdSet(s.projectIds, selectedIds)) ?? null
-
-  function selectScenario(s: Scenario) {
-    setSelectedIds(s.projectIds)
-  }
-
-  function toggleProject(id: ProjectId) {
-    setSelectedIds((prev) => {
-      if (prev.includes(id)) {
-        // Alespoň jeden projekt musí zůstat vybraný.
-        return prev.length > 1 ? prev.filter((p) => p !== id) : prev
-      }
-      return [...prev, id]
-    })
-  }
-
-  const selected = scaledProjectsByPriority.filter((p) => selectedIds.includes(p.id))
+  const selected = scaledProjectsByPriority
   const single = selected.length === 1 ? selected[0] : null
+
+  // Prázdný stav: žádný uživatel, žádná budova nebo žádné namapované renovace.
+  const isEmpty = scaledProjects.length === 0
 
   const agg = useMemo(() => {
     const budget = selected.reduce((sum, p) => sum + p.budget, 0)
@@ -337,6 +309,27 @@ export default function FinancialsPage() {
       accent: null,
     },
   ]
+
+  if (isEmpty) {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-center py-24">
+        <div className="flex max-w-md flex-col items-center gap-4 rounded-2xl border bg-background/60 p-8 text-center backdrop-blur-sm">
+          <Wallet className="size-8 text-primary" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            Zatím nemáte uložený plán
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {loaded
+              ? "Projděte si kalkulaci a vyberte renovace — pak se vám tu zobrazí finanční model vašeho plánu."
+              : "Načítáme váš plán…"}
+          </p>
+          <Button asChild>
+            <a href="/onboarding">Spustit kalkulaci</a>
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
@@ -463,32 +456,17 @@ export default function FinancialsPage() {
               Scénář
             </span>
             <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
-              {scenarios.map((s) => {
-                const active = activeScenario?.id === s.id
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => selectScenario(s)}
-                    aria-pressed={active}
-                    className={cn(
-                      "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
-                      active
-                        ? "bg-background text-foreground shadow"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
-                    {s.name}
-                  </button>
-                )
-              })}
+              {userScenarioList.map((s) => (
+                <span
+                  key={s.id}
+                  aria-pressed
+                  className="flex items-center gap-2 rounded-full bg-background px-3.5 py-1.5 text-sm font-medium text-foreground shadow"
+                >
+                  <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
+                  {s.name}
+                </span>
+              ))}
             </div>
-            {!activeScenario && (
-              <span className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3.5 py-1.5 text-sm font-medium text-muted-foreground">
-                <span className="size-2 shrink-0 rounded-full bg-muted-foreground/50" />
-                Vlastní výběr
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -515,26 +493,15 @@ export default function FinancialsPage() {
           </div>
         </div>
 
-        {/* Tagline + rozpočet aktivního scénáře */}
+        {/* Tagline + rozpočet vašeho plánu */}
         <p className="text-xs text-muted-foreground">
-          {activeScenario ? (
-            <>
-              {activeScenario.tagline}{" "}
-              <span className="font-medium text-foreground tabular-nums">
-                Celkem {fmtCzkShort(agg.budget)}.
-              </span>
-            </>
-          ) : (
-            <>
-              Vlastní kombinace {selected.length} z {scaledProjects.length} projektů.{" "}
-              <span className="font-medium text-foreground tabular-nums">
-                Celkem {fmtCzkShort(agg.budget)}.
-              </span>
-            </>
-          )}
+          {activeScenario?.tagline}{" "}
+          <span className="font-medium text-foreground tabular-nums">
+            Celkem {fmtCzkShort(agg.budget)}.
+          </span>
         </p>
 
-        {/* Pokročilé: ruční mix & match */}
+        {/* Vaše vybrané projekty (jen pro náhled) */}
         <div className="flex flex-col gap-2.5">
           <button
             type="button"
@@ -542,7 +509,7 @@ export default function FinancialsPage() {
             aria-expanded={mixOpen}
             className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
-            Upravit výběr projektů
+            Vaše vybrané projekty
             {mixOpen ? (
               <ChevronUp className="size-3.5" />
             ) : (
@@ -554,57 +521,29 @@ export default function FinancialsPage() {
             <div className="flex flex-col gap-2.5 rounded-2xl border bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {selected.length} z {scaledProjects.length} vybráno
+                  {selected.length} {selected.length === 1 ? "projekt" : "projektů"} ve vašem plánu
                 </span>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setSelectedIds(scaledProjects.map((p) => p.id))}
-                  disabled={allSelected}
-                >
-                  <Layers />
-                  Vybrat vše
-                </Button>
               </div>
               <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                 {scaledProjectsByPriority.map((p) => {
-                  const active = selectedIds.includes(p.id)
                   return (
-                    <button
+                    <div
                       key={p.id}
-                      onClick={() => toggleProject(p.id)}
-                      aria-pressed={active}
-                      className={cn(
-                        "flex flex-col gap-1.5 rounded-2xl border p-3 text-left transition-all duration-200",
-                        active
-                          ? "scale-[1.02] border-primary/60 bg-primary/5 shadow-lg ring-3 ring-primary/15"
-                          : "bg-background/60 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
-                      )}
+                      className="flex flex-col gap-1.5 rounded-2xl border border-primary/60 bg-primary/5 p-3 text-left shadow-lg ring-3 ring-primary/15"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                           {p.priority === 1 && (
                             <Star className="size-3 shrink-0 fill-amber-400 text-amber-400" />
                           )}
-                          <p
-                            className={cn(
-                              "text-sm font-medium",
-                              !active && "text-muted-foreground"
-                            )}
-                          >
-                            {p.shortName}
-                          </p>
+                          <p className="text-sm font-medium">{p.shortName}</p>
                         </div>
-                        {active ? (
-                          <CircleCheck className="size-4 shrink-0 text-primary" />
-                        ) : (
-                          <span className="size-4 shrink-0 rounded-full border-2 border-border" />
-                        )}
+                        <CircleCheck className="size-4 shrink-0 text-primary" />
                       </div>
                       <p className="text-xs text-muted-foreground tabular-nums">
                         {fmtCzkShort(p.budget)}
                       </p>
-                    </button>
+                    </div>
                   )
                 })}
               </div>
