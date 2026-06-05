@@ -575,10 +575,8 @@ export default function CalculatorPage() {
                         <p className="font-semibold">
                           {g ? g.label : "Rok výstavby neznámý"}
                         </p>
-                        {pts != null ? (
+                        {year != null ? (
                           <p className="mt-0.5 text-xs text-muted-foreground">
-                            {pts}{" "}
-                            {pts === 1 ? "bod" : pts < 5 ? "body" : "bodů"} ·
                             rok {year}
                           </p>
                         ) : (
@@ -604,7 +602,6 @@ export default function CalculatorPage() {
                                 className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
                               >
                                 {label}
-                                {label === "Ano" ? " (−2 b.)" : ""}
                               </button>
                             )
                           })}
@@ -623,7 +620,6 @@ export default function CalculatorPage() {
                                 className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
                               >
                                 {label}
-                                {label === "Nová" ? " (−1 b.)" : ""}
                               </button>
                             )
                           })}
