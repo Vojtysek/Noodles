@@ -1,7 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
 import {
   Wallet,
   TrendingDown,
@@ -48,6 +50,26 @@ export default function FinancialsPage() {
   // Výchozí výběr: projekt s nejvyšší prioritou (největší dopad).
   const [selectedIds, setSelectedIds] = useState<ProjectId[]>([projectsByPriority[0].id])
   const [horizon, setHorizon] = useState(15)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
+      tl.from("[data-fin-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0)
+        .from(
+          "[data-fin-block]",
+          { y: 32, autoAlpha: 0, duration: 0.7, stagger: 0.1 },
+          0.15
+        )
+        .from(
+          "[data-fin-scenario]",
+          { y: 40, autoAlpha: 0, duration: 0.7, stagger: 0.12 },
+          0.45
+        )
+    },
+    { scope: rootRef }
+  )
 
   const allSelected = selectedIds.length === projects.length
 
@@ -177,11 +199,27 @@ export default function FinancialsPage() {
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div ref={rootRef} className="relative mx-auto flex w-full max-w-5xl flex-col gap-8">
+      {/* Ambient blobs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-rose-500/8 blur-[120px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-40 top-1/4 -z-10 size-96 rounded-full bg-emerald-500/8 blur-[120px]"
+      />
+
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold">Finance</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div data-fin-header>
+        <div className="flex items-center gap-2.5">
+          <span aria-hidden className="h-px w-7 bg-emerald-500/60" />
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
+            Dva scénáře, jedno rozhodnutí
+          </p>
+        </div>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Finance</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
           Co se stane, když rekonstruovat — a když ne. Modelace obou scénářů v čase pro libovolnou
           kombinaci projektů. Stačí vám rychlý souhrn?{" "}
           <Link href="/dashboard/prehled" className="font-medium text-primary hover:underline">
@@ -192,7 +230,7 @@ export default function FinancialsPage() {
       </div>
 
       {/* Project mix & match */}
-      <div className="flex flex-col gap-2.5">
+      <div data-fin-block className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -226,10 +264,10 @@ export default function FinancialsPage() {
                 onClick={() => toggleProject(p.id)}
                 aria-pressed={active}
                 className={cn(
-                  "flex flex-col gap-1.5 rounded-lg border p-3 text-left transition-all",
+                  "flex flex-col gap-1.5 rounded-2xl border p-3 text-left transition-all duration-200",
                   active
-                    ? "border-primary/60 bg-primary/5 ring-3 ring-primary/15"
-                    : "hover:bg-muted/50"
+                    ? "scale-[1.02] border-primary/60 bg-primary/5 shadow-lg ring-3 ring-primary/15"
+                    : "hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -273,18 +311,21 @@ export default function FinancialsPage() {
       </div>
 
       {/* Horizon + KPIs */}
-      <div className="flex flex-col gap-3">
+      <div data-fin-block className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Porovnání scénářů — {scopeLabel}
-          </p>
-          <div className="flex items-center gap-1 rounded-lg border p-0.5">
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              Porovnání scénářů — {scopeLabel}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 rounded-full border bg-background/60 p-0.5 backdrop-blur-sm">
             {HORIZONS.map((h) => (
               <button
                 key={h}
                 onClick={() => setHorizon(h)}
                 className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors tabular-nums",
+                  "rounded-full px-2.5 py-1 text-xs font-medium transition-colors tabular-nums",
                   h === horizon
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -298,7 +339,10 @@ export default function FinancialsPage() {
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {kpis.map((kpi) => (
-            <div key={kpi.label} className="rounded-lg border bg-muted/40 px-4 py-3">
+            <div
+              key={kpi.label}
+              className="rounded-2xl border bg-muted/40 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            >
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <kpi.icon className="size-3.5 shrink-0 text-primary" />
                 {kpi.label}
@@ -313,8 +357,23 @@ export default function FinancialsPage() {
 
       {/* Scenario side-by-side */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-4">
-          <p className="text-sm font-medium text-rose-600 dark:text-rose-400">Bez rekonstrukce</p>
+        <div
+          data-fin-scenario
+          className="relative overflow-hidden rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-rose-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-bl-[3rem]"
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-12 -right-12 size-40 rounded-full bg-rose-500/10 blur-[60px]"
+          />
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="h-px w-6 bg-rose-500/60" />
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-rose-600 uppercase dark:text-rose-400">
+              Scénář A
+            </p>
+          </div>
+          <p className="mt-1.5 text-base font-semibold text-rose-600 dark:text-rose-400">
+            Bez rekonstrukce
+          </p>
           <div className="mt-3 flex flex-col gap-2 text-sm">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-muted-foreground">Roční náklady dnes</span>
@@ -337,8 +396,21 @@ export default function FinancialsPage() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
-          <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+        <div
+          data-fin-scenario
+          className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-br-[3rem]"
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-12 -left-12 size-40 rounded-full bg-emerald-500/10 blur-[60px]"
+          />
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="h-px w-6 bg-emerald-500/60" />
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
+              Scénář B
+            </p>
+          </div>
+          <p className="mt-1.5 text-base font-semibold text-emerald-600 dark:text-emerald-400">
             S rekonstrukcí
           </p>
           <div className="mt-3 flex flex-col gap-2 text-sm">
@@ -368,8 +440,9 @@ export default function FinancialsPage() {
 
       {/* Delta callout */}
       <div
+        data-fin-block
         className={cn(
-          "flex items-center gap-3 rounded-lg border px-4 py-3",
+          "flex items-center gap-3 rounded-2xl border px-4 py-3",
           agg.lossAtHorizon > 0
             ? "border-rose-500/30 bg-rose-500/5"
             : "border-emerald-500/30 bg-emerald-500/5"
@@ -405,7 +478,7 @@ export default function FinancialsPage() {
       </div>
 
       {/* Comparison charts */}
-      <div className="rounded-lg border p-4">
+      <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
         <p className="text-sm font-medium">Roční náklady v čase</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Kolik bude dům každý rok stát — nůžky mezi scénáři se s růstem cen energií rozevírají
@@ -429,7 +502,7 @@ export default function FinancialsPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border p-4">
+      <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
         <p className="text-sm font-medium">Kumulativní náklady včetně investice</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Celkové výdaje od roku {START_YEAR} — kde se křivky protnou, investice se zaplatila
@@ -459,8 +532,8 @@ export default function FinancialsPage() {
       </div>
 
       {/* Budget detail */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="rounded-lg border p-4">
+      <div data-fin-block className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
           <p className="text-sm font-medium">Čerpání rozpočtu</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Vyčerpáno {fmtCzk(agg.spent)} z {fmtCzk(agg.budget)}
@@ -468,7 +541,7 @@ export default function FinancialsPage() {
           <div className="mt-4">
             <DonutChart percent={spentPct} label="rozpočtu vyčerpáno" />
           </div>
-          <div className="mt-4 rounded-lg bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
+          <div className="mt-4 rounded-xl bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
             Navýšení fondu oprav:{" "}
             <span className="font-medium text-foreground tabular-nums">
               {fmtCzk(agg.fundIncreasePerFlat)} / byt / měsíc
@@ -477,7 +550,7 @@ export default function FinancialsPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border p-4">
+        <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
           <p className="text-sm font-medium">Rozpad nákladů</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {single ? "Hlavní položky rozpočtu" : "Rozpočty vybraných projektů"}
@@ -489,14 +562,17 @@ export default function FinancialsPage() {
       </div>
 
       {/* Cost items table */}
-      <div>
-        <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Položky rozpočtu — {scopeLabel}
-        </p>
-        <div className="overflow-x-auto rounded-lg border">
+      <div data-fin-block>
+        <div className="mb-3 flex items-center gap-2.5">
+          <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            Položky rozpočtu — {scopeLabel}
+          </p>
+        </div>
+        <div className="overflow-x-auto rounded-2xl border">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
+              <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                 <th className="px-4 py-2.5 font-medium">Položka</th>
                 {!single && <th className="px-4 py-2.5 font-medium">Projekt</th>}
                 <th className="px-4 py-2.5 font-medium">Dodavatel</th>
@@ -506,7 +582,10 @@ export default function FinancialsPage() {
             </thead>
             <tbody>
               {agg.costItems.map((row) => (
-                <tr key={`${row.project}-${row.item}`} className="border-b last:border-b-0">
+                <tr
+                  key={`${row.project}-${row.item}`}
+                  className="border-b transition-colors last:border-b-0 hover:bg-muted/40"
+                >
                   <td className="px-4 py-2.5 font-medium">{row.item}</td>
                   {!single && (
                     <td className="px-4 py-2.5">

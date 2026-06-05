@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
 import {
   FileText,
   Presentation,
@@ -41,11 +43,31 @@ export default function ExportyPage() {
   const [projectId, setProjectId] = useState<string>("all")
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]
   const selectedPersona = personas.find((p) => p.id === personaId)
   const scopedProjects = projectId === "all" ? projects : projects.filter((p) => p.id === projectId)
   const totalBudget = scopedProjects.reduce((sum, p) => sum + p.budget, 0)
+
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
+      tl.from("[data-ex-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0)
+        .from(
+          "[data-ex-block]",
+          { y: 28, autoAlpha: 0, duration: 0.6, stagger: 0.08 },
+          0.15
+        )
+        .from(
+          "[data-ex-card]",
+          { y: 24, autoAlpha: 0, duration: 0.5, stagger: 0.07 },
+          0.35
+        )
+    },
+    { scope: rootRef }
+  )
 
   // Mock generování — pouze vizuální stav, žádný skutečný export.
   function generate() {
@@ -59,20 +81,39 @@ export default function ExportyPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div ref={rootRef} className="relative mx-auto flex w-full max-w-5xl flex-col gap-6">
+      {/* Ambient blobs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-primary/8 blur-[120px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-40 top-1/2 -z-10 size-96 rounded-full bg-emerald-500/8 blur-[120px]"
+      />
+
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold">Exporty</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div data-ex-header>
+        <div className="flex items-center gap-2.5">
+          <span aria-hidden className="h-px w-7 bg-primary/60" />
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
+            Materiály pro sousedy
+          </p>
+        </div>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Exporty</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
           PDF a prezentace z agregovaných dat — materiály pro různé situace a publika. Zatím mock
           bez skutečného generování.
         </p>
       </div>
 
       {/* Context: project scope + stats */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-primary/5 px-4 py-3">
+      <div
+        data-ex-block
+        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-3"
+      >
         <div className="flex items-center gap-3">
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
             1
           </span>
           <p className="text-sm font-medium">Co exportovat</p>
@@ -89,7 +130,7 @@ export default function ExportyPage() {
             ))}
           </select>
         </div>
-        <div className="flex items-center gap-4 rounded-lg bg-background px-3 py-1.5 text-xs">
+        <div className="flex items-center gap-4 rounded-xl bg-background/80 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Building2 className="size-3.5" />
             <span className="font-medium text-foreground tabular-nums">
@@ -112,8 +153,8 @@ export default function ExportyPage() {
       </div>
 
       {/* Export type cards — clickable, selected gets outline */}
-      <div className="flex items-center gap-3">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+      <div data-ex-block className="flex items-center gap-3">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
           2
         </span>
         <p className="text-sm font-medium">Pro koho dokument je</p>
@@ -125,20 +166,21 @@ export default function ExportyPage() {
           return (
             <button
               key={exp.id}
+              data-ex-card
               onClick={() => setSelectedTypeId(exp.id)}
               aria-pressed={selected}
               className={cn(
-                "flex flex-col gap-3 rounded-lg border p-4 text-left transition-all",
+                "flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
                 selected
-                  ? "border-primary/60 bg-primary/5 ring-3 ring-primary/15"
-                  : "hover:bg-muted/50"
+                  ? "scale-[1.02] border-primary/60 bg-primary/5 shadow-xl ring-3 ring-primary/15"
+                  : "hover:scale-[1.02] hover:bg-muted/50 hover:shadow-lg"
               )}
             >
               <div className="flex items-start justify-between gap-2">
                 <div
                   className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors",
-                    selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                    "flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    selected ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-foreground"
                   )}
                 >
                   <Icon className="size-4.5" />
@@ -168,9 +210,9 @@ export default function ExportyPage() {
       </div>
 
       {/* Generate panel */}
-      <div className="rounded-lg border p-4">
+      <div data-ex-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
             3
           </span>
           <div className="flex items-center gap-2">
@@ -199,7 +241,7 @@ export default function ExportyPage() {
           </div>
         )}
 
-        <div className="mt-3 rounded-lg bg-muted/50 p-4">
+        <div className="mt-3 rounded-xl bg-muted/50 p-4">
           <p className="text-xs font-medium text-muted-foreground">Dokument bude obsahovat:</p>
           <div className="mt-2.5 grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
             {selectedType.includes.map((item) => (
@@ -211,7 +253,7 @@ export default function ExportyPage() {
           </div>
         </div>
 
-        <Button onClick={generate} disabled={generating} className="mt-3 w-full" size="lg">
+        <Button onClick={generate} disabled={generating} className="mt-3 w-full rounded-full shadow-lg" size="lg">
           {generating ? <Loader2 className="animate-spin" /> : done ? <Check /> : <Download />}
           {generating
             ? "Generuji…"
@@ -224,7 +266,10 @@ export default function ExportyPage() {
       </div>
 
       {/* Distribution tips */}
-      <div className="rounded-lg border bg-primary/5 p-4">
+      <div
+        data-ex-block
+        className="rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] p-4"
+      >
         <div className="flex items-center gap-2">
           <Lightbulb className="size-4 text-primary" />
           <p className="text-sm font-medium text-primary">Tipy k distribuci</p>
@@ -240,14 +285,17 @@ export default function ExportyPage() {
       </div>
 
       {/* Export history */}
-      <div>
-        <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Poslední exporty
-        </p>
-        <div className="overflow-x-auto rounded-lg border">
+      <div data-ex-block>
+        <div className="mb-3 flex items-center gap-2.5">
+          <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            Poslední exporty
+          </p>
+        </div>
+        <div className="overflow-x-auto rounded-2xl border">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
+              <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                 <th className="px-4 py-2.5 font-medium">Název</th>
                 <th className="px-4 py-2.5 font-medium">Typ</th>
                 <th className="px-4 py-2.5 font-medium">Projekt</th>
@@ -258,7 +306,10 @@ export default function ExportyPage() {
             </thead>
             <tbody>
               {exportHistory.map((row) => (
-                <tr key={row.id} className="border-b last:border-b-0">
+                <tr
+                  key={row.id}
+                  className="border-b transition-colors last:border-b-0 hover:bg-muted/40"
+                >
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       {row.format === "PPTX" ? (

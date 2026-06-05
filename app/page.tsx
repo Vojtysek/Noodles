@@ -5,13 +5,7 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Building2,
-  Check,
-  ChevronDown,
-} from "lucide-react";
+import { ArrowUpRight, Building2, Check, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -25,8 +19,8 @@ const heroBenefits = [
 
 const stats = [
   { value: 4, suffix: "", label: "typy renovací v plánu" },
-  { value: 40, suffix: " %", label: "úspora tepla po zateplení fasády" },
-  { value: 8, suffix: " let", label: "typická návratnost investice" },
+  { value: 40, suffix: " %", label: "tepla může ušetřit zateplení fasády" },
+  { value: 50, suffix: " %", label: "nákladů může pokrýt dotace NZÚ" },
   { value: 24, suffix: "", label: "bytových jednotek v domě" },
 ];
 
@@ -52,24 +46,24 @@ const projects = [
   {
     name: "Zateplení fasády",
     cost: "4 800 000 Kč",
-    savings: "−18 %",
-    payback: "9 let",
+    savings: "−35 %",
+    payback: "11 let",
     status: "K hlasování",
     pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   },
   {
     name: "Výměna oken",
     cost: "2 100 000 Kč",
-    savings: "−11 %",
-    payback: "7 let",
+    savings: "−15 %",
+    payback: "12 let",
     status: "Plánování",
     pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   {
     name: "Rekonstrukce střechy",
     cost: "1 600 000 Kč",
-    savings: "−6 %",
-    payback: "11 let",
+    savings: "−10 %",
+    payback: "13 let",
     status: "Plánování",
     pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
@@ -176,6 +170,24 @@ export default function Page() {
             { scaleX: 0, transformOrigin: "left center", duration: 0.9, ease: "power3.out" },
             1.6
           );
+
+        // Blob percentage counts up as the blob lands (synced with its entrance)
+        const blobNum = document.querySelector<HTMLElement>("[data-blob-count]");
+        if (blobNum) {
+          const blobCounter = { value: 0 };
+          tl.to(
+            blobCounter,
+            {
+              value: 40,
+              duration: 1.4,
+              ease: "power2.out",
+              onUpdate() {
+                blobNum.textContent = String(Math.round(blobCounter.value));
+              },
+            },
+            0.95
+          );
+        }
 
         // Subtle parallax on the hero photo — numeric scrub adds inertia so
         // the photo glides instead of snapping 1:1 with the wheel
@@ -290,9 +302,9 @@ export default function Page() {
           gsap.set(stepsLine, { strokeDasharray: length, strokeDashoffset: length });
           gsap.to(stepsLine, {
             strokeDashoffset: 0,
-            duration: 1.8,
+            duration: 1.4,
             ease: "power2.inOut",
-            scrollTrigger: { trigger: "[data-steps]", start: "top 75%" },
+            scrollTrigger: { trigger: "[data-steps]", start: "top 70%" },
           });
         }
       });
@@ -391,13 +403,11 @@ export default function Page() {
             className="bg-primary text-primary-foreground absolute top-32 right-8 z-10 hidden w-60 flex-col gap-3 rounded-[2.5rem] p-8 shadow-2xl lg:flex xl:right-16"
           >
             <p className="text-7xl leading-none font-bold tracking-tight">
-              <span data-count="40" data-suffix="">
-                40
-              </span>
+              <span data-blob-count>40</span>
               <span className="align-top text-3xl">%</span>
             </p>
             <p className="text-sm leading-snug text-pretty opacity-90">
-              tepla ušetří zateplení fasády staršího bytového domu
+              tepla může ušetřit zateplení fasády staršího domu
             </p>
           </div>
 
@@ -411,7 +421,7 @@ export default function Page() {
                 Roční náklady domu na teplo
               </span>
               <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
-                −18 %
+                −35 %
               </span>
             </div>
             <div className="flex flex-col gap-2.5">
@@ -421,7 +431,7 @@ export default function Page() {
                   <div className="h-full w-full rounded-full bg-white/35" />
                 </div>
                 <span className="w-16 shrink-0 text-right text-xs tabular-nums text-white/70">
-                  2,9 mil. Kč
+                  600 tis. Kč
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -429,18 +439,18 @@ export default function Page() {
                 <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
                   <div
                     data-hero-bar
-                    className="h-full w-[82%] rounded-full bg-emerald-400"
+                    className="h-full w-[65%] rounded-full bg-emerald-400"
                   />
                 </div>
                 <span className="w-16 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
-                  2,4 mil. Kč
+                  390 tis. Kč
                 </span>
               </div>
             </div>
             <p className="text-xs text-pretty text-white/60">
               Úspora{" "}
-              <span className="font-semibold text-emerald-300">530 000 Kč ročně</span> po
-              zateplení fasády
+              <span className="font-semibold text-emerald-300">210 000 Kč ročně</span> po
+              zateplení fasády domu s 24 byty
             </p>
           </div>
         </div>
@@ -491,6 +501,58 @@ export default function Page() {
                 AI z vašich poznámek pochopí námitky a motivace každého souseda, takže víte,
                 s kým a o čem mluvit.
               </p>
+              <div className="mt-6 flex flex-col">
+                {[
+                  {
+                    initials: "MK",
+                    color: "bg-emerald-500",
+                    name: "Marek Kolář",
+                    note: "„Hlavně ať se začne co nejdřív.“",
+                    label: "Podporuje",
+                    pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                  },
+                  {
+                    initials: "PV",
+                    color: "bg-amber-500",
+                    name: "Petra Veselá",
+                    note: "„Nejdřív chci vidět návratnost.“",
+                    label: "Váhá",
+                    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                  },
+                  {
+                    initials: "AH",
+                    color: "bg-rose-500",
+                    name: "Anna Horáková",
+                    note: "„Bojím se zvýšení záloh.“",
+                    label: "Proti",
+                    pill: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
+                  },
+                ].map((resident) => (
+                  <div
+                    key={resident.initials}
+                    className="border-border/40 flex items-center gap-3 border-b py-2.5 last:border-b-0"
+                  >
+                    <span
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ${resident.color}`}
+                    >
+                      {resident.initials}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{resident.name}</p>
+                      <p className="text-muted-foreground truncate text-xs">{resident.note}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${resident.pill}`}
+                    >
+                      {resident.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-primary/5 text-primary mt-3 rounded-lg px-3.5 py-2.5 text-xs leading-relaxed">
+                ✦ AI tip: Anně ukažte rozpočet s fixními zálohami — její námitka je
+                o cashflow, ne o renovaci samotné.
+              </div>
               <div className="mt-auto pt-6">
                 <div className="bg-muted/40 flex flex-col gap-4 rounded-xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04] ring-inset dark:shadow-none dark:ring-white/[0.04]">
                   <div className="flex items-center justify-between">
@@ -558,7 +620,7 @@ export default function Page() {
                   Soused tvrdí, že se zateplení nevyplatí. Co mu mám říct?
                 </p>
                 <p className="bg-muted max-w-[88%] self-start rounded-2xl rounded-bl-md px-3 py-2">
-                  Při vašich nákladech na teplo ušetříte ~530 tis. Kč ročně. Tady jsou tři
+                  Při vašich nákladech na teplo ušetříte ~210 tis. Kč ročně. Tady jsou tři
                   argumenty…
                 </p>
                 <span className="bg-muted mt-0.5 flex gap-1 self-start rounded-2xl rounded-bl-md px-3 py-2.5">
@@ -629,16 +691,16 @@ export default function Page() {
                 <div className="flex flex-col gap-1 md:px-6">
                   <dt className="text-muted-foreground text-xs">Úspora ročně</dt>
                   <dd className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    <span data-count="530" data-suffix=" tis. Kč">
-                      530 tis. Kč
+                    <span data-count="210" data-suffix=" tis. Kč">
+                      210 tis. Kč
                     </span>
                   </dd>
                 </div>
                 <div className="flex flex-col gap-1 md:px-6 md:last:pr-0">
-                  <dt className="text-muted-foreground text-xs">Návratnost</dt>
+                  <dt className="text-muted-foreground text-xs">Návratnost s dotací</dt>
                   <dd className="text-lg font-semibold tabular-nums">
-                    <span data-count="9" data-suffix=" let">
-                      9 let
+                    <span data-count="11" data-suffix=" let">
+                      11 let
                     </span>
                   </dd>
                 </div>
@@ -659,34 +721,42 @@ export default function Page() {
               </p>
             </div>
             <div data-steps className="relative">
-              {/* Curved progress line threading the three steps */}
+              {/* Curved line through the pip centers — dashed track + solid fill */}
               <svg
-                className="text-primary pointer-events-none absolute -top-6 left-0 hidden h-28 w-full md:block"
-                viewBox="0 0 1200 112"
+                className="text-primary pointer-events-none absolute -top-4 left-0 hidden h-20 w-full md:block"
+                viewBox="0 0 1200 80"
                 fill="none"
                 preserveAspectRatio="none"
                 aria-hidden
               >
                 <path
-                  data-steps-line
-                  d="M 44 72 C 180 8, 300 8, 440 56 S 700 120, 840 60 C 940 18, 1060 24, 1164 56"
+                  className="text-border"
+                  d="M 189 40 C 320 6, 470 6, 600 40 C 730 6, 880 6, 1011 40"
                   stroke="currentColor"
-                  strokeOpacity="0.35"
+                  strokeWidth="2"
+                  strokeDasharray="2 8"
+                  strokeLinecap="round"
+                />
+                <path
+                  data-steps-line
+                  d="M 189 40 C 320 6, 470 6, 600 40 C 730 6, 880 6, 1011 40"
+                  stroke="currentColor"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
               </svg>
-              <div className="relative grid gap-10 md:grid-cols-3 md:gap-8">
+              <div className="relative grid gap-12 md:grid-cols-3 md:gap-8">
                 {steps.map((step, index) => (
-                  <div key={step.title} data-reveal className="relative flex flex-col gap-3 pt-10">
-                    <span
-                      className="text-foreground/[7%] pointer-events-none absolute -top-4 left-0 text-8xl font-bold select-none"
-                      aria-hidden
-                    >
+                  <div
+                    key={step.title}
+                    data-reveal
+                    className="flex flex-col items-center gap-3 text-center"
+                  >
+                    <span className="bg-primary text-primary-foreground ring-background shadow-primary/30 relative z-10 flex size-12 items-center justify-center rounded-full text-lg font-semibold shadow-lg ring-4">
                       {index + 1}
                     </span>
-                    <h3 className="text-lg font-semibold">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm">{step.description}</p>
+                    <h3 className="mt-3 text-lg font-semibold">{step.title}</h3>
+                    <p className="text-muted-foreground max-w-xs text-sm">{step.description}</p>
                   </div>
                 ))}
               </div>
@@ -718,8 +788,8 @@ export default function Page() {
             <div className="text-muted-foreground border-border/60 hidden grid-cols-[1.6fr_1fr_1fr_0.8fr_8.5rem] gap-4 border-b px-6 py-2.5 text-xs md:grid">
               <span>Projekt</span>
               <span className="text-right">Náklady</span>
-              <span className="text-right">Úspora energií</span>
-              <span className="text-right">Návratnost</span>
+              <span className="text-right">Úspora tepla</span>
+              <span className="text-right">Návratnost*</span>
               <span className="text-right">Stav</span>
             </div>
             {projects.map((project) => (
@@ -771,6 +841,10 @@ export default function Page() {
               </div>
             ))}
           </div>
+          <p className="text-muted-foreground mt-3 px-1 text-xs">
+            * Návratnost při využití dotace Nová zelená úsporám (až 50 % způsobilých výdajů) a
+            ročních nákladech domu na teplo ~600 tis. Kč.
+          </p>
         </section>
 
         {/* FAQ */}
@@ -815,10 +889,7 @@ export default function Page() {
                 asChild
                 className="h-14 rounded-full px-8 text-base font-semibold"
               >
-                <Link href="/dashboard">
-                  Vyzkoušet zdarma
-                  <ArrowRight data-icon="inline-end" className="size-5" />
-                </Link>
+                <Link href="/dashboard">Vyzkoušet zdarma</Link>
               </Button>
             </div>
           </div>
