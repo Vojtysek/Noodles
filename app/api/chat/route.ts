@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { openai } from "@/lib/ai/client";
-import { characterizePersona } from "@/lib/ai/instructions/characterizePersona";
+import { buildCharacterizePersonaPrompt } from "@/lib/ai/instructions/characterizePersona";
 import { generateArguments } from "@/lib/ai/instructions/generateArguments";
 
 const INSTRUCTIONS = {
-  characterizePersona,
+  characterizePersona: buildCharacterizePersonaPrompt(),
   generateArguments,
 } as const;
 

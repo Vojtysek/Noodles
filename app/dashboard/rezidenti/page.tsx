@@ -26,6 +26,7 @@ import {
   type Sentiment,
   type StrategyPoint,
 } from "@/lib/mock-data"
+import { PersonaType, PERSONA_TYPES } from "@/lib/persona-types"
 
 const SENTIMENTS: Record<
   Sentiment,
@@ -88,6 +89,7 @@ export default function RezidentiPage() {
   const [generatedStrategies, setGeneratedStrategies] = useState<Record<string, StrategyPoint[]>>({})
   const [generatingStrategy, setGeneratingStrategy] = useState(false)
   const [sentimentFilter, setSentimentFilter] = useState<Sentiment | null>(null)
+  const [selectedPersonaType, setSelectedPersonaType] = useState<PersonaType | null>(null)
 
   useEffect(() => {
     fetch("/api/personas")
@@ -101,6 +103,7 @@ export default function RezidentiPage() {
         sentiment: Sentiment
         brief: string
         structured: Persona["structured"]
+        persona_type: string | null
       }>) => {
         if (!Array.isArray(rows) || rows.length === 0) return
         const fromDb: Persona[] = rows.map((r) => ({
@@ -112,6 +115,9 @@ export default function RezidentiPage() {
           sentiment: r.sentiment,
           brief: r.brief,
           structured: r.structured,
+          personaType: r.persona_type && r.persona_type in PERSONA_TYPES
+            ? (r.persona_type as PersonaType)
+            : undefined,
         }))
         setPersonaList((prev) => {
           const dbIds = new Set(fromDb.map((p) => p.id))
@@ -144,16 +150,23 @@ export default function RezidentiPage() {
 
   const selectedPersona = personaList.find((p) => p.id === selectedPersonaId)
 
+  function resetForm() {
+    setNewName("")
+    setNewBrief("")
+    setSelectedPersonaType(null)
+    setShowForm(false)
+  }
+
   async function addPersona() {
     const name = newName.trim()
     const brief = newBrief.trim()
-    if (!name || !brief || adding) return
+    if (!name || adding) return
     setAdding(true)
     try {
       const res = await fetch("/api/personas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, brief }),
+        body: JSON.stringify({ name, brief: brief || undefined, personaType: selectedPersonaType ?? undefined }),
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json() as {
@@ -165,6 +178,7 @@ export default function RezidentiPage() {
         sentiment: Sentiment
         brief: string
         structured: Persona["structured"]
+        persona_type: string | null
       }
       const persona: Persona = {
         id: data.id,
@@ -175,12 +189,13 @@ export default function RezidentiPage() {
         sentiment: data.sentiment,
         brief: data.brief,
         structured: data.structured,
+        personaType: data.persona_type && data.persona_type in PERSONA_TYPES
+          ? (data.persona_type as PersonaType)
+          : undefined,
       }
       setPersonaList((prev) => [persona, ...prev])
       setSelectedPersonaId(persona.id)
-      setNewName("")
-      setNewBrief("")
-      setShowForm(false)
+      resetForm()
     } catch (err) {
       console.error(err)
     } finally {
@@ -252,40 +267,60 @@ export default function RezidentiPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-xl font-semibold">Rezidenti</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>
+        <Button onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}>
           {showForm ? <X /> : <Plus />}
-          {showForm ? "Zavřít" : "Nová persona"}
+          {showForm ? "Zavřít" : "Nový rezident"}
         </Button>
       </div>
 
-      {/* New persona form */}
+      {/* New persona form — full-page takeover */}
       {showForm && (
-        <div className="rounded-xl border bg-muted/30 p-4">
+        <div className="animate-in fade-in duration-200 rounded-xl border bg-muted/30 p-6">
           <p className="text-sm font-medium">Popište rezidenta vlastními slovy</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Kdo to je, jak se chová, co mu vadí, jaké má námitky proti rekonstrukcím a co momentálně
             odmítá. Text později zpracuje AI agent do strukturované podoby.
           </p>
-          <div className="mt-3 flex flex-col gap-2">
+          <div className="mt-4 flex flex-col gap-3">
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Jméno persony, např. Pan Černý"
+              placeholder="Jméno rezidenta, např. Pan Černý"
               className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              autoFocus
             />
+            {/* Persona type selection */}
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(PERSONA_TYPES) as [PersonaType, typeof PERSONA_TYPES[PersonaType]][]).map(([key, pt]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedPersonaType(selectedPersonaType === key ? null : key)}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl border p-2 text-xs transition-all w-32",
+                    selectedPersonaType === key
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                  )}
+                >
+                  <img src={pt.imagePath} alt={pt.name} className="h-32 w-32 rounded-lg object-cover" />
+                  <span className="text-center leading-tight">{pt.name}</span>
+                </button>
+              ))}
+            </div>
             <textarea
               value={newBrief}
               onChange={(e) => setNewBrief(e.target.value)}
-              rows={4}
+              rows={6}
               placeholder="Např. Pan Černý je čtyřicátník, pracuje z domova a vadí mu hlavně hluk. Rekonstrukce podporuje, ale odmítá cokoliv, co by trvalo déle než tři měsíce…"
               className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowForm(false)} disabled={adding}>
+              <Button variant="ghost" onClick={resetForm} disabled={adding}>
                 Zrušit
               </Button>
-              <Button onClick={addPersona} disabled={!newName.trim() || !newBrief.trim() || adding}>
+              <Button onClick={addPersona} disabled={!newName.trim() || adding}>
                 <Sparkles className={adding ? "animate-spin" : ""} />
                 {adding ? "Analyzuji…" : "Uložit personu"}
               </Button>
@@ -294,94 +329,102 @@ export default function RezidentiPage() {
         </div>
       )}
 
-      {/* Sentiment filter badges */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setSentimentFilter(null)}
-          className={cn(
-            "rounded-full px-4 py-2 text-sm font-medium transition-all",
-            sentimentFilter === null
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
-          )}
-        >
-          Všichni ({personaList.length})
-        </button>
-        {(["podporuje", "vaha", "proti"] as const).map((sentiment) => {
-          const count = personaList.filter((p) => p.sentiment === sentiment).length
-          const cfg = SENTIMENTS[sentiment]
-          return (
+      {/* Resident list — hidden while form is open */}
+      {!showForm && (
+        <>
+          {/* Sentiment filter badges */}
+          <div className="flex flex-wrap gap-2">
             <button
-              key={sentiment}
-              onClick={() => setSentimentFilter(sentiment)}
+              onClick={() => setSentimentFilter(null)}
               className={cn(
                 "rounded-full px-4 py-2 text-sm font-medium transition-all",
-                sentimentFilter === sentiment
-                  ? cn(cfg.card, "text-white shadow-md")
+                sentimentFilter === null
+                  ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
             >
-              {cfg.label} ({count})
+              Všichni ({personaList.length})
             </button>
-          )
-        })}
-      </div>
-
-      {/* Resident carousel */}
-      <div className="-mx-1 flex gap-4 overflow-x-auto px-4 pt-4 pb-8">
-        {loadingPersonas
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-44 w-52 shrink-0 animate-pulse rounded-2xl bg-muted"
-              />
-            ))
-          : personaList
-              .filter((p) => !sentimentFilter || p.sentiment === sentimentFilter)
-              .map((persona) => {
-              const cfg = SENTIMENTS[persona.sentiment]
-              const selected = persona.id === selectedPersonaId
-              const SentimentIcon = cfg.icon
+            {(["podporuje", "vaha", "proti"] as const).map((sentiment) => {
+              const count = personaList.filter((p) => p.sentiment === sentiment).length
+              const cfg = SENTIMENTS[sentiment]
               return (
                 <button
-                  key={persona.id}
-                  onClick={() => setSelectedPersonaId(persona.id)}
+                  key={sentiment}
+                  onClick={() => setSentimentFilter(sentiment)}
                   className={cn(
-                    "relative flex h-44 w-52 shrink-0 flex-col gap-3 rounded-2xl p-5 text-left transition-all duration-200",
-                    cfg.card,
-                    selected
-                      ? "scale-[1.04] shadow-xl ring-4 ring-white/70"
-                      : "hover:scale-[1.02] hover:shadow-lg opacity-85 hover:opacity-100"
+                    "rounded-full px-4 py-2 text-sm font-medium transition-all",
+                    sentimentFilter === sentiment
+                      ? cn(cfg.card, "text-white shadow-md")
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                   )}
                 >
-                  {persona.status === "ceka" && (
-                    <Clock className={cn("absolute top-3 right-3 size-3.5", cfg.cardMuted)} />
-                  )}
-                  <div
-                    className={cn(
-                      "flex size-12 items-center justify-center rounded-full text-base font-bold text-white",
-                      cfg.cardAvatar
-                    )}
-                  >
-                    {initials(persona.name)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-white">{persona.name}</p>
-                    <p className={cn("text-xs", cfg.cardMuted)}>
-                      {persona.role} · {persona.unit}
-                    </p>
-                  </div>
-                  <div className={cn("flex items-center gap-1.5 text-xs font-medium", cfg.cardMuted)}>
-                    <SentimentIcon className="size-3.5" />
-                    {cfg.label}
-                  </div>
+                  {cfg.label} ({count})
                 </button>
               )
             })}
-      </div>
+          </div>
 
-      {/* Detail */}
-      {selectedPersona && (
+          {/* Resident carousel */}
+          <div className="-mx-1 flex gap-4 overflow-x-auto px-4 pt-4 pb-8">
+            {loadingPersonas
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-44 w-52 shrink-0 animate-pulse rounded-2xl bg-muted"
+                  />
+                ))
+              : personaList
+                  .filter((p) => !sentimentFilter || p.sentiment === sentimentFilter)
+                  .map((persona) => {
+                  const cfg = SENTIMENTS[persona.sentiment]
+                  const selected = persona.id === selectedPersonaId
+                  const SentimentIcon = cfg.icon
+                  return (
+                    <button
+                      key={persona.id}
+                      onClick={() => setSelectedPersonaId(persona.id)}
+                      className={cn(
+                        "relative flex h-44 w-52 shrink-0 flex-col gap-3 rounded-2xl p-5 text-left transition-all duration-200",
+                        cfg.card,
+                        selected
+                          ? "scale-[1.04] shadow-xl ring-4 ring-white/70"
+                          : "hover:scale-[1.02] hover:shadow-lg opacity-85 hover:opacity-100"
+                      )}
+                    >
+                      {persona.status === "ceka" && (
+                        <Clock className={cn("absolute top-3 right-3 size-3.5", cfg.cardMuted)} />
+                      )}
+                      <div
+                        className={cn(
+                          "flex size-12 items-center justify-center rounded-full text-base font-bold text-white",
+                          cfg.cardAvatar
+                        )}
+                      >
+                        {initials(persona.name)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-white">{persona.name}</p>
+                        <p className={cn("text-xs", cfg.cardMuted)}>
+                          {persona.role} · {persona.unit}
+                        </p>
+                        {persona.personaType && (
+                          <p className={cn("text-[10px] mt-0.5 opacity-70", cfg.cardMuted)}>
+                            {PERSONA_TYPES[persona.personaType].name}
+                          </p>
+                        )}
+                      </div>
+                      <div className={cn("flex items-center gap-1.5 text-xs font-medium", cfg.cardMuted)}>
+                        <SentimentIcon className="size-3.5" />
+                        {cfg.label}
+                      </div>
+                    </button>
+                  )
+                })}
+          </div>
+
+          {/* Detail */}
+          {selectedPersona && (
         <div className="relative flex flex-col gap-6 rounded-xl border bg-muted/30 p-6">
           {regenerating && (
             <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-xl bg-background/70 text-sm text-muted-foreground backdrop-blur-sm">
@@ -415,6 +458,16 @@ export default function RezidentiPage() {
                 <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                   <Clock className="size-3" />
                   Čeká na zpracování
+                </span>
+              )}
+              {selectedPersona.personaType && (
+                <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  <img
+                    src={PERSONA_TYPES[selectedPersona.personaType].imagePath}
+                    alt={PERSONA_TYPES[selectedPersona.personaType].name}
+                    className="size-3 rounded-sm object-cover"
+                  />
+                  {PERSONA_TYPES[selectedPersona.personaType].name}
                 </span>
               )}
             </div>
@@ -543,6 +596,8 @@ export default function RezidentiPage() {
             </div>
           </div>
         </div>
+          )}
+        </>
       )}
     </div>
   )
