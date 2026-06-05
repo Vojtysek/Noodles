@@ -5,29 +5,32 @@ import {
   buildStrategyUserMessage,
 } from "@/lib/ai/instructions/generateStrategy";
 import { createClient } from "@/lib/supabase/server";
+import { getArchetype, isArchetypeId } from "@/lib/archetypes";
 import { aggregateScenario, isProjectId, scenarioKey } from "@/lib/scenarios";
 import type { StrategyPoint } from "@/lib/mock-data";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ type: string }> }
 ) {
-  const { id } = await params;
-  const supabase = await createClient();
+  const { type } = await params;
+  if (!isArchetypeId(type)) {
+    return Response.json({ error: "Neznámý archetyp." }, { status: 404 });
+  }
 
+  const supabase = await createClient();
   const { data, error } = await supabase
-    .from("persona_strategies")
-    .select("project_id, strategies")
-    .eq("persona_id", id);
+    .from("archetype_strategies")
+    .select("scenario_key, strategies")
+    .eq("archetype", type);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  // Sloupec project_id historicky nese klíč scénáře (scenario_key).
   const result: Record<string, StrategyPoint[]> = {};
   for (const row of data ?? []) {
-    result[row.project_id as string] = row.strategies as StrategyPoint[];
+    result[row.scenario_key as string] = row.strategies as StrategyPoint[];
   }
 
   return Response.json(result);
@@ -35,9 +38,13 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ type: string }> }
 ) {
-  const { id } = await params;
+  const { type } = await params;
+  if (!isArchetypeId(type)) {
+    return Response.json({ error: "Neznámý archetyp." }, { status: 404 });
+  }
+
   let projectIds: string[];
   let scenarioName: string;
   try {
@@ -55,32 +62,7 @@ export async function POST(
     return Response.json({ error: "Neznámé ID projektu." }, { status: 400 });
   }
 
-  const supabase = await createClient();
-
-  const { data: persona, error: personaError } = await supabase
-    .from("personas")
-    .select("name, brief, structured, sentiment")
-    .eq("id", id)
-    .single();
-
-  if (personaError || !persona) {
-    return Response.json({ error: "Persona not found" }, { status: 404 });
-  }
-
-  if (!persona.structured) {
-    return Response.json(
-      { error: "Persona nemá zpracovaný brief — nejdříve spusťte analýzu." },
-      { status: 400 }
-    );
-  }
-
-  const profile = persona.structured as {
-    traits: string[];
-    objections: string[];
-    motivations: string[];
-    rejects: string[];
-  };
-
+  const archetype = getArchetype(type);
   const aggregates = aggregateScenario(projectIds);
   const key = scenarioKey(projectIds);
 
@@ -94,7 +76,7 @@ export async function POST(
         {
           role: "user",
           content: buildStrategyUserMessage(
-            { name: persona.name, sentiment: persona.sentiment, profile },
+            { name: archetype.name, profile: archetype.profile },
             { name: scenarioName, ...aggregates }
           ),
         },
@@ -112,17 +94,15 @@ export async function POST(
   }
 
   if (!Array.isArray(raw.strategies)) {
-    return Response.json(
-      { error: "Neplatný výstup modelu." },
-      { status: 502 }
-    );
+    return Response.json({ error: "Neplatný výstup modelu." }, { status: 502 });
   }
 
+  const supabase = await createClient();
   const { error: upsertError } = await supabase
-    .from("persona_strategies")
+    .from("archetype_strategies")
     .upsert(
-      { persona_id: id, project_id: key, strategies: raw.strategies },
-      { onConflict: "persona_id,project_id" }
+      { archetype: type, scenario_key: key, strategies: raw.strategies },
+      { onConflict: "archetype,scenario_key" }
     );
 
   if (upsertError) {

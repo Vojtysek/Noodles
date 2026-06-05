@@ -19,17 +19,14 @@ import { cn } from "@/lib/utils"
 import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
 import { Roadmap, type RoadmapItem } from "@/components/dashboard/roadmap"
 import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
+import { buildDynamicScenarios } from "@/lib/scenarios"
 import {
-  fmtCzk,
   fmtCzkShort,
   fmtDuration,
-  personas as initialPersonas,
   projects,
   scenarios,
-  type ProjectId,
   type Scenario,
   type ScenarioTone,
-  type Sentiment,
 } from "@/lib/mock-data"
 
 type BuildingCalc = {
@@ -84,41 +81,6 @@ const MONTHS_CS = [
   "listopadu",
   "prosince",
 ]
-
-const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
-  "Okna": "okna",
-  "Zateplení fasády": "fasada",
-  "Zateplení střechy": "strecha",
-}
-
-function buildDynamicScenarios(selectedRenovations: string[]): Scenario[] {
-  const matchedIds = selectedRenovations
-    .map((label) => RENOVATION_LABEL_TO_PROJECT[label])
-    .filter((id): id is ProjectId => id !== undefined)
-
-  if (matchedIds.length === 0) {
-    // Fall back to kompromis + kompletni (skip "nejnutnejsi")
-    return scenarios.filter((s) => s.id !== "nejnutnejsi")
-  }
-
-  return [
-    {
-      id: "vase-vybrane",
-      name: "Co jste si vybrali",
-      tagline: "Scénáře, které jste zvolili v kalkulaci — modelace jejich přínosu.",
-      tone: "emerald",
-      projectIds: matchedIds,
-    },
-    {
-      id: "kompletni-obnova",
-      name: "Kompletní obnova",
-      tagline:
-        "Všechny čtyři scénáře najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
-      tone: "blue",
-      projectIds: ["strecha", "okna", "fasada", "vytah"],
-    },
-  ]
-}
 
 const TONE_DOT: Record<ScenarioTone, string> = {
   emerald: "bg-emerald-500",
@@ -195,7 +157,6 @@ function computeScenario(scenario: Scenario) {
 export default function PrehledPage() {
   const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>(scenarios)
   const [scenarioId, setScenarioId] = useState(scenarios[0].id)
-  const [supportCounts, setSupportCounts] = useState(() => countSentiments(initialPersonas))
   // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
   const [splashOpen, setSplashOpen] = useState(false)
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
@@ -224,19 +185,6 @@ export default function PrehledPage() {
         }
       } catch {}
     })()
-  }, [])
-
-  // Živé počty postojů ze stejného API jako stránka Rezidenti; mock jako záloha.
-  useEffect(() => {
-    fetch("/api/personas")
-      .then((r) => r.json())
-      .then((rows: Array<{ id: string; sentiment: Sentiment }>) => {
-        if (!Array.isArray(rows) || rows.length === 0) return
-        const dbIds = new Set(rows.map((p) => p.id))
-        const merged = [...rows, ...initialPersonas.filter((p) => !dbIds.has(p.id))]
-        setSupportCounts(countSentiments(merged))
-      })
-      .catch(() => {/* keep mock data on error */})
   }, [])
 
   const scenario = dynamicScenarios.find((s) => s.id === scenarioId) ?? dynamicScenarios[0]
@@ -284,7 +232,7 @@ export default function PrehledPage() {
         )
       })
     },
-    { scope: rootRef, dependencies: [supportCounts, buildingCalc, breakEvenYear] }
+    { scope: rootRef, dependencies: [buildingCalc, breakEvenYear] }
   )
 
   return (
@@ -358,10 +306,10 @@ export default function PrehledPage() {
               >
                 <Users className="size-4 shrink-0 text-emerald-300" />
                 <p className="text-sm text-white/90">
-                  <span data-count-chip={supportCounts.podporuje} className="font-semibold tabular-nums">
-                    {supportCounts.podporuje}
+                  <span data-count-chip={buildingCalc.units} className="font-semibold tabular-nums">
+                    {buildingCalc.units}
                   </span>{" "}
-                  <span className="text-white/60">rezidentů podporuje</span>
+                  <span className="text-white/60">bytových jednotek</span>
                 </p>
               </div>
               <div
@@ -542,11 +490,4 @@ export default function PrehledPage() {
       </div>
     </div>
   )
-}
-
-function countSentiments(list: Array<{ sentiment: Sentiment }>) {
-  return {
-    total: list.length,
-    podporuje: list.filter((p) => p.sentiment === "podporuje").length,
-  }
 }

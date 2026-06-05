@@ -22,14 +22,28 @@ import {
   exportTypes,
   exportHistory,
   distributionTips,
-  personas as mockPersonas,
   scenarios,
   fmtCzkShort,
   type Persona,
   type Sentiment,
 } from "@/lib/mock-data"
+import { ARCHETYPES } from "@/lib/archetypes"
 import { PERSONA_TYPES } from "@/lib/persona-types"
 import type { PersonaType } from "@/lib/persona-types"
+
+// Vestavěné archetypy v podobě person — výchozí nabídka pro personalizovaný
+// export; vlastní archetypy ze Supabase se přidávají před ně.
+const archetypePersonas: Persona[] = ARCHETYPES.map((a) => ({
+  id: a.id,
+  name: a.name,
+  role: a.subtitle,
+  unit: "—",
+  status: "zpracovano",
+  sentiment: "vaha",
+  brief: a.description,
+  structured: a.profile,
+  personaType: a.id,
+}))
 
 const TYPE_ICONS: Record<string, typeof FileText> = {
   "overall-brief": FileText,
@@ -40,8 +54,8 @@ const TYPE_ICONS: Record<string, typeof FileText> = {
 
 export default function ExportyPage() {
   const [selectedTypeId, setSelectedTypeId] = useState(exportTypes[0].id)
-  const [personaList, setPersonaList] = useState<Persona[]>(mockPersonas)
-  const [personaId, setPersonaId] = useState(mockPersonas[0].id)
+  const [personaList, setPersonaList] = useState<Persona[]>(archetypePersonas)
+  const [personaId, setPersonaId] = useState(archetypePersonas[0].id)
   const [scenarioId, setScenarioId] = useState<string>("all")
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
@@ -69,7 +83,7 @@ export default function ExportyPage() {
         })
         setPersonaId(fromDb[0].id)
       })
-      .catch(() => {/* keep mock personas on error */})
+      .catch(() => {/* keep built-in archetypes on error */})
   }, [])
 
   const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]

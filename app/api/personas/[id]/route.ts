@@ -53,3 +53,20 @@ export async function PATCH(
 
   return Response.json(data);
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  // FK on delete cascade smaže i persona_strategies.
+  const { error } = await supabase.from("personas").delete().eq("id", id);
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  return Response.json({ ok: true });
+}

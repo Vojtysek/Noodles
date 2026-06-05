@@ -19,3 +19,44 @@ VÝSTUP musí být validní JSON objekt:
 { "strategies": [{ "title": string, "detail": string }] }
 Odpověz POUZE validním JSON objektem, žádný jiný text.
 `.trim();
+
+type StrategyProfile = {
+  traits: string[];
+  objections: string[];
+  motivations: string[];
+  rejects: string[];
+};
+
+type StrategyScenario = {
+  name: string;
+  budget: number;
+  savingsPerYear: number;
+  paybackYears: number;
+  fundIncreasePerFlat: number;
+  energySavingPct: number;
+  projectNames: string[];
+};
+
+/** Uživatelská zpráva pro generování strategií — persona/archetyp × scénář. */
+export function buildStrategyUserMessage(
+  persona: { name: string; sentiment?: string; profile: StrategyProfile },
+  scenario: StrategyScenario
+): string {
+  return `PERSONA:
+Jméno: ${persona.name}${persona.sentiment ? `\nPostoj: ${persona.sentiment}` : ""}
+Charakteristika: ${persona.profile.traits.join(", ")}
+Námitky: ${persona.profile.objections.join(", ")}
+Motivace: ${persona.profile.motivations.join(", ")}
+Odmítá: ${persona.profile.rejects.join(", ")}
+
+SCÉNÁŘ:
+Název: ${scenario.name}
+Zahrnuje: ${scenario.projectNames.join(", ")}
+Rozpočet: ${scenario.budget.toLocaleString("cs-CZ")} Kč
+Roční úspora: ${scenario.savingsPerYear.toLocaleString("cs-CZ")} Kč
+Návratnost: ${scenario.paybackYears} let
+Navýšení fondu: ${scenario.fundIncreasePerFlat} Kč/byt/měsíc
+Úspora energií: ${scenario.energySavingPct} %
+
+Vygeneruj 4 strategické body jak přesvědčit tuto personu k podpoře tohoto scénáře.`;
+}
