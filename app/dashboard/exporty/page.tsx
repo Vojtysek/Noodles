@@ -90,7 +90,7 @@ export default function ExportyPage() {
   }
 
   return (
-    <div ref={rootRef} className="relative mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6">
       {/* Ambient blobs */}
       <div
         aria-hidden
