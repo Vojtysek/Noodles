@@ -48,38 +48,39 @@ const steps = [
   },
 ];
 
-const projects = [
+const landingScenarios = [
   {
-    name: "Zateplení fasády",
-    cost: "4 800 000 Kč",
-    savings: "−35 %",
-    payback: "11 let",
-    status: "K hlasování",
-    pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    id: "dilci",
+    name: "Dílčí renovace",
+    tagline:
+      "Zateplení fasády a výměna oken — dvě opatření s největším dopadem na tepelné ztráty domu.",
+    tone: "blue" as const,
+    renovations: [
+      { label: "Fasáda", color: "bg-blue-500/10 text-blue-700 dark:text-blue-400" },
+      { label: "Okna", color: "bg-blue-500/10 text-blue-700 dark:text-blue-400" },
+    ],
+    investment: "5,5 mil. Kč",
+    savingsPerYear: "200 tis. Kč",
+    energySaving: "−40 %",
+    subsidy: "2,75 mil. Kč",
+    bestFor: "Nejlepší poměr ceny a úspor",
   },
   {
-    name: "Výměna oken",
-    cost: "2 100 000 Kč",
-    savings: "−15 %",
-    payback: "12 let",
-    status: "Plánování",
-    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  },
-  {
-    name: "Rekonstrukce střechy",
-    cost: "1 600 000 Kč",
-    savings: "−10 %",
-    payback: "13 let",
-    status: "Plánování",
-    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  },
-  {
-    name: "Modernizace výtahu",
-    cost: "1 900 000 Kč",
-    savings: "—",
-    payback: "—",
-    status: "Sbíráme podporu",
-    pill: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
+    id: "komplexni",
+    name: "Komplexní renovace",
+    tagline:
+      "Fasáda, okna i střecha najednou. Dům připravený na desítky let — a poloviční účty za teplo.",
+    tone: "emerald" as const,
+    renovations: [
+      { label: "Fasáda", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+      { label: "Okna", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+      { label: "Střecha", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    ],
+    investment: "21 mil. Kč",
+    savingsPerYear: "360 tis. Kč",
+    energySaving: "−70 %",
+    subsidy: "10,5 mil. Kč",
+    bestFor: "Dlouhodobá hodnota domu",
   },
 ];
 
@@ -422,63 +423,63 @@ export default function Page() {
               ))}
             </ul>
             <HeroCta />
-          </div>
 
-          {/* Oversized stat blob */}
-          <div
-            data-hero-blob
-            className="bg-primary text-primary-foreground absolute top-32 right-8 z-10 hidden w-60 flex-col gap-3 rounded-[2.5rem] p-8 shadow-2xl lg:flex xl:right-16"
-          >
-            <p className="text-7xl leading-none font-bold tracking-tight">
-              <span data-blob-count>40</span>
-              <span className="align-top text-3xl">%</span>
-            </p>
-            <p className="text-sm leading-snug text-pretty opacity-90">
-              tepla může ušetřit zateplení fasády staršího domu
-            </p>
-          </div>
-
-          {/* Floating product card — heating costs before/after, dark glass */}
-          <div
-            data-hero-card
-            className="absolute right-8 bottom-12 z-10 hidden w-80 flex-col gap-4 rounded-2xl bg-zinc-950/70 p-5 text-white ring-1 ring-white/15 backdrop-blur-md lg:flex xl:right-16 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.6)]"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-white/70">
-                Roční náklady domu na teplo
-              </span>
-              <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
-                −35 %
-              </span>
+            {/* Oversized stat blob — anchored to the container's right edge */}
+            <div
+              data-hero-blob
+              className="bg-primary text-primary-foreground absolute top-32 right-0 z-10 hidden w-60 flex-col gap-3 rounded-[2.5rem] p-8 shadow-2xl lg:flex"
+            >
+              <p className="text-7xl leading-none font-bold tracking-tight">
+                <span data-blob-count>40</span>
+                <span className="align-top text-3xl">%</span>
+              </p>
+              <p className="text-sm leading-snug text-pretty opacity-90">
+                tepla může ušetřit zateplení fasády staršího domu
+              </p>
             </div>
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-3">
-                <span className="w-9 shrink-0 text-[11px] text-white/50">Dnes</span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-full rounded-full bg-white/35" />
-                </div>
-                <span className="w-16 shrink-0 text-right text-xs tabular-nums text-white/70">
-                  600 tis. Kč
+
+            {/* Floating product card — anchored to the container's right edge */}
+            <div
+              data-hero-card
+              className="absolute right-0 bottom-28 z-10 hidden w-80 flex-col gap-4 rounded-2xl bg-zinc-950/70 p-5 text-white ring-1 ring-white/15 backdrop-blur-md lg:flex shadow-[0_24px_64px_-16px_rgba(0,0,0,0.6)]"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-white/70">
+                  Roční náklady domu na teplo
+                </span>
+                <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
+                  −35 %
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-9 shrink-0 text-[11px] text-white/50">Potom</span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    data-hero-bar
-                    className="h-full w-[65%] rounded-full bg-emerald-400"
-                  />
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center gap-3">
+                  <span className="w-9 shrink-0 text-[11px] text-white/50">Dnes</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full w-full rounded-full bg-white/35" />
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-xs tabular-nums text-white/70">
+                    600 tis. Kč
+                  </span>
                 </div>
-                <span className="w-16 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
-                  390 tis. Kč
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="w-9 shrink-0 text-[11px] text-white/50">Potom</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      data-hero-bar
+                      className="h-full w-[65%] rounded-full bg-emerald-400"
+                    />
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
+                    390 tis. Kč
+                  </span>
+                </div>
               </div>
+              <p className="text-xs text-pretty text-white/60">
+                Úspora{" "}
+                <span className="font-semibold text-emerald-300">210 000 Kč ročně</span> po
+                zateplení fasády domu s 24 byty
+              </p>
             </div>
-            <p className="text-xs text-pretty text-white/60">
-              Úspora{" "}
-              <span className="font-semibold text-emerald-300">210 000 Kč ročně</span> po
-              zateplení fasády domu s 24 byty
-            </p>
           </div>
         </div>
       </section>
@@ -799,86 +800,72 @@ export default function Page() {
           </div>
         </section>
 
-        {/* Project examples */}
+        {/* Scenario comparison */}
         <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
           <div data-reveal className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              Jaké renovace s námi naplánujete a prosadíte
+              Porovnejte varianty, vyberte svou cestu
             </h2>
             <p className="text-muted-foreground mt-3 text-lg text-pretty">
-              Ukázka projektů z typického bytového domu. Čísla jsou orientační — ta vaše si
-              spočítáte v kalkulačce.
+              Každý dům je jiný. Noodles vám ukáže, jak různé kombinace projektů ovlivní náklady, úspory i hlasování SVJ.
             </p>
           </div>
-          <div
-            data-reveal
-            className="bg-card overflow-hidden rounded-2xl ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
-          >
-            <div className="border-border/60 bg-muted/30 flex items-center justify-between border-b px-6 py-3.5">
-              <p className="text-sm font-semibold tracking-tight">Bělohorská 1042/18</p>
-              <p className="text-muted-foreground text-xs">
-                4 projekty · <span className="tabular-nums">24</span> jednotek
-              </p>
-            </div>
-            <div className="text-muted-foreground border-border/60 hidden grid-cols-[1.6fr_1fr_1fr_0.8fr_8.5rem] gap-4 border-b px-6 py-2.5 text-xs md:grid">
-              <span>Projekt</span>
-              <span className="text-right">Náklady</span>
-              <span className="text-right">Úspora tepla</span>
-              <span className="text-right">Návratnost*</span>
-              <span className="text-right">Stav</span>
-            </div>
-            {projects.map((project) => (
+          <div className="grid gap-5 md:grid-cols-2 lg:gap-6">
+            {landingScenarios.map((s) => (
               <div
-                key={project.name}
-                className="border-border/40 hover:bg-muted/30 flex flex-col gap-3 border-b px-6 py-4 transition-colors last:border-b-0 md:grid md:grid-cols-[1.6fr_1fr_1fr_0.8fr_8.5rem] md:items-center md:gap-4"
+                key={s.id}
+                data-reveal
+                className="bg-card relative flex flex-col rounded-2xl p-6 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] transition-shadow hover:shadow-[0_4px_32px_-8px_rgba(16,24,40,0.16)] dark:ring-white/[0.06]"
               >
-                <div className="flex items-center justify-between md:contents">
-                  <h3 className="text-sm font-medium tracking-tight">{project.name}</h3>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium md:hidden ${project.pill}`}
-                  >
-                    {project.status}
-                  </span>
+                {/* Header */}
+                <div className="mb-4">
+                  <p className="text-primary text-xs font-semibold tracking-wider uppercase">
+                    {s.bestFor}
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold tracking-tight">{s.name}</h3>
+                  <p className="text-muted-foreground mt-1.5 text-sm leading-snug">{s.tagline}</p>
                 </div>
-                <div className="grid grid-cols-3 gap-2 md:contents">
-                  <div className="md:text-right">
-                    <p className="text-muted-foreground text-[11px] md:hidden">Náklady</p>
-                    <p className="text-sm tabular-nums">{project.cost}</p>
-                  </div>
-                  <div className="md:text-right">
-                    <p className="text-muted-foreground text-[11px] md:hidden">Úspora</p>
-                    <p
-                      className={`text-sm tabular-nums ${
-                        project.savings !== "—"
-                          ? "font-medium text-emerald-600 dark:text-emerald-400"
-                          : "text-muted-foreground"
-                      }`}
+
+                {/* Renovation tags */}
+                <div className="mb-5 flex flex-wrap gap-1.5">
+                  {s.renovations.map((r) => (
+                    <span
+                      key={r.label}
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${r.color}`}
                     >
-                      {project.savings}
-                    </p>
+                      {r.label}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Metrics */}
+                <div className="border-border/50 mt-auto flex flex-col gap-3 border-t pt-4">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-muted-foreground text-xs">Celková investice</span>
+                    <span className="text-sm font-semibold tabular-nums">{s.investment}</span>
                   </div>
-                  <div className="md:text-right">
-                    <p className="text-muted-foreground text-[11px] md:hidden">Návratnost</p>
-                    <p
-                      className={`text-sm tabular-nums ${
-                        project.payback === "—" ? "text-muted-foreground" : "font-medium"
-                      }`}
-                    >
-                      {project.payback}
-                    </p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-muted-foreground text-xs">Úspora ročně</span>
+                    <span className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {s.savingsPerYear}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-muted-foreground text-xs">Úspora energie</span>
+                    <span className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {s.energySaving}
+                    </span>
+                  </div>
+                  <div className="bg-muted/60 mt-1 flex items-center justify-between rounded-xl px-3 py-2">
+                    <span className="text-muted-foreground text-xs">Dotace NZÚ až</span>
+                    <span className="text-sm font-bold tabular-nums">{s.subsidy}</span>
                   </div>
                 </div>
-                <span
-                  className={`hidden shrink-0 justify-self-end rounded-full px-2 py-0.5 text-[11px] font-medium md:inline-flex ${project.pill}`}
-                >
-                  {project.status}
-                </span>
               </div>
             ))}
           </div>
-          <p className="text-muted-foreground mt-3 px-1 text-xs">
-            * Návratnost při využití dotace Nová zelená úsporám (až 50 % způsobilých výdajů) a
-            ročních nákladech domu na teplo ~600 tis. Kč.
+          <p className="text-muted-foreground mt-6 px-1 text-xs">
+            Orientační čísla pro typický panelový dům s 24 byty v ČR. Vycházejí z reálných případových studií renovací (TZB-info, Ekowatt) a podmínek programu Nová zelená úsporám, který kryje až 50 % způsobilých výdajů. Ta vaše si spočítáte v kalkulačce.
           </p>
         </section>
 
