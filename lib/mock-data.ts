@@ -214,7 +214,7 @@ export const scenarios: Scenario[] = [
   {
     id: "kompletni",
     name: "Kompletní obnova",
-    tagline: "Všechny čtyři projekty najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
+    tagline: "Všechny čtyři scénáře najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
     tone: "blue",
     projectIds: ["strecha", "okna", "fasada", "vytah"],
   },
@@ -276,12 +276,12 @@ export const personas: Persona[] = [
     status: "zpracovano",
     sentiment: "vaha",
     brief:
-      "Pan Dvořák byt pronajímá a v domě se téměř nevyskytuje. Zajímá ho čistě návratnost — kolik investice přidá na nájmu nebo ceně bytu. Vadí mu dlouhé schvalovací procesy a schůze SVJ považuje za ztrátu času. Odmítá projekty s návratností delší než 15 let, výtah považuje za zbytečný luxus.",
+      "Pan Dvořák byt pronajímá a v domě se téměř nevyskytuje. Zajímá ho čistě návratnost — kolik investice přidá na nájmu nebo ceně bytu. Vadí mu dlouhé schvalovací procesy a schůze SVJ považuje za ztrátu času. Odmítá scénáře s návratností delší než 15 let, výtah považuje za zbytečný luxus.",
     structured: {
       traits: ["Analytický", "Orientovaný na výnos", "Minimální osobní vazba na dům"],
       objections: ["Dlouhá návratnost", "Neefektivní schůze", "Náklady bez vlivu na nájem"],
       motivations: ["Růst ceny bytu", "Vyšší nájemné", "Rychlé a věcné rozhodování"],
-      rejects: ["Modernizace výtahu", "Projekty s návratností nad 15 let"],
+      rejects: ["Modernizace výtahu", "Scénáře s návratností nad 15 let"],
     },
   },
   {
@@ -405,7 +405,7 @@ export const personas: Persona[] = [
     status: "zpracovano",
     sentiment: "proti",
     brief:
-      "Paní Fialová slouží noční směny a přes den spí. Stavební hluk je pro ni zásadní problém — kvůli němu je aktuálně proti všem velkým projektům. Kdyby existoval režim tichých hodin dopoledne, byla by ochotná jednat.",
+      "Paní Fialová slouží noční směny a přes den spí. Stavební hluk je pro ni zásadní problém — kvůli němu je aktuálně proti všem velkým scénářům. Kdyby existoval režim tichých hodin dopoledne, byla by ochotná jednat.",
     structured: {
       traits: ["Unavená směnami", "Principiální", "Otevřená kompromisu"],
       objections: ["Hluk v dopoledních hodinách", "Dlouhé trvání staveb"],
@@ -437,7 +437,7 @@ export const personas: Persona[] = [
       traits: ["Precizní", "Konzervativní ve financích", "Respektovaná sousedy"],
       objections: ["Podhodnocené rozpočty", "Chybějící rezervy"],
       motivations: ["Zdravé finance SVJ", "Transparentní čerpání"],
-      rejects: ["Projekty bez 10% rezervy"],
+      rejects: ["Scénáře bez 10% rezervy"],
     },
   },
   {
@@ -460,7 +460,7 @@ export function getStrategy(persona: Persona, project: Project): StrategyPoint[]
   return [
     {
       title: "Začněte tím, co ho/ji zajímá",
-      detail: `${persona.name} reaguje na: ${persona.structured?.motivations.slice(0, 2).join(", ").toLowerCase() ?? "stabilitu a předvídatelnost"}. Otevřete projekt „${project.name}“ právě přes tato témata.`,
+      detail: `${persona.name} reaguje na: ${persona.structured?.motivations.slice(0, 2).join(", ").toLowerCase() ?? "stabilitu a předvídatelnost"}. Otevřete scénář „${project.name}“ právě přes tato témata.`,
     },
     {
       title: "Předejděte hlavní námitce",
@@ -468,7 +468,7 @@ export function getStrategy(persona: Persona, project: Project): StrategyPoint[]
     },
     {
       title: "Argumentujte návratností",
-      detail: `Projekt má návratnost ${project.paybackYears.toLocaleString("cs-CZ")} let při roční úspoře ${project.savingsPerYear.toLocaleString("cs-CZ")} Kč. Pro tuto personu prezentujte dopad na hodnotu bytu, ne jen na účty.`,
+      detail: `Scénář má návratnost ${project.paybackYears.toLocaleString("cs-CZ")} let při roční úspoře ${project.savingsPerYear.toLocaleString("cs-CZ")} Kč. Pro tuto personu prezentujte dopad na hodnotu bytu, ne jen na účty.`,
     },
     {
       title: "Nabídněte kompromis",
@@ -494,13 +494,13 @@ export const exportTypes: ExportType[] = [
     id: "overall-brief",
     title: "Stručný přehled",
     description:
-      "Obecné informace o projektech, základní data a hlavní argumenty. Vhodné pro nástěnku nebo hromadný e-mail vlastníkům.",
+      "Obecné informace o scénářích, základní data a hlavní argumenty. Vhodné pro nástěnku nebo hromadný e-mail vlastníkům.",
     format: "PDF",
     pages: "2–3 strany",
     bestFor: "Nejlepší pro: zaneprázdněné rezidenty",
     needsPersona: false,
     includes: [
-      "Přehled projektů a přínosů",
+      "Přehled scénářů a přínosů",
       "Klíčová čísla na jedné straně",
       "Hlavní argumenty pro rekonstrukci",
       "Dopad na fond oprav",
@@ -534,7 +534,7 @@ export const exportTypes: ExportType[] = [
     bestFor: "Nejlepší pro: analytické povahy",
     needsPersona: false,
     includes: [
-      "Přehled projektů a přínosů",
+      "Přehled scénářů a přínosů",
       "Finanční rozpad po položkách",
       "Návratnost a predikce úspor",
       "Harmonogram a milníky",
@@ -554,7 +554,7 @@ export const exportTypes: ExportType[] = [
     needsPersona: false,
     includes: [
       "Klíčové metriky a grafy",
-      "Porovnání projektů",
+      "Porovnání scénářů",
       "Mluvící body ke každému snímku",
       "Příprava na časté dotazy",
     ],
@@ -624,7 +624,7 @@ export const exportHistory: ExportHistoryItem[] = [
     name: "Schůze SVJ červen — prezentace",
     type: "Prezentace",
     format: "PPTX",
-    project: "Všechny projekty",
+    project: "Všechny scénáře",
     createdAt: "2026-05-15",
     size: "6,1 MB",
   },

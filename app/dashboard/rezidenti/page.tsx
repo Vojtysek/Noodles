@@ -617,9 +617,9 @@ export default function RezidentiPage() {
                     </p>
                   </div>
                 )}
-              </div>
             </div>
           </div>
+        </div>
         </div>
           )}
         </>

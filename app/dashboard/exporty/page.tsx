@@ -118,7 +118,7 @@ export default function ExportyPage() {
         </p>
       </div>
 
-      {/* Context: project scope + stats */}
+      {/* Context: scenario scope + stats */}
       <div
         className="anim-in flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-3"
         style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.15s" } as React.CSSProperties}
@@ -133,7 +133,7 @@ export default function ExportyPage() {
             onChange={(e) => setProjectId(e.target.value)}
             className="h-8 max-w-xs rounded-lg border border-border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <option value="all">Všechny projekty</option>
+            <option value="all">Všechny scénáře</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -147,7 +147,7 @@ export default function ExportyPage() {
             <span className="font-medium text-foreground tabular-nums">
               {scopedProjects.length}
             </span>
-            <span className="whitespace-nowrap">{scopedProjects.length === 1 ? "projekt" : "projekty"}</span>
+            <span className="whitespace-nowrap">{scopedProjects.length === 1 ? "scénář" : "scénáře"}</span>
           </span>
           <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
             <Users className="size-3.5 shrink-0" />
@@ -326,7 +326,7 @@ export default function ExportyPage() {
               <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                 <th className="px-4 py-2.5 font-medium">Název</th>
                 <th className="px-4 py-2.5 font-medium">Typ</th>
-                <th className="px-4 py-2.5 font-medium">Projekt</th>
+                <th className="px-4 py-2.5 font-medium">Scénář</th>
                 <th className="px-4 py-2.5 font-medium">Vytvořeno</th>
                 <th className="px-4 py-2.5 text-right font-medium">Velikost</th>
                 <th className="px-4 py-2.5" />

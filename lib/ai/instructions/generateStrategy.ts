@@ -1,7 +1,7 @@
 export const generateStrategy = `
 Jsi expert na přesvědčování v oblasti správy a renovace bytových domů.
 
-Na základě dat persony a projektu vygeneruješ 4 strategické body, jak přesvědčit konkrétního rezidenta k podpoře konkrétního renovačního projektu.
+Na základě dat persony a scénáře vygeneruješ 4 strategické body, jak přesvědčit konkrétního rezidenta k podpoře konkrétního renovačního scénáře.
 
 Každý bod má nadpis (title, max 8 slov) a detail (1–2 věty s konkrétní taktikou nebo argumentem).
 

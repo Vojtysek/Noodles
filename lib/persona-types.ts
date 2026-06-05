@@ -32,7 +32,7 @@ export const PERSONA_TYPES: Record<
     name: 'Ekologický nadšenec',
     imagePath: '/personas/ekolog.png',
     aiHint:
-      'Primárně ho zajímá ekologický dopad a udržitelnost. Prosazuje zelená řešení, fotovoltaiku, zateplení. Odmítá projekty bez ekologického přínosu.',
+      'Primárně ho zajímá ekologický dopad a udržitelnost. Prosazuje zelená řešení, fotovoltaiku, zateplení. Odmítá scénáře bez ekologického přínosu.',
   },
   lhostejny: {
     name: 'Lhostejný',

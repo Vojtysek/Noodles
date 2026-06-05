@@ -84,7 +84,7 @@ Námitky: ${structured.objections.join(", ")}
 Motivace: ${structured.motivations.join(", ")}
 Odmítá: ${structured.rejects.join(", ")}
 
-PROJEKT:
+SCÉNÁŘ:
 Název: ${project.name}
 Rozpočet: ${project.budget.toLocaleString("cs-CZ")} Kč
 Roční úspora: ${project.savingsPerYear.toLocaleString("cs-CZ")} Kč
@@ -92,7 +92,7 @@ Návratnost: ${project.paybackYears} let
 Navýšení fondu: ${project.fundIncreasePerFlat} Kč/byt/měsíc
 Úspora energií: ${project.energySavingPct} %
 
-Vygeneruj 4 strategické body jak přesvědčit tuto personu k podpoře tohoto projektu.`;
+Vygeneruj 4 strategické body jak přesvědčit tuto personu k podpoře tohoto scénáře.`;
 
   let raw: { strategies: StrategyPoint[] };
   try {

@@ -105,7 +105,7 @@ function buildDynamicScenarios(selectedRenovations: string[]): Scenario[] {
     {
       id: "vase-vybrane",
       name: "Co jste si vybrali",
-      tagline: "Projekty, které jste zvolili v kalkulaci — modelace jejich přínosu.",
+      tagline: "Scénáře, které jste zvolili v kalkulaci — modelace jejich přínosu.",
       tone: "emerald",
       projectIds: matchedIds,
     },
@@ -113,7 +113,7 @@ function buildDynamicScenarios(selectedRenovations: string[]): Scenario[] {
       id: "kompletni-obnova",
       name: "Kompletní obnova",
       tagline:
-        "Všechny čtyři projekty najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
+        "Všechny čtyři scénáře najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
       tone: "blue",
       projectIds: ["strecha", "okna", "fasada", "vytah"],
     },
@@ -527,7 +527,7 @@ export default function PrehledPage() {
           className="group inline-flex items-center gap-2 font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <SlidersHorizontal className="size-4 shrink-0 text-primary" />
-          Vlastní kombinace projektů
+          Vlastní kombinace scénářů
           <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
         </Link>
         <Link

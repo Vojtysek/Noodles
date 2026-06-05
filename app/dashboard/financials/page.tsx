@@ -1,16 +1,19 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
 import {
   Wallet,
   TrendingDown,
+  TrendingUp,
   CalendarClock,
   Layers,
   CircleCheck,
   Scale,
   TriangleAlert,
   Star,
+  Hammer,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -24,16 +27,13 @@ import {
 import {
   projects,
   projectsByPriority,
+  scenarios,
   fmtCzk,
   fmtCzkShort,
   type ProjectId,
+  type Scenario,
+  type ScenarioTone,
 } from "@/lib/mock-data"
-
-const STATUS_LABELS: Record<string, string> = {
-  navrh: "Návrh",
-  schvalovani: "Schvalování",
-  realizace: "Realizace",
-}
 
 const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
@@ -43,13 +43,40 @@ const SAMPLES = 6
 const WITHOUT_COLOR = "var(--color-rose-500, #f43f5e)"
 const WITH_COLOR = "var(--color-emerald-500, #10b981)"
 
+// Tečka scénáře — stejné mapování jako na stránce Přehled.
+const TONE_DOT: Record<ScenarioTone, string> = {
+  emerald: "bg-emerald-500",
+  amber: "bg-amber-500",
+  blue: "bg-blue-500",
+}
+
+const DEFAULT_SCENARIO_ID = "kompromis"
+
+/** Porovná dvě množiny ID projektů bez ohledu na pořadí. */
+function sameIdSet(a: readonly ProjectId[], b: readonly ProjectId[]): boolean {
+  if (a.length !== b.length) return false
+  const set = new Set(a)
+  return b.every((id) => set.has(id))
+}
+
 export default function FinancialsPage() {
-  // Mix & match — lze vybrat libovolnou kombinaci projektů, nebo všechny najednou.
-  // Výchozí výběr: projekt s nejvyšší prioritou (největší dopad).
-  const [selectedIds, setSelectedIds] = useState<ProjectId[]>([projectsByPriority[0].id])
+  // Hlavní ovládání: předpřipravené scénáře (levný → drahý). Mix & match zůstává
+  // jako skrytá pokročilá možnost. Výchozí scénář: rozumný kompromis.
+  const defaultScenario =
+    scenarios.find((s) => s.id === DEFAULT_SCENARIO_ID) ?? scenarios[0]
+  const [selectedIds, setSelectedIds] = useState<ProjectId[]>(defaultScenario.projectIds)
   const [horizon, setHorizon] = useState(15)
+  const [mixOpen, setMixOpen] = useState(false)
 
   const allSelected = selectedIds.length === projects.length
+
+  // Aktivní scénář — pokud vybraná množina projektů odpovídá některému scénáři.
+  const activeScenario: Scenario | null =
+    scenarios.find((s) => sameIdSet(s.projectIds, selectedIds)) ?? null
+
+  function selectScenario(s: Scenario) {
+    setSelectedIds(s.projectIds)
+  }
 
   function toggleProject(id: ProjectId) {
     setSelectedIds((prev) => {
@@ -141,11 +168,11 @@ export default function FinancialsPage() {
   }, [selected, single, horizon])
 
   const spentPct = Math.round((agg.spent / agg.budget) * 100)
-  const scopeLabel = single
-    ? single.name
-    : allSelected
-      ? "Všechny projekty"
-      : selected.map((p) => p.shortName).join(" + ")
+  const scopeLabel = activeScenario
+    ? activeScenario.name
+    : single
+      ? single.name
+      : "Vlastní výběr"
   const breakEvenYearNum =
     agg.breakEvenPos !== null ? Math.round(START_YEAR + agg.breakEvenPos * horizon) : null
   const breakEvenLabel =
@@ -155,7 +182,7 @@ export default function FinancialsPage() {
     { icon: Wallet, label: "Investice", value: fmtCzkShort(agg.budget), accent: null },
     {
       icon: TrendingDown,
-      label: "Roční úspora po rekonstrukci",
+      label: "Roční úspora",
       value: fmtCzkShort(agg.savingsPerYear),
       accent: "text-emerald-600 dark:text-emerald-400",
     },
@@ -167,7 +194,7 @@ export default function FinancialsPage() {
     },
     {
       icon: TriangleAlert,
-      label: `Ztráta bez rekonstrukce za ${horizon} let`,
+      label: "Ztráta bez akce",
       value: fmtCzkShort(Math.abs(agg.lossAtHorizon)),
       accent:
         agg.lossAtHorizon > 0
@@ -190,7 +217,7 @@ export default function FinancialsPage() {
 
       {/* Header */}
       <div
-        className="anim-in"
+        className="anim-in flex flex-col"
         style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
       >
         <div className="flex items-center gap-2.5">
@@ -201,93 +228,143 @@ export default function FinancialsPage() {
         </div>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Finance</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Finanční modelace obou scénářů — rekonstrukce vs. nečinnost. Stačí přehled?{" "}
-          <Link href="/dashboard/prehled" className="font-medium text-primary hover:underline">
-            Zpět na Přehled
-          </Link>
-          .
+          Rekonstrukce vs. nečinnost — kolik vás stojí každá cesta.
         </p>
       </div>
 
-      {/* Project mix & match */}
+      {/* Výběr scénáře — hlavní ovládací prvek */}
       <div
-        className="anim-in flex flex-col gap-2.5"
+        className="anim-in flex flex-col gap-3"
         style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.15s" } as React.CSSProperties}
       >
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Projekty k porovnání
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {selected.length} z {projects.length} vybráno
-            </span>
-            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1.5 py-0.5 font-medium">data k doplnění</span>
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => setSelectedIds(projects.map((p) => p.id))}
-              disabled={allSelected}
-            >
-              <Layers />
-              Vybrat vše
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          {projectsByPriority.map((p) => {
-            const active = selectedIds.includes(p.id)
-            return (
-              <button
-                key={p.id}
-                onClick={() => toggleProject(p.id)}
-                aria-pressed={active}
-                className={cn(
-                  "flex flex-col gap-1.5 rounded-2xl border p-3 text-left transition-all duration-200",
-                  active
-                    ? "scale-[1.02] border-primary/60 bg-primary/5 shadow-lg ring-3 ring-primary/15"
-                    : "hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className={cn("text-sm font-medium", !active && "text-muted-foreground")}>
-                    {p.shortName}
-                  </p>
-                  {active ? (
-                    <CircleCheck className="size-4 shrink-0 text-primary" />
-                  ) : (
-                    <span className="size-4 shrink-0 rounded-full border-2 border-border" />
+        <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          Vyberte scénář
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+            {scenarios.map((s) => {
+              const active = activeScenario?.id === s.id
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => selectScenario(s)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
+                    active
+                      ? "bg-background text-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
-                </div>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {fmtCzkShort(p.budget)}
-                </p>
-                <div className="flex flex-wrap items-center gap-1">
-                  <span
-                    className={cn(
-                      "flex w-fit items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-                      p.priority === 1
-                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                        : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {p.priority === 1 && <Star className="size-2.5 fill-current" />}
-                    Priorita {p.priority}
-                  </span>
-                  <span
-                    className={cn(
-                      "w-fit rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-                      active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {STATUS_LABELS[p.status]}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
+                >
+                  <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
+                  {s.name}
+                </button>
+              )
+            })}
+          </div>
+          {!activeScenario && (
+            <span className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3.5 py-1.5 text-sm font-medium text-muted-foreground">
+              <span className="size-2 shrink-0 rounded-full bg-muted-foreground/50" />
+              Vlastní výběr
+            </span>
+          )}
+        </div>
+
+        {/* Tagline + rozpočet aktivního scénáře */}
+        <p className="text-xs text-muted-foreground">
+          {activeScenario ? (
+            <>
+              {activeScenario.tagline}{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                Celkem {fmtCzkShort(agg.budget)}.
+              </span>
+            </>
+          ) : (
+            <>
+              Vlastní kombinace {selected.length} z {projects.length} projektů.{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                Celkem {fmtCzkShort(agg.budget)}.
+              </span>
+            </>
+          )}
+        </p>
+
+        {/* Pokročilé: ruční mix & match */}
+        <div className="flex flex-col gap-2.5">
+          <button
+            type="button"
+            onClick={() => setMixOpen((v) => !v)}
+            aria-expanded={mixOpen}
+            className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Upravit výběr projektů
+            {mixOpen ? (
+              <ChevronUp className="size-3.5" />
+            ) : (
+              <ChevronDown className="size-3.5" />
+            )}
+          </button>
+
+          {mixOpen && (
+            <div className="flex flex-col gap-2.5 rounded-2xl border bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {selected.length} z {projects.length} vybráno
+                </span>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setSelectedIds(projects.map((p) => p.id))}
+                  disabled={allSelected}
+                >
+                  <Layers />
+                  Vybrat vše
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {projectsByPriority.map((p) => {
+                  const active = selectedIds.includes(p.id)
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => toggleProject(p.id)}
+                      aria-pressed={active}
+                      className={cn(
+                        "flex flex-col gap-1.5 rounded-2xl border p-3 text-left transition-all duration-200",
+                        active
+                          ? "scale-[1.02] border-primary/60 bg-primary/5 shadow-lg ring-3 ring-primary/15"
+                          : "bg-background/60 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          {p.priority === 1 && (
+                            <Star className="size-3 shrink-0 fill-amber-400 text-amber-400" />
+                          )}
+                          <p
+                            className={cn(
+                              "text-sm font-medium",
+                              !active && "text-muted-foreground"
+                            )}
+                          >
+                            {p.shortName}
+                          </p>
+                        </div>
+                        {active ? (
+                          <CircleCheck className="size-4 shrink-0 text-primary" />
+                        ) : (
+                          <span className="size-4 shrink-0 rounded-full border-2 border-border" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {fmtCzkShort(p.budget)}
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -340,89 +417,124 @@ export default function FinancialsPage() {
       </div>
 
       {/* Scenario side-by-side */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div
-          className="anim-in relative overflow-hidden rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-rose-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-bl-[3rem]"
-          style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.45s" } as React.CSSProperties}
-        >
-          <div
+      <div
+        className="anim-in relative grid grid-cols-1 gap-3 lg:grid-cols-2"
+        style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.35s" } as React.CSSProperties}
+      >
+        {/* VS odznak mezi kartami (jen desktop) */}
+        <span className="absolute left-1/2 top-1/2 z-10 hidden size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-background text-[11px] font-bold text-muted-foreground shadow-sm lg:flex">
+          VS
+        </span>
+
+        {/* Scénář A — bez rekonstrukce */}
+        <div className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm transition-shadow hover:shadow-lg sm:p-5 lg:rounded-bl-[3rem]">
+          <span
             aria-hidden
-            className="pointer-events-none absolute -top-12 -right-12 size-40 rounded-full bg-rose-500/10 blur-[60px]"
+            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-rose-500/70"
           />
-          <div className="flex items-center gap-2.5">
-            <span aria-hidden className="h-px w-6 bg-rose-500/60" />
-            <p className="text-[11px] font-semibold tracking-[0.2em] text-rose-600 uppercase dark:text-rose-400">
-              Scénář A
+          {/* Ručně kreslená stoupající šipka v rohu */}
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute -top-1 right-3 size-16 text-rose-500/20"
+            viewBox="0 0 64 64"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M10 50 L26 34 L36 44 L54 18" />
+            <path d="M42 16 H56 V30" />
+          </svg>
+          <div className="flex items-center gap-3">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-rose-500/10">
+              <TrendingUp className="size-4 text-rose-600 dark:text-rose-400" />
+            </span>
+            <div>
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-rose-600 uppercase dark:text-rose-400">
+                Scénář A
+              </p>
+              <p className="text-sm font-semibold">Bez rekonstrukce</p>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-[11px] text-muted-foreground">Celkem za {horizon} let</p>
+            <p className="text-2xl font-bold tabular-nums text-rose-600 dark:text-rose-400 sm:text-3xl">
+              {fmtCzkShort(agg.cumWithoutEnd)}
             </p>
           </div>
-          <p className="mt-1.5 text-base font-semibold text-rose-600 dark:text-rose-400">
-            Bez rekonstrukce
-          </p>
-          <div className="mt-3 flex flex-col gap-2 text-sm">
-            <div className="flex items-baseline justify-between gap-2">
+
+          <div className="mt-4 divide-y divide-border/60 border-t border-border/60 text-sm">
+            <div className="flex items-baseline justify-between gap-2 py-2">
               <span className="text-muted-foreground">Roční náklady dnes</span>
               <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithoutNow)}</span>
             </div>
-            <div className="flex items-baseline justify-between gap-2">
+            <div className="flex items-baseline justify-between gap-2 py-2">
               <span className="text-muted-foreground">Roční náklady za {horizon} let</span>
               <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithoutEnd)}</span>
             </div>
-            <div className="mt-1 flex items-baseline justify-between gap-2 border-t border-rose-500/20 pt-2">
-              <span className="text-muted-foreground">Celkem zaplatíte za {horizon} let</span>
-              <span className="font-semibold text-rose-600 tabular-nums dark:text-rose-400">
-                {fmtCzkShort(agg.cumWithoutEnd)}
-              </span>
-            </div>
           </div>
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Náklady porostou ~{agg.growthPct.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} % ročně bez brzdné investice.
-          </p>
         </div>
 
-        <div
-          className="anim-in relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-br-[3rem]"
-          style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.57s" } as React.CSSProperties}
-        >
-          <div
+        {/* Scénář B — s rekonstrukcí */}
+        <div className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm transition-shadow hover:shadow-lg sm:p-5 lg:rounded-br-[3rem]">
+          <span
             aria-hidden
-            className="pointer-events-none absolute -top-12 -left-12 size-40 rounded-full bg-emerald-500/10 blur-[60px]"
+            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-emerald-500/70"
           />
-          <div className="flex items-center gap-2.5">
-            <span aria-hidden className="h-px w-6 bg-emerald-500/60" />
-            <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
-              Scénář B
+          {/* Ručně kreslený domeček s kladívkem v rohu */}
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute -top-1 right-3 size-16 text-emerald-500/20"
+            viewBox="0 0 64 64"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 30 L32 14 L52 30" />
+            <path d="M18 28 V50 H46 V28" />
+            <path d="M40 40 L50 30 M46 26 L54 34" />
+          </svg>
+          <div className="flex items-center gap-3">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+              <Hammer className="size-4 text-emerald-600 dark:text-emerald-400" />
+            </span>
+            <div>
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
+                Scénář B
+              </p>
+              <p className="text-sm font-semibold">S rekonstrukcí</p>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-[11px] text-muted-foreground">
+              Celkem vč. investice za {horizon} let
+            </p>
+            <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 sm:text-3xl">
+              {fmtCzkShort(agg.cumWithEnd)}
             </p>
           </div>
-          <p className="mt-1.5 text-base font-semibold text-emerald-600 dark:text-emerald-400">
-            S rekonstrukcí
-          </p>
-          <div className="mt-3 flex flex-col gap-2 text-sm">
-            <div className="flex items-baseline justify-between gap-2">
+
+          <div className="mt-4 divide-y divide-border/60 border-t border-border/60 text-sm">
+            <div className="flex items-baseline justify-between gap-2 py-2">
               <span className="text-muted-foreground">Jednorázová investice</span>
               <span className="font-medium tabular-nums">{fmtCzkShort(agg.budget)}</span>
             </div>
-            <div className="flex items-baseline justify-between gap-2">
+            <div className="flex items-baseline justify-between gap-2 py-2">
               <span className="text-muted-foreground">Roční náklady po rekonstrukci</span>
               <span className="font-medium tabular-nums">{fmtCzkShort(agg.annualWithNow)}</span>
             </div>
-            <div className="mt-1 flex items-baseline justify-between gap-2 border-t border-emerald-500/20 pt-2">
-              <span className="text-muted-foreground">
-                Celkem vč. investice za {horizon} let
-              </span>
-              <span className="font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
-                {fmtCzkShort(agg.cumWithEnd)}
-              </span>
-            </div>
           </div>
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Bod zlomu: {breakEvenLabel}; roční úspora {fmtCzkShort(agg.savingsPerYear)} dál roste.
-          </p>
         </div>
       </div>
 
       {/* Delta callout */}
       <div
-        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.35s" } as React.CSSProperties}
+        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.45s" } as React.CSSProperties}
         className={cn(
           "anim-in flex items-center gap-3 rounded-2xl border px-4 py-3",
           agg.lossAtHorizon > 0
@@ -441,75 +553,71 @@ export default function FinancialsPage() {
         <p className="text-sm">
           {agg.lossAtHorizon > 0 ? (
             <>
-              Pokud se nezrekonstruuje, vyjde to za {horizon} let o{" "}
+              Nečinnost vyjde za {horizon} let o{" "}
               <span className="font-semibold text-rose-600 tabular-nums dark:text-rose-400">
                 {fmtCzkShort(agg.lossAtHorizon)}
               </span>{" "}
-              dráž — a rozdíl se každým dalším rokem prohlubuje.
+              dráž.
             </>
           ) : (
             <>
-              Na horizontu {horizon} let se investice ještě nevrátí — chybí{" "}
+              Investice se za {horizon} let ještě nevrátí — chybí{" "}
               <span className="font-semibold tabular-nums">
                 {fmtCzkShort(Math.abs(agg.lossAtHorizon))}
               </span>
-              . Bod zlomu: {breakEvenLabel}. Zkuste delší horizont.
+              . Zkuste delší horizont.
             </>
           )}
         </p>
       </div>
 
       {/* Comparison charts */}
-      <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-        <p className="text-sm font-medium">Roční náklady v čase</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Roční výdaje obou scénářů v čase
-        </p>
-        <div className="mt-4">
-          <ComparisonLineChart
-            series={[
-              {
-                label: "Bez rekonstrukce",
-                color: WITHOUT_COLOR,
-                points: agg.annualSeries.without,
-              },
-              {
-                label: "S rekonstrukcí",
-                color: WITH_COLOR,
-                points: agg.annualSeries.with,
-              },
-            ]}
-            formatValue={fmtCzkShort}
-          />
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
+          <p className="text-sm font-medium">Roční náklady</p>
+          <div className="mt-4">
+            <ComparisonLineChart
+              series={[
+                {
+                  label: "Bez rekonstrukce",
+                  color: WITHOUT_COLOR,
+                  points: agg.annualSeries.without,
+                },
+                {
+                  label: "S rekonstrukcí",
+                  color: WITH_COLOR,
+                  points: agg.annualSeries.with,
+                },
+              ]}
+              formatValue={fmtCzkShort}
+            />
+          </div>
         </div>
-      </div>
 
-      <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-        <p className="text-sm font-medium">Kumulativní náklady včetně investice</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Kumulativní výdaje — kde se křivky protnou, investice se vrátila
-        </p>
-        <div className="mt-4">
-          <ComparisonLineChart
-            series={[
-              {
-                label: "Bez rekonstrukce",
-                color: WITHOUT_COLOR,
-                points: agg.cumSeries.without,
-              },
-              {
-                label: "S rekonstrukcí (vč. investice)",
-                color: WITH_COLOR,
-                points: agg.cumSeries.with,
-              },
-            ]}
-            formatValue={fmtCzkShort}
-            marker={
-              agg.breakEvenPos !== null
-                ? { position: agg.breakEvenPos, label: `Bod zlomu ${breakEvenLabel}` }
-                : null
-            }
-          />
+        <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
+          <p className="text-sm font-medium">Kumulativní náklady vč. investice</p>
+          <div className="mt-4">
+            <ComparisonLineChart
+              series={[
+                {
+                  label: "Bez rekonstrukce",
+                  color: WITHOUT_COLOR,
+                  points: agg.cumSeries.without,
+                },
+                {
+                  label: "S rekonstrukcí (vč. investice)",
+                  color: WITH_COLOR,
+                  points: agg.cumSeries.with,
+                },
+              ]}
+              formatValue={fmtCzkShort}
+              marker={
+                agg.breakEvenPos !== null
+                  ? { position: agg.breakEvenPos, label: `Bod zlomu ${breakEvenLabel}` }
+                  : null
+              }
+            />
+          </div>
         </div>
       </div>
 
@@ -517,26 +625,27 @@ export default function FinancialsPage() {
       <div data-fin-block className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
           <p className="text-sm font-medium">Čerpání rozpočtu</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Vyčerpáno {fmtCzk(agg.spent)} z {fmtCzk(agg.budget)}
-          </p>
           <div className="mt-4">
             <DonutChart percent={spentPct} label="rozpočtu vyčerpáno" />
           </div>
-          <div className="mt-4 rounded-xl bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
-            Navýšení fondu oprav:{" "}
-            <span className="font-medium text-foreground tabular-nums">
-              {fmtCzk(agg.fundIncreasePerFlat)} / byt / měsíc
+          <div className="mt-4 flex flex-col gap-1 rounded-xl bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
+            <span>
+              Vyčerpáno{" "}
+              <span className="font-medium text-foreground tabular-nums">{fmtCzk(agg.spent)}</span> z{" "}
+              <span className="font-medium text-foreground tabular-nums">{fmtCzk(agg.budget)}</span>
             </span>
-            {!single && <span className="ml-1">(součet za vybrané projekty)</span>}
+            <span>
+              Navýšení fondu oprav:{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                {fmtCzk(agg.fundIncreasePerFlat)} / byt / měsíc
+              </span>
+              {!single && <span className="ml-1">(součet za vybrané scénáře)</span>}
+            </span>
           </div>
         </div>
 
         <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
           <p className="text-sm font-medium">Rozpad nákladů</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {single ? "Hlavní položky rozpočtu" : "Rozpočty vybraných projektů"}
-          </p>
           <div className="mt-4">
             <BreakdownBars data={agg.costBreakdown} formatValue={fmtCzkShort} />
           </div>
@@ -556,7 +665,7 @@ export default function FinancialsPage() {
             <thead>
               <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                 <th className="px-4 py-2.5 font-medium">Položka</th>
-                {!single && <th className="px-4 py-2.5 font-medium">Projekt</th>}
+                {!single && <th className="px-4 py-2.5 font-medium">Scénář</th>}
                 <th className="px-4 py-2.5 font-medium">Dodavatel</th>
                 <th className="px-4 py-2.5 text-right font-medium">Částka</th>
                 <th className="px-4 py-2.5 text-right font-medium">Podíl</th>
