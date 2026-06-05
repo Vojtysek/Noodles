@@ -2,7 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, ChartColumn, FileDown, Calculator, Building2 } from "lucide-react"
+import {
+  Users,
+  ChartColumn,
+  FileDown,
+  Calculator,
+  Building2,
+  Astroid,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -12,7 +19,10 @@ const NAV_ITEMS = [
   { href: "/dashboard/exporty", label: "Exporty", icon: FileDown },
 ]
 
-const TOOL_ITEMS = [{ href: "/calculator", label: "Kalkulačka", icon: Calculator }]
+const TOOL_ITEMS = [
+  { href: "/calculator", label: "Kalkulačka", icon: Calculator },
+  { href: "/calculator", label: "AI Asistent", icon: Astroid },
+]
 
 export function DashboardSidebar() {
   const pathname = usePathname()
