@@ -1,10 +1,7 @@
 "use client"
 
-import { useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
 import {
   Users,
   ChartColumn,
@@ -31,25 +28,9 @@ const TOOL_ITEMS = [
 
 export function DashboardSidebar() {
   const pathname = usePathname()
-  const rootRef = useRef<HTMLElement>(null)
-
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-      gsap.from("[data-sb-item]", {
-        x: -10,
-        autoAlpha: 0,
-        duration: 0.35,
-        ease: "power3.out",
-        stagger: 0.04,
-      })
-    },
-    { scope: rootRef }
-  )
 
   return (
     <aside
-      ref={rootRef}
       className="sticky top-0 flex h-svh w-56 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl"
     >
       {/* Ambient tint */}
@@ -62,7 +43,10 @@ export function DashboardSidebar() {
         className="pointer-events-none absolute -right-24 -bottom-24 size-56 rounded-full bg-emerald-500/8 blur-[90px]"
       />
 
-      <div data-sb-item className="relative flex items-center gap-2.5 px-4 py-5">
+      <div
+        className="sb-item-in relative flex items-center gap-2.5 px-4 py-5"
+        style={{ "--sb-i": 0 } as React.CSSProperties}
+      >
         <div className="relative flex size-8 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-1 ring-white/15">
           <Building2 className="size-4" />
           <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-emerald-400 ring-2 ring-sidebar" />
@@ -82,24 +66,24 @@ export function DashboardSidebar() {
 
       <nav className="relative flex flex-1 flex-col gap-0.5 px-2 pt-1">
         <p
-          data-sb-item
-          className="px-2 pt-2 pb-1.5 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+          className="sb-item-in px-2 pt-2 pb-1.5 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+          style={{ "--sb-i": 1 } as React.CSSProperties}
         >
           Přehledy
         </p>
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.map((item, i) => {
           const active = pathname.startsWith(item.href)
           return (
             <Link
               key={item.href}
               href={item.href}
-              data-sb-item
               className={cn(
-                "relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm transition-all duration-200",
+                "sb-item-in relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm transition-all duration-200",
                 active
                   ? "bg-sidebar-primary/10 font-medium text-sidebar-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
               )}
+              style={{ "--sb-i": 2 + i } as React.CSSProperties}
             >
               {active && (
                 <span
@@ -119,17 +103,17 @@ export function DashboardSidebar() {
         })}
 
         <p
-          data-sb-item
-          className="px-2 pt-5 pb-1.5 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+          className="sb-item-in px-2 pt-5 pb-1.5 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
+          style={{ "--sb-i": 6 } as React.CSSProperties}
         >
           Nástroje
         </p>
-        {TOOL_ITEMS.map((item) => (
+        {TOOL_ITEMS.map((item, i) => (
           <Link
             key={item.href}
             href={item.href}
-            data-sb-item
-            className="flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+            className="sb-item-in flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+            style={{ "--sb-i": 7 + i } as React.CSSProperties}
           >
             <item.icon className="size-4 shrink-0" />
             {item.label}
