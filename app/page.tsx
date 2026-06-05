@@ -1,19 +1,30 @@
-import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/server";
 
-export default function Page() {
+export default async function Page() {
+  const supabase = await createClient();
+  const { data: renovations } = await supabase
+    .from("renovations")
+    .select("*")
+    .order("created_at", { ascending: false });
+
   return (
     <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
+      <div className="flex w-full max-w-lg flex-col gap-6">
+        <h1 className="text-xl font-semibold">Renovations</h1>
+        <div className="flex flex-col gap-3">
+          {renovations?.map((r) => (
+            <div
+              key={r.id}
+              className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm"
+            >
+              <span>{r.name}</span>
+              <span className="font-mono font-medium">
+                {Number(r.cost_czk).toLocaleString("cs-CZ")} Kč
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
-  )
+  );
 }
