@@ -29,6 +29,7 @@ import {
   personas as initialPersonas,
   projects,
   scenarios,
+  type ProjectId,
   type Scenario,
   type ScenarioTone,
   type Sentiment,
@@ -83,6 +84,41 @@ const MONTHS_CS = [
   "listopadu",
   "prosince",
 ]
+
+const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
+  "Okna": "okna",
+  "Zateplení fasády": "fasada",
+  "Zateplení střechy": "strecha",
+}
+
+function buildDynamicScenarios(selectedRenovations: string[]): Scenario[] {
+  const matchedIds = selectedRenovations
+    .map((label) => RENOVATION_LABEL_TO_PROJECT[label])
+    .filter((id): id is ProjectId => id !== undefined)
+
+  if (matchedIds.length === 0) {
+    // Fall back to kompromis + kompletni (skip "nejnutnejsi")
+    return scenarios.filter((s) => s.id !== "nejnutnejsi")
+  }
+
+  return [
+    {
+      id: "vase-vybrane",
+      name: "Co jste si vybrali",
+      tagline: "Projekty, které jste zvolili v kalkulaci — modelace jejich přínosu.",
+      tone: "emerald",
+      projectIds: matchedIds,
+    },
+    {
+      id: "kompletni-obnova",
+      name: "Kompletní obnova",
+      tagline:
+        "Všechny čtyři projekty najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
+      tone: "blue",
+      projectIds: ["strecha", "okna", "fasada", "vytah"],
+    },
+  ]
+}
 
 const TONE_STYLES: Record<ScenarioTone, { selected: string; dot: string }> = {
   emerald: {
@@ -166,6 +202,7 @@ function computeScenario(scenario: Scenario) {
 }
 
 export default function PrehledPage() {
+  const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>(scenarios.slice(1)) // starts with kompromis + kompletni
   const [scenarioId, setScenarioId] = useState(scenarios[1].id)
   const [supportCounts, setSupportCounts] = useState(() => countSentiments(initialPersonas))
   // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
@@ -201,7 +238,12 @@ export default function PrehledPage() {
           .order("created_at", { ascending: false })
           .limit(1)
           .single()
-        if (data) setBuildingCalc(data as BuildingCalc)
+        if (data) {
+          setBuildingCalc(data as BuildingCalc)
+          const built = buildDynamicScenarios((data as BuildingCalc).selected_renovations ?? [])
+          setDynamicScenarios(built)
+          setScenarioId(built[0].id)
+        }
       } catch {}
     })()
   }, [])
@@ -219,7 +261,7 @@ export default function PrehledPage() {
       .catch(() => {/* keep mock data on error */})
   }, [])
 
-  const scenario = scenarios.find((s) => s.id === scenarioId) ?? scenarios[0]
+  const scenario = dynamicScenarios.find((s) => s.id === scenarioId) ?? dynamicScenarios[0]
   const result = useMemo(() => computeScenario(scenario), [scenario])
 
   const inProgress = projects.filter((p) => p.status === "realizace")
@@ -283,13 +325,13 @@ export default function PrehledPage() {
           <div className="flex items-center gap-2.5">
             <span aria-hidden className="h-px w-7 bg-emerald-500/60" />
             <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
-              SVJ Letná 24
+              {buildingCalc?.address ?? "Vaše SVJ"}
             </p>
           </div>
           <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Přehled</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Vše podstatné o rekonstrukcích SVJ Letná 24 na jednom místě — bez tabulek a odborných
-            pojmů.
+            Vše podstatné o rekonstrukcích na jednom místě — přehled investice, úspor a
+            harmonogramu.
           </p>
         </div>
         {process.env.NODE_ENV === "development" && (
@@ -370,16 +412,15 @@ export default function PrehledPage() {
           <div className="flex items-center gap-2.5">
             <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
             <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-              Jak se do toho pustit?
+              Varianty realizace
             </p>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Tři připravené cesty — od nejlevnější po kompletní. Vyberte si a níže uvidíte, jak
-            dlouho potrvá a co bude stát.
+            Dvě varianty realizace — vyberte a níže uvidíte harmonogram a finanční dopad.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-          {scenarios.map((s) => {
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {dynamicScenarios.map((s) => {
             const r = computeScenario(s)
             const active = s.id === scenarioId
             const tone = TONE_STYLES[s.tone]

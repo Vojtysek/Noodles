@@ -220,8 +220,7 @@ export default function FinancialsPage() {
         </div>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Finance</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Co se stane, když rekonstruovat — a když ne. Modelace obou scénářů v čase pro libovolnou
-          kombinaci projektů. Stačí vám rychlý souhrn?{" "}
+          Finanční modelace obou scénářů — rekonstrukce vs. nečinnost. Stačí přehled?{" "}
           <Link href="/dashboard/prehled" className="font-medium text-primary hover:underline">
             Zpět na Přehled
           </Link>
@@ -236,14 +235,12 @@ export default function FinancialsPage() {
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Projekty k porovnání
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Seřazeno podle priority — Priorita 1 má největší dopad na dům.
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground tabular-nums">
               {selected.length} z {projects.length} vybráno
             </span>
+            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1.5 py-0.5 font-medium">data k doplnění</span>
             <Button
               variant="ghost"
               size="xs"
@@ -391,8 +388,7 @@ export default function FinancialsPage() {
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Náklady rostou ~{agg.growthPct.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} %
-            ročně (energie, údržba stárnoucích konstrukcí) a žádná investice je nebrzdí.
+            Náklady porostou ~{agg.growthPct.toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} % ročně bez brzdné investice.
           </p>
         </div>
 
@@ -432,8 +428,7 @@ export default function FinancialsPage() {
             </div>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Investice se vrátí v roce {breakEvenLabel}; úspora{" "}
-            {fmtCzkShort(agg.savingsPerYear)} ročně dál roste s cenami energií.
+            Bod zlomu: {breakEvenLabel}; roční úspora {fmtCzkShort(agg.savingsPerYear)} dál roste.
           </p>
         </div>
       </div>
@@ -481,7 +476,7 @@ export default function FinancialsPage() {
       <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
         <p className="text-sm font-medium">Roční náklady v čase</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Kolik bude dům každý rok stát — nůžky mezi scénáři se s růstem cen energií rozevírají
+          Roční výdaje obou scénářů v čase
         </p>
         <div className="mt-4">
           <ComparisonLineChart
@@ -505,7 +500,7 @@ export default function FinancialsPage() {
       <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
         <p className="text-sm font-medium">Kumulativní náklady včetně investice</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Celkové výdaje od roku {START_YEAR} — kde se křivky protnou, investice se zaplatila
+          Kumulativní výdaje — kde se křivky protnou, investice se vrátila
         </p>
         <div className="mt-4">
           <ComparisonLineChart

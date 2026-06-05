@@ -278,8 +278,7 @@ export default function RezidentiPage() {
         <div className="animate-in fade-in duration-200 rounded-xl border bg-muted/30 p-6">
           <p className="text-sm font-medium">Popište rezidenta vlastními slovy</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Kdo to je, jak se chová, co mu vadí, jaké má námitky proti rekonstrukcím a co momentálně
-            odmítá. Text později zpracuje AI agent do strukturované podoby.
+            Popište osobnost a postoj rezidenta. AI agent text automaticky vyhodnotí.
           </p>
           <div className="mt-4 flex flex-col gap-3">
             <input
@@ -546,9 +545,6 @@ export default function RezidentiPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-medium">Argumentační strategie</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Personalizovaná argumentace pro {selectedPersona.name}
-                </p>
               </div>
               <div className="flex items-center gap-2">
                 <select
@@ -589,7 +585,7 @@ export default function RezidentiPage() {
                 <div className="flex items-start gap-3 rounded-lg border border-dashed px-4 py-3 opacity-60">
                   <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Vyberte projekt a klikněte na „Vygenerovat strategie" pro argumentaci na míru.
+                    Vyberte projekt výše a vygenerujte argumentaci.
                   </p>
                 </div>
               )}

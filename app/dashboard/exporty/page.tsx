@@ -102,8 +102,7 @@ export default function ExportyPage() {
         </div>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Exporty</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          PDF a prezentace z agregovaných dat — materiály pro různé situace a publika. Zatím mock
-          bez skutečného generování.
+          PDF a prezentace připravené pro různé situace — nástěnka, osobní jednání i schůze SVJ.
         </p>
       </div>
 
@@ -148,6 +147,7 @@ export default function ExportyPage() {
             <span className="font-medium text-foreground tabular-nums">
               {fmtCzkShort(totalBudget)}
             </span>
+            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium">mock</span>
           </span>
         </div>
       </div>
@@ -258,7 +258,7 @@ export default function ExportyPage() {
           {generating
             ? "Generuji…"
             : done
-              ? "Připraveno ke stažení (mock)"
+              ? "Připraveno ke stažení"
               : selectedType.needsPersona && selectedPersona
                 ? `${selectedType.cta} — ${selectedPersona.name}`
                 : selectedType.cta}
@@ -288,9 +288,12 @@ export default function ExportyPage() {
       <div data-ex-block>
         <div className="mb-3 flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Poslední exporty
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              Poslední exporty
+            </p>
+            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1.5 py-0.5 font-medium">ukázková data</span>
+          </div>
         </div>
         <div className="overflow-x-auto rounded-2xl border">
           <table className="w-full text-sm">
