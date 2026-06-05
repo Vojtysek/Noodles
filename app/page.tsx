@@ -5,7 +5,8 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { ArrowUpRight, Building2, Check, ChevronDown } from "lucide-react";
+import { ArrowUpRight, Building2, Check, ChevronDown, FileDown, FileText, Presentation, UserRound } from "lucide-react";
+import { motion, useAnimation } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 
@@ -38,7 +39,12 @@ const steps = [
   {
     title: "Přesvědčte sousedy",
     description:
-      "Sledujte podporu rezidentů, připravte si argumenty s AI asistentem a přijďte na schůzi SVJ připraveni.",
+      "Sledujte postoje rezidentů, připravte si argumenty a exportujte přehledné materiály přímo na schůzi SVJ.",
+  },
+  {
+    title: "Sledujte průběh",
+    description:
+      "Po schválení renovace sledujte harmonogram, čerpání fondu oprav a skutečné úspory v čase.",
   },
 ];
 
@@ -81,12 +87,17 @@ const faqs = [
   {
     question: "Co je Noodles?",
     answer:
-      "Noodles je aplikace, která pomáhá renovace bytových domů nejen naplánovat, ale hlavně prosadit. Spočítá náklady a úspory, sleduje názory rezidentů a připraví vás s argumenty na hlasování SVJ.",
+      "Noodles je aplikace, která provází celým životním cyklem renovace bytového domu — od výpočtu úspor a získání podpory sousedů, přes schválení na schůzi SVJ, až po sledování průběhu a skutečných výsledků rekonstrukce.",
   },
   {
     question: "Pro koho je aplikace určená?",
     answer:
-      "Pro výbory SVJ, aktivní rezidenty a správce bytových domů, kteří chtějí renovaci dotáhnout od prvního nápadu až po schválení na schůzi.",
+      "Pro výbory SVJ, aktivní rezidenty a správce bytových domů, kteří chtějí renovaci dotáhnout od prvního nápadu až po dokončenou stavbu.",
+  },
+  {
+    question: "Co se děje po schválení renovace?",
+    answer:
+      "Po schválení na schůzi vám Noodles pomůže sledovat harmonogram prací, čerpání fondu oprav a skutečné úspory energie v čase — takže víte, jestli vše probíhá podle plánu.",
   },
   {
     question: "Kolik to stojí?",
@@ -101,7 +112,7 @@ const faqs = [
   {
     question: "Jak funguje sledování rezidentů?",
     answer:
-      "Ke každému rezidentovi si zapíšete, jak se k renovaci staví. AI z vašich poznámek vytvoří profil s námitkami a motivacemi, takže víte, s kým a o čem mluvit.",
+      "Ke každému rezidentovi si zapíšete, jak se k renovaci staví. Noodles z vašich poznámek vytvoří přehled postojů a pomůže vám připravit materiály přizpůsobené každému sousedovi.",
   },
 ];
 
@@ -132,6 +143,45 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
           <p className="text-muted-foreground pt-3 text-sm">{answer}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function HeroCta() {
+  const arrowControls = useAnimation();
+
+  return (
+    <div
+      data-hero-cta
+      className="group flex items-center gap-1.5"
+      onMouseEnter={() =>
+        arrowControls.start({
+          x: 3,
+          y: -3,
+          transition: { type: "spring", stiffness: 600, damping: 12, mass: 0.6 },
+        })
+      }
+      onMouseLeave={() =>
+        arrowControls.start({
+          x: 0,
+          y: 0,
+          transition: { type: "spring", stiffness: 400, damping: 20 },
+        })
+      }
+    >
+      <Button
+        asChild
+        className="h-14 rounded-full px-8 text-base font-semibold shadow-xl hover:bg-primary/85 group-hover:bg-primary/85"
+      >
+        <Link href="/dashboard">Spustit kalkulačku</Link>
+      </Button>
+      <Button asChild className="size-14 rounded-full shadow-xl hover:bg-primary/85 group-hover:bg-primary/85">
+        <Link href="/dashboard" aria-label="Vyzkoušet zdarma">
+          <motion.span animate={arrowControls} className="inline-flex">
+            <ArrowUpRight className="size-6" />
+          </motion.span>
+        </Link>
+      </Button>
     </div>
   );
 }
@@ -283,17 +333,6 @@ export default function Page() {
           });
         });
 
-        // Chat bubbles arrive like a real conversation
-        gsap.utils.toArray<HTMLElement>("[data-chat]").forEach((chat) => {
-          gsap.from(chat.children, {
-            y: 12,
-            autoAlpha: 0,
-            duration: 0.5,
-            ease: "power2.out",
-            stagger: 0.35,
-            scrollTrigger: { trigger: chat, start: "top 85%" },
-          });
-        });
 
         // Draw the curved progress line through the steps
         const stepsLine = document.querySelector<SVGPathElement>("[data-steps-line]");
@@ -382,19 +421,7 @@ export default function Page() {
                 </li>
               ))}
             </ul>
-            <div data-hero-cta className="flex items-center gap-1.5">
-              <Button
-                asChild
-                className="h-14 rounded-full px-8 text-base font-semibold shadow-xl"
-              >
-                <Link href="/dashboard">Vyzkoušet zdarma</Link>
-              </Button>
-              <Button asChild className="size-14 rounded-full shadow-xl">
-                <Link href="/dashboard" aria-label="Vyzkoušet zdarma">
-                  <ArrowUpRight className="size-6" />
-                </Link>
-              </Button>
-            </div>
+            <HeroCta />
           </div>
 
           {/* Oversized stat blob */}
@@ -478,11 +505,10 @@ export default function Page() {
         <section id="funkce" className="mx-auto w-full max-w-6xl scroll-mt-8 px-4 py-16 sm:px-6 lg:py-24">
           <div data-reveal className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              Spočítat je snadné. Přesvědčit je těžší.
+              Od nápadu po rekonstrukci — na jednom místě.
             </h2>
             <p className="text-muted-foreground mt-3 text-lg text-pretty">
-              Renovace neztroskotá na číslech, ale na schůzi. Noodles vám dá čísla, argumenty
-              i přehled o tom, koho ještě musíte získat.
+              Renovace neztroskotá na číslech, ale na schůzi. A po schválení přichází další výzva — sledovat průběh. Noodles vás provede každým krokem.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-3">
@@ -604,30 +630,39 @@ export default function Page() {
               </div>
             </div>
 
-            {/* AI asistent — live chat transcript */}
+            {/* Exporty — materiály pro schůzi SVJ */}
             <div
               data-reveal
               className="bg-card flex flex-col overflow-hidden rounded-2xl ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
             >
               <div className="border-border/60 flex items-center gap-2 border-b px-5 py-3">
-                <span className="size-2 rounded-full bg-emerald-500" />
+                <FileDown className="size-3.5 shrink-0 text-primary" />
                 <span className="text-muted-foreground text-xs font-medium">
-                  AI asistent · online
+                  Exporty · připraveno
                 </span>
               </div>
-              <div data-chat className="flex flex-1 flex-col gap-2.5 p-5 text-xs">
-                <p className="bg-primary text-primary-foreground max-w-[88%] self-end rounded-2xl rounded-br-md px-3 py-2">
-                  Soused tvrdí, že se zateplení nevyplatí. Co mu mám říct?
+              <div className="flex flex-1 flex-col gap-2 p-5">
+                {[
+                  { Icon: FileText, label: "Stručný přehled", tag: "PDF · 1 str." },
+                  { Icon: Presentation, label: "Prezentace na schůzi", tag: "PPTX · 8 sl." },
+                  { Icon: UserRound, label: "Dopis sousedovi", tag: "PDF · na míru" },
+                ].map(({ Icon, label, tag }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-3 rounded-xl border bg-muted/40 px-3 py-2.5"
+                  >
+                    <div className="bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-lg">
+                      <Icon className="size-3.5" />
+                    </div>
+                    <p className="min-w-0 flex-1 truncate text-sm font-medium">{label}</p>
+                    <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
+                      {tag}
+                    </span>
+                  </div>
+                ))}
+                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                  Materiály přizpůsobené vašim datům — na nástěnku, do e-mailu i na schůzi SVJ.
                 </p>
-                <p className="bg-muted max-w-[88%] self-start rounded-2xl rounded-bl-md px-3 py-2">
-                  Při vašich nákladech na teplo ušetříte ~210 tis. Kč ročně. Tady jsou tři
-                  argumenty…
-                </p>
-                <span className="bg-muted mt-0.5 flex gap-1 self-start rounded-2xl rounded-bl-md px-3 py-2.5">
-                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:0ms]" />
-                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:150ms]" />
-                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:300ms]" />
-                </span>
               </div>
             </div>
 
@@ -717,7 +752,7 @@ export default function Page() {
                 Jak to funguje
               </h2>
               <p className="text-muted-foreground mt-3 text-lg">
-                Tři kroky od nápadu ke schválené renovaci.
+                Čtyři kroky od prvního nápadu až za schválenou rekonstrukci.
               </p>
             </div>
             <div data-steps className="relative">
@@ -731,7 +766,7 @@ export default function Page() {
               >
                 <path
                   className="text-border"
-                  d="M 189 40 C 320 6, 470 6, 600 40 C 730 6, 880 6, 1011 40"
+                  d="M 150 40 C 270 6, 330 6, 450 40 C 570 6, 630 6, 750 40 C 870 6, 930 6, 1050 40"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeDasharray="2 8"
@@ -739,13 +774,13 @@ export default function Page() {
                 />
                 <path
                   data-steps-line
-                  d="M 189 40 C 320 6, 470 6, 600 40 C 730 6, 880 6, 1011 40"
+                  d="M 150 40 C 270 6, 330 6, 450 40 C 570 6, 630 6, 750 40 C 870 6, 930 6, 1050 40"
                   stroke="currentColor"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
               </svg>
-              <div className="relative grid gap-12 md:grid-cols-3 md:gap-8">
+              <div className="relative grid gap-12 md:grid-cols-4 md:gap-8">
                 {steps.map((step, index) => (
                   <div
                     key={step.title}
@@ -880,8 +915,7 @@ export default function Page() {
                 Příští schůze SVJ může dopadnout jinak
               </h2>
               <p className="max-w-md text-pretty opacity-90">
-                Za pár minut budete vědět, kolik váš dům ušetří — a s čím přesvědčíte
-                i ty, kteří váhají.
+                Za pár minut budete vědět, kolik váš dům ušetří, koho ještě přesvědčit — a co sledovat, až renovace projde.
               </p>
               <Button
                 size="lg"
@@ -889,7 +923,7 @@ export default function Page() {
                 asChild
                 className="h-14 rounded-full px-8 text-base font-semibold"
               >
-                <Link href="/dashboard">Vyzkoušet zdarma</Link>
+                <Link href="/dashboard">Spustit kalkulačku</Link>
               </Button>
             </div>
           </div>
@@ -907,8 +941,7 @@ export default function Page() {
               Noodles
             </Link>
             <p className="text-muted-foreground max-w-xs text-sm">
-              Naplánujte renovaci bytového domu a získejte pro ni podporu celého SVJ —
-              s čísly a argumenty, kterým rozumí každý soused.
+              Od výpočtu úspor přes přesvědčení sousedů až po sledování průběhu rekonstrukce — vše na jednom místě.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-10 text-sm">
@@ -920,8 +953,8 @@ export default function Page() {
               <Link href="/onboarding" className="text-muted-foreground hover:text-foreground transition-colors">
                 Kalkulačka
               </Link>
-              <Link href="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
-                AI asistent
+              <Link href="/dashboard/exporty" className="text-muted-foreground hover:text-foreground transition-colors">
+                Exporty
               </Link>
             </div>
             <div className="flex flex-col gap-2">
