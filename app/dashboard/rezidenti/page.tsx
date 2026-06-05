@@ -115,7 +115,9 @@ export default function RezidentiPage() {
           sentiment: r.sentiment,
           brief: r.brief,
           structured: r.structured,
-          personaType: (r.persona_type as PersonaType | null) ?? undefined,
+          personaType: r.persona_type && r.persona_type in PERSONA_TYPES
+            ? (r.persona_type as PersonaType)
+            : undefined,
         }))
         setPersonaList((prev) => {
           const dbIds = new Set(fromDb.map((p) => p.id))
@@ -147,6 +149,13 @@ export default function RezidentiPage() {
   }, [selectedPersonaId])
 
   const selectedPersona = personaList.find((p) => p.id === selectedPersonaId)
+
+  function resetForm() {
+    setNewName("")
+    setNewBrief("")
+    setSelectedPersonaType(null)
+    setShowForm(false)
+  }
 
   async function addPersona() {
     const name = newName.trim()
@@ -180,14 +189,13 @@ export default function RezidentiPage() {
         sentiment: data.sentiment,
         brief: data.brief,
         structured: data.structured,
-        personaType: (data.persona_type as PersonaType | null) ?? undefined,
+        personaType: data.persona_type && data.persona_type in PERSONA_TYPES
+          ? (data.persona_type as PersonaType)
+          : undefined,
       }
       setPersonaList((prev) => [persona, ...prev])
       setSelectedPersonaId(persona.id)
-      setNewName("")
-      setNewBrief("")
-      setShowForm(false)
-      setSelectedPersonaType(null)
+      resetForm()
     } catch (err) {
       console.error(err)
     } finally {
@@ -259,7 +267,7 @@ export default function RezidentiPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-xl font-semibold">Rezidenti</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>
+        <Button onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}>
           {showForm ? <X /> : <Plus />}
           {showForm ? "Zavřít" : "Nový rezident"}
         </Button>
@@ -308,7 +316,7 @@ export default function RezidentiPage() {
               className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowForm(false)} disabled={adding}>
+              <Button variant="ghost" onClick={resetForm} disabled={adding}>
                 Zrušit
               </Button>
               <Button onClick={addPersona} disabled={!newName.trim() || adding}>

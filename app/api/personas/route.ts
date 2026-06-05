@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("personas")
-    .insert({ name, role, unit, brief, structured, sentiment, status: "zpracovano", persona_type: personaType ?? null })
+    .insert({ name, role, unit, brief: brief ?? '', structured, sentiment, status: "zpracovano", persona_type: personaType ?? null })
     .select()
     .single();
 
