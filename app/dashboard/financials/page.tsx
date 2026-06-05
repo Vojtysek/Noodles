@@ -37,9 +37,9 @@ const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
 const SAMPLES = 6
 
-// Barvy scénářů — stejné sémantické odstíny jako u postojů rezidentů.
-const WITHOUT_COLOR = "var(--color-rose-500, #f43f5e)"
-const WITH_COLOR = "var(--color-emerald-500, #10b981)"
+// Barvy scénářů — bez rekonstrukce: červená, s rekonstrukcí: modrá (primary).
+const WITHOUT_COLOR = "var(--color-red-500, #ef4444)"
+const WITH_COLOR = "var(--color-blue-500, #3b82f6)"
 
 // Tečka scénáře — stejné mapování jako na stránce Přehled.
 const TONE_DOT: Record<ScenarioTone, string> = {
@@ -343,11 +343,11 @@ export default function FinancialsPage() {
       {/* Ambient blobs */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-rose-500/8 blur-[120px]"
+        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-red-500/8 blur-[120px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-40 top-1/4 -z-10 size-96 rounded-full bg-emerald-500/8 blur-[120px]"
+        className="pointer-events-none absolute -right-40 top-1/4 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
       />
 
       {/* ------------------------------------------------------------------ */}
@@ -357,22 +357,22 @@ export default function FinancialsPage() {
         className="anim-in relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950 text-white"
         style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
       >
-        {/* Barevné záře — rose (nečinnost) vlevo, emerald (rekonstrukce) vpravo */}
+        {/* Barevné záře — amber (nečinnost) vlevo, blue (rekonstrukce) vpravo */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 -left-24 -z-10 size-80 rounded-full bg-rose-500/15 blur-[100px]"
+          className="pointer-events-none absolute -top-24 -left-24 -z-10 size-80 rounded-full bg-red-500/15 blur-[100px]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-16 -bottom-28 -z-10 size-96 rounded-full bg-emerald-500/20 blur-[110px]"
+          className="pointer-events-none absolute -right-16 -bottom-28 -z-10 size-96 rounded-full bg-blue-500/20 blur-[110px]"
         />
 
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
           {/* Levá část — titulek + hlavní číslo */}
           <div>
             <div className="flex items-center gap-2.5">
-              <span aria-hidden className="h-px w-7 bg-emerald-300/70" />
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-300 uppercase">
+              <span aria-hidden className="h-px w-7 bg-blue-300/70" />
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-300 uppercase">
                 Dva scénáře, jedno rozhodnutí
               </p>
             </div>
@@ -388,7 +388,7 @@ export default function FinancialsPage() {
               <p
                 className={cn(
                   "mt-1 text-4xl font-bold tracking-tight sm:text-5xl",
-                  profitable ? "text-emerald-300" : "text-amber-300"
+                  profitable ? "text-blue-300" : "text-amber-300"
                 )}
               >
                 <AnimatedCzk value={Math.abs(agg.lossAtHorizon)} />
@@ -412,7 +412,7 @@ export default function FinancialsPage() {
           <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/15 backdrop-blur-md">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-white/70">Roční náklady domu</span>
-              <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
+              <span className="rounded-md bg-blue-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-blue-300">
                 −{savingsPct.toLocaleString("cs-CZ")} %
               </span>
             </div>
@@ -426,22 +426,22 @@ export default function FinancialsPage() {
                   {fmtCzkShort(agg.annualWithoutNow)}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="w-10 shrink-0 text-[11px] text-white/50">Potom</span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-emerald-400 transition-[width] duration-700 ease-out"
-                    style={{ width: `${afterBarPct}%` }}
-                  />
-                </div>
-                <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
+                <div className="flex items-center gap-3">
+                  <span className="w-10 shrink-0 text-[11px] text-white/50">Potom</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-blue-400 transition-[width] duration-700 ease-out"
+                      style={{ width: `${afterBarPct}%` }}
+                    />
+                  </div>
+                  <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-blue-300">
                   {fmtCzkShort(agg.annualWithNow)}
                 </span>
               </div>
             </div>
             <p className="text-xs text-pretty text-white/60">
               Úspora{" "}
-              <span className="font-semibold tabular-nums text-emerald-300">
+              <span className="font-semibold tabular-nums text-blue-300">
                 {fmtCzk(agg.savingsPerYear)} ročně
               </span>{" "}
               po dokončení vybraných projektů
@@ -657,7 +657,7 @@ export default function FinancialsPage() {
             {/* Ručně kreslené sluníčko v rohu — stejný motiv jako na Přehledu */}
             <svg
               aria-hidden
-              className="pointer-events-none absolute top-3 right-4 size-16 text-emerald-500/30"
+              className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
               viewBox="0 0 64 64"
               fill="none"
               stroke="currentColor"
@@ -675,19 +675,19 @@ export default function FinancialsPage() {
             <div className="mt-4 flex gap-6">
               <div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="size-2 shrink-0 rounded-full bg-rose-500" />
+                  <span className="size-2 shrink-0 rounded-full bg-red-500" />
                   Bez rekonstrukce
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-rose-600 dark:text-rose-400">
+                <p className="mt-0.5 font-semibold tabular-nums text-red-600 dark:text-red-400">
                   {fmtCzkShort(agg.cumWithoutEnd)}
                 </p>
               </div>
               <div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="size-2 shrink-0 rounded-full bg-emerald-500" />
+                  <span className="size-2 shrink-0 rounded-full bg-blue-500" />
                   S rekonstrukcí
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                <p className="mt-0.5 font-semibold tabular-nums text-blue-600 dark:text-blue-400">
                   {fmtCzkShort(agg.cumWithEnd)}
                 </p>
               </div>
@@ -728,19 +728,19 @@ export default function FinancialsPage() {
             <div className="mt-4 flex gap-6">
               <div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="size-2 shrink-0 rounded-full bg-rose-500" />
+                  <span className="size-2 shrink-0 rounded-full bg-red-500" />
                   Za {horizon} let bez akce
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-rose-600 dark:text-rose-400">
+                <p className="mt-0.5 font-semibold tabular-nums text-red-600 dark:text-red-400">
                   {fmtCzkShort(agg.annualWithoutEnd)}
                 </p>
               </div>
               <div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="size-2 shrink-0 rounded-full bg-emerald-500" />
+                  <span className="size-2 shrink-0 rounded-full bg-blue-500" />
                   Po rekonstrukci
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                <p className="mt-0.5 font-semibold tabular-nums text-blue-600 dark:text-blue-400">
                   {fmtCzkShort(agg.annualWithEnd)}
                 </p>
               </div>
