@@ -7,12 +7,18 @@ export type Project = {
   name: string
   shortName: string
   status: "navrh" | "schvalovani" | "realizace"
+  /** Pořadí podle dopadu — 1 = nejvýznamnější přínos pro dům. */
+  priority: number
   budget: number
   spent: number
   savingsPerYear: number
   paybackYears: number
   fundIncreasePerFlat: number
   energySavingPct: number
+  /** Odhadovaná délka realizace v měsících. */
+  durationMonths: number
+  /** Náklady spojené s danou částí domu dnes a jejich růst, pokud se nerekonstruuje. */
+  baseline: { annualCost: number; costGrowthPct: number }
   costBreakdown: { label: string; value: number }[]
   cashflow: { year: string; value: number }[]
   costItems: { item: string; supplier: string; amount: number; share: number }[]
@@ -24,12 +30,15 @@ export const projects: Project[] = [
     name: "Zateplení fasády",
     shortName: "Fasáda",
     status: "schvalovani",
+    priority: 1,
     budget: 8_400_000,
     spent: 480_000,
     savingsPerYear: 620_000,
     paybackYears: 13.5,
     fundIncreasePerFlat: 850,
     energySavingPct: 32,
+    durationMonths: 9,
+    baseline: { annualCost: 1_350_000, costGrowthPct: 6 },
     costBreakdown: [
       { label: "Izolační materiál", value: 3_100_000 },
       { label: "Lešení a montáž", value: 2_400_000 },
@@ -60,12 +69,15 @@ export const projects: Project[] = [
     name: "Výměna oken",
     shortName: "Okna",
     status: "navrh",
+    priority: 2,
     budget: 4_900_000,
     spent: 120_000,
     savingsPerYear: 410_000,
     paybackYears: 12,
     fundIncreasePerFlat: 520,
     energySavingPct: 21,
+    durationMonths: 4,
+    baseline: { annualCost: 980_000, costGrowthPct: 6 },
     costBreakdown: [
       { label: "Okna a rámy", value: 2_900_000 },
       { label: "Montáž a demontáž", value: 1_100_000 },
@@ -94,12 +106,15 @@ export const projects: Project[] = [
     name: "Rekonstrukce střechy",
     shortName: "Střecha",
     status: "realizace",
+    priority: 3,
     budget: 3_200_000,
     spent: 1_950_000,
     savingsPerYear: 180_000,
     paybackYears: 17.8,
     fundIncreasePerFlat: 380,
     energySavingPct: 9,
+    durationMonths: 5,
+    baseline: { annualCost: 540_000, costGrowthPct: 5 },
     costBreakdown: [
       { label: "Krytina a izolace", value: 1_700_000 },
       { label: "Klempířské prvky", value: 600_000 },
@@ -127,12 +142,15 @@ export const projects: Project[] = [
     name: "Modernizace výtahu",
     shortName: "Výtah",
     status: "navrh",
+    priority: 4,
     budget: 2_600_000,
     spent: 0,
     savingsPerYear: 95_000,
     paybackYears: 27.4,
     fundIncreasePerFlat: 310,
     energySavingPct: 4,
+    durationMonths: 3,
+    baseline: { annualCost: 320_000, costGrowthPct: 8 },
     costBreakdown: [
       { label: "Výtahová technologie", value: 1_800_000 },
       { label: "Stavební úpravy šachty", value: 450_000 },
@@ -156,6 +174,62 @@ export const projects: Project[] = [
     ],
   },
 ]
+
+/** Projekty seřazené podle dopadu — používat všude, kde se projekty vypisují. */
+export const projectsByPriority = [...projects].sort((a, b) => a.priority - b.priority)
+
+// ---------------------------------------------------------------------------
+// Scénáře — předpřipravené kombinace projektů pro stránku Přehled.
+// Tři srozumitelné varianty místo volného mix & match (ten zůstává ve Financích).
+// ---------------------------------------------------------------------------
+
+export type ScenarioTone = "emerald" | "amber" | "blue"
+
+export type Scenario = {
+  id: string
+  name: string
+  /** Jedna věta lidskou řečí — co scénář znamená. */
+  tagline: string
+  tone: ScenarioTone
+  /** Pořadí určuje harmonogram — projekty se realizují postupně. */
+  projectIds: ProjectId[]
+}
+
+export const scenarios: Scenario[] = [
+  {
+    id: "nejnutnejsi",
+    name: "Jen to nejnutnější",
+    tagline: "Dokončíme rozjetou střechu a nic dalšího. Nejlevnější a nejrychlejší varianta.",
+    tone: "emerald",
+    projectIds: ["strecha"],
+  },
+  {
+    id: "kompromis",
+    name: "Rozumný kompromis",
+    tagline: "Střecha plus nová okna — citelná úspora energií za rozumný měsíční příspěvek.",
+    tone: "amber",
+    projectIds: ["strecha", "okna"],
+  },
+  {
+    id: "kompletni",
+    name: "Kompletní obnova",
+    tagline: "Všechny čtyři projekty najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
+    tone: "blue",
+    projectIds: ["strecha", "okna", "fasada", "vytah"],
+  },
+]
+
+/** Délka v měsících → česky („5 měsíců", „rok a 2 měsíce", „2 roky"). */
+export function fmtDuration(months: number): string {
+  const years = Math.floor(months / 12)
+  const rest = months % 12
+  const monthWord = (n: number) => (n === 1 ? "měsíc" : n < 5 ? "měsíce" : "měsíců")
+  const yearWord = (n: number) => (n === 1 ? "rok" : n < 5 ? "roky" : "let")
+  if (years === 0) return `${rest} ${monthWord(rest)}`
+  const yearPart = years === 1 ? "rok" : `${years} ${yearWord(years)}`
+  if (rest === 0) return yearPart
+  return `${yearPart} a ${rest} ${monthWord(rest)}`
+}
 
 export type Sentiment = "podporuje" | "vaha" | "proti"
 

@@ -9,13 +9,15 @@ import {
   Calculator,
   Building2,
   Astroid,
+  House,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
+  { href: "/dashboard/prehled", label: "Přehled", icon: House },
   { href: "/dashboard/rezidenti", label: "Rezidenti", icon: Users },
-  { href: "/dashboard/financials", label: "Financials", icon: ChartColumn },
+  { href: "/dashboard/financials", label: "Finance", icon: ChartColumn },
   { href: "/dashboard/exporty", label: "Exporty", icon: FileDown },
 ]
 
@@ -77,9 +79,6 @@ export function DashboardSidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-sidebar-border px-4 py-3">
-        <p className="text-xs text-muted-foreground">Mock data · bez backendu</p>
-      </div>
     </aside>
   )
 }
