@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -8,13 +8,9 @@ import { useGSAP } from "@gsap/react";
 import {
   ArrowRight,
   ArrowUpRight,
-  Bot,
   Building2,
-  Calculator,
-  ChartLine,
   Check,
   ChevronDown,
-  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,13 +19,13 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const heroBenefits = [
   "Spočítejte úspory energií a návratnost",
-  "Získejte podporu sousedů pro hlasování",
-  "Od prvního nápadu po schválení na schůzi",
+  "Argumenty a podpora sousedů pro hlasování",
+  "Od prvního nápadu po schválení na schůzi SVJ",
 ];
 
 const stats = [
   { value: 4, suffix: "", label: "typy renovací v plánu" },
-  { value: 32, suffix: " %", label: "průměrná úspora energií" },
+  { value: 40, suffix: " %", label: "úspora tepla po zateplení fasády" },
   { value: 8, suffix: " let", label: "typická návratnost investice" },
   { value: 24, suffix: "", label: "bytových jednotek v domě" },
 ];
@@ -56,26 +52,26 @@ const projects = [
   {
     name: "Zateplení fasády",
     cost: "4 800 000 Kč",
-    savings: "18 %",
+    savings: "−18 %",
     payback: "9 let",
-    status: "Připraveno k hlasování",
-    dot: "bg-emerald-500",
+    status: "K hlasování",
+    pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   },
   {
     name: "Výměna oken",
     cost: "2 100 000 Kč",
-    savings: "11 %",
+    savings: "−11 %",
     payback: "7 let",
-    status: "Ve fázi plánování",
-    dot: "bg-amber-500",
+    status: "Plánování",
+    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   {
     name: "Rekonstrukce střechy",
     cost: "1 600 000 Kč",
-    savings: "6 %",
+    savings: "−6 %",
     payback: "11 let",
-    status: "Ve fázi plánování",
-    dot: "bg-amber-500",
+    status: "Plánování",
+    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
   },
   {
     name: "Modernizace výtahu",
@@ -83,7 +79,7 @@ const projects = [
     savings: "—",
     payback: "—",
     status: "Sbíráme podporu",
-    dot: "bg-rose-500",
+    pill: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
   },
 ];
 
@@ -91,7 +87,7 @@ const faqs = [
   {
     question: "Co je Noodles?",
     answer:
-      "Noodles je aplikace pro plánování renovací bytových domů. Pomůže vám spočítat náklady a úspory, sledovat názory rezidentů a připravit se na hlasování SVJ.",
+      "Noodles je aplikace, která pomáhá renovace bytových domů nejen naplánovat, ale hlavně prosadit. Spočítá náklady a úspory, sleduje názory rezidentů a připraví vás s argumenty na hlasování SVJ.",
   },
   {
     question: "Pro koho je aplikace určená?",
@@ -114,6 +110,37 @@ const faqs = [
       "Ke každému rezidentovi si zapíšete, jak se k renovaci staví. AI z vašich poznámek vytvoří profil s námitkami a motivacemi, takže víte, s kým a o čem mluvit.",
   },
 ];
+
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div data-reveal className="rounded-2xl border px-5 py-4">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center justify-between gap-4 text-left font-medium"
+      >
+        {question}
+        <ChevronDown
+          className={`text-muted-foreground size-4 shrink-0 transition-transform duration-300 ease-out ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <p className="text-muted-foreground pt-3 text-sm">{answer}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Page() {
   const root = useRef<HTMLDivElement>(null);
@@ -143,9 +170,15 @@ export default function Page() {
             { scale: 0.4, autoAlpha: 0, duration: 0.9, ease: "back.out(1.6)" },
             0.9
           )
-          .from("[data-hero-card]", { y: 40, autoAlpha: 0, duration: 0.7 }, 1.2);
+          .from("[data-hero-card]", { y: 40, autoAlpha: 0, duration: 0.7 }, 1.2)
+          .from(
+            "[data-hero-bar]",
+            { scaleX: 0, transformOrigin: "left center", duration: 0.9, ease: "power3.out" },
+            1.6
+          );
 
-        // Subtle parallax on the hero photo
+        // Subtle parallax on the hero photo — numeric scrub adds inertia so
+        // the photo glides instead of snapping 1:1 with the wheel
         gsap.to("[data-hero-img]", {
           yPercent: 8,
           ease: "none",
@@ -153,8 +186,26 @@ export default function Page() {
             trigger: "[data-hero]",
             start: "top top",
             end: "bottom top",
-            scrub: true,
+            scrub: 0.8,
           },
+        });
+
+        // The corner cards drift gently after they land
+        gsap.to("[data-hero-blob]", {
+          y: -10,
+          duration: 3.2,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+          delay: 2,
+        });
+        gsap.to("[data-hero-card]", {
+          y: -8,
+          duration: 2.6,
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+          delay: 2.2,
         });
 
         // Scroll reveals
@@ -168,10 +219,11 @@ export default function Page() {
           });
         });
 
-        // Count-up stats
+        // Count-up numbers (supports decimals via data-decimals, Czech comma)
         gsap.utils.toArray<HTMLElement>("[data-count]").forEach((el) => {
           const target = parseFloat(el.dataset.count ?? "0");
           const suffix = el.dataset.suffix ?? "";
+          const decimals = Number(el.dataset.decimals ?? 0);
           const counter = { value: 0 };
           gsap.to(counter, {
             value: target,
@@ -179,10 +231,70 @@ export default function Page() {
             ease: "power2.out",
             scrollTrigger: { trigger: el, start: "top 85%" },
             onUpdate() {
-              el.textContent = `${Math.round(counter.value)}${suffix}`;
+              el.textContent = `${counter.value.toFixed(decimals).replace(".", ",")}${suffix}`;
             },
           });
         });
+
+        // Segmented bars fill from the left
+        gsap.utils.toArray<HTMLElement>("[data-fill-bar]").forEach((bar) => {
+          gsap.from(bar.children, {
+            scaleX: 0,
+            transformOrigin: "left center",
+            duration: 0.9,
+            ease: "power3.out",
+            stagger: 0.12,
+            scrollTrigger: { trigger: bar, start: "top 85%" },
+          });
+        });
+
+        // Chart bars grow from the baseline
+        gsap.utils.toArray<HTMLElement>("[data-bar-chart]").forEach((chart) => {
+          gsap.from(chart.querySelectorAll("[data-bar]"), {
+            scaleY: 0,
+            transformOrigin: "bottom center",
+            duration: 0.7,
+            ease: "power3.out",
+            stagger: 0.08,
+            scrollTrigger: { trigger: chart, start: "top 85%" },
+          });
+        });
+
+        // Avatars pop in one by one
+        gsap.utils.toArray<HTMLElement>("[data-avatar-row]").forEach((row) => {
+          gsap.from(row.children, {
+            scale: 0,
+            duration: 0.5,
+            ease: "back.out(2)",
+            stagger: 0.07,
+            scrollTrigger: { trigger: row, start: "top 85%" },
+          });
+        });
+
+        // Chat bubbles arrive like a real conversation
+        gsap.utils.toArray<HTMLElement>("[data-chat]").forEach((chat) => {
+          gsap.from(chat.children, {
+            y: 12,
+            autoAlpha: 0,
+            duration: 0.5,
+            ease: "power2.out",
+            stagger: 0.35,
+            scrollTrigger: { trigger: chat, start: "top 85%" },
+          });
+        });
+
+        // Draw the curved progress line through the steps
+        const stepsLine = document.querySelector<SVGPathElement>("[data-steps-line]");
+        if (stepsLine) {
+          const length = stepsLine.getTotalLength();
+          gsap.set(stepsLine, { strokeDasharray: length, strokeDashoffset: length });
+          gsap.to(stepsLine, {
+            strokeDashoffset: 0,
+            duration: 1.8,
+            ease: "power2.inOut",
+            scrollTrigger: { trigger: "[data-steps]", start: "top 75%" },
+          });
+        }
       });
     },
     { scope: root }
@@ -192,13 +304,13 @@ export default function Page() {
     <div ref={root} className="flex min-h-svh flex-col">
       {/* Hero — full-bleed photo tapering off at the bottom */}
       <section data-hero className="relative">
-        <div className="relative min-h-[94svh] overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[4rem] lg:rounded-bl-[4rem] lg:rounded-br-[10rem]">
+        <div className="relative isolate min-h-[94svh] overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[4rem] lg:rounded-bl-[4rem] lg:rounded-br-[10rem]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             data-hero-img
             src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2400&auto=format&fit=crop"
             alt="Bytový dům"
-            className="absolute -top-[8%] left-0 h-[116%] w-full object-cover"
+            className="absolute -top-[8%] left-0 h-[116%] w-full object-cover will-change-transform"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
@@ -238,13 +350,10 @@ export default function Page() {
           <div className="relative z-10 mx-auto flex min-h-[94svh] w-full max-w-6xl flex-col justify-center gap-8 px-6 pt-32 pb-28 sm:px-8">
             <h1 className="max-w-3xl text-5xl leading-[1.08] font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
               <span data-hero-line className="block overflow-hidden">
-                <span className="block">Jednoduché</span>
+                <span className="block">Naplánujte renovaci.</span>
               </span>
               <span data-hero-line className="block overflow-hidden">
-                <span className="block">plánování renovací</span>
-              </span>
-              <span data-hero-line className="block overflow-hidden">
-                <span className="block">vašeho domu</span>
+                <span className="block">Přesvědčte sousedy.</span>
               </span>
             </h1>
             <ul className="flex flex-col gap-3">
@@ -279,38 +388,60 @@ export default function Page() {
           {/* Oversized stat blob */}
           <div
             data-hero-blob
-            className="bg-primary text-primary-foreground absolute top-32 right-8 z-10 hidden max-w-72 items-start gap-3 rounded-[3rem] p-8 shadow-2xl lg:flex xl:right-16"
+            className="bg-primary text-primary-foreground absolute top-32 right-8 z-10 hidden w-60 flex-col gap-3 rounded-[2.5rem] p-8 shadow-2xl lg:flex xl:right-16"
           >
             <p className="text-7xl leading-none font-bold tracking-tight">
-              32<span className="align-top text-3xl">%</span>
+              <span data-count="40" data-suffix="">
+                40
+              </span>
+              <span className="align-top text-3xl">%</span>
             </p>
-            <p className="pt-1 text-sm leading-snug opacity-90">
-              průměrná úspora energií po renovaci
+            <p className="text-sm leading-snug text-pretty opacity-90">
+              tepla ušetří zateplení fasády staršího bytového domu
             </p>
           </div>
 
-          {/* Floating product card */}
+          {/* Floating product card — heating costs before/after, dark glass */}
           <div
             data-hero-card
-            className="bg-background absolute right-8 bottom-12 z-10 hidden w-80 flex-col gap-3 rounded-2xl p-5 shadow-2xl lg:flex xl:right-16"
+            className="absolute right-8 bottom-12 z-10 hidden w-80 flex-col gap-4 rounded-2xl bg-zinc-950/70 p-5 text-white ring-1 ring-white/15 backdrop-blur-md lg:flex xl:right-16 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.6)]"
           >
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold">Zateplení fasády</span>
-              <span className="text-muted-foreground text-xs">podpora 16 z 24</span>
-            </div>
-            <div className="bg-muted h-2 overflow-hidden rounded-full">
-              <div className="flex h-full">
-                <div className="w-[67%] bg-emerald-500" />
-                <div className="w-[21%] bg-amber-500" />
-                <div className="w-[12%] bg-rose-500" />
-              </div>
-            </div>
-            <div className="text-muted-foreground flex items-center justify-between text-xs">
-              <span>Návratnost 9 let</span>
-              <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
-                −18 % energií
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-white/70">
+                Roční náklady domu na teplo
+              </span>
+              <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
+                −18 %
               </span>
             </div>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-3">
+                <span className="w-9 shrink-0 text-[11px] text-white/50">Dnes</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full w-full rounded-full bg-white/35" />
+                </div>
+                <span className="w-16 shrink-0 text-right text-xs tabular-nums text-white/70">
+                  2,9 mil. Kč
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-9 shrink-0 text-[11px] text-white/50">Potom</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    data-hero-bar
+                    className="h-full w-[82%] rounded-full bg-emerald-400"
+                  />
+                </div>
+                <span className="w-16 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
+                  2,4 mil. Kč
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-pretty text-white/60">
+              Úspora{" "}
+              <span className="font-semibold text-emerald-300">530 000 Kč ročně</span> po
+              zateplení fasády
+            </p>
           </div>
         </div>
       </section>
@@ -337,143 +468,181 @@ export default function Page() {
         <section id="funkce" className="mx-auto w-full max-w-6xl scroll-mt-8 px-4 py-16 sm:px-6 lg:py-24">
           <div data-reveal className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              Vše pro renovaci na jednom místě
+              Spočítat je snadné. Přesvědčit je těžší.
             </h2>
             <p className="text-muted-foreground mt-3 text-lg text-pretty">
-              Žádné tabulky v Excelu ani nekonečné e-maily. Noodles drží čísla, lidi i plány
-              pohromadě.
+              Renovace neztroskotá na číslech, ale na schůzi. Noodles vám dá čísla, argumenty
+              i přehled o tom, koho ještě musíte získat.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {/* Rezidenti — wide card with sentiment visual */}
+          <div className="grid gap-5 md:grid-cols-3">
+            {/* Rezidenti — anchor card with inset product viewport */}
             <div
               data-reveal
-              className="bg-muted/30 flex flex-col justify-between gap-6 rounded-3xl border p-7 md:col-span-2"
+              className="bg-card flex flex-col rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-16px_rgba(16,24,40,0.14)] md:col-span-2 md:row-span-2 dark:ring-white/[0.06]"
             >
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <Users className="size-5" />
-                </span>
-                <h3 className="text-lg font-semibold">Rezidenti</h3>
-                <p className="text-muted-foreground max-w-md text-sm">
-                  Mějte přehled o tom, kdo renovaci podporuje, kdo váhá a kdo je proti. AI vám
-                  pomůže pochopit námitky a motivace každého souseda.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3">
-                <div className="flex -space-x-2">
-                  {["JN", "MK", "PV", "AH", "TS"].map((initials, i) => (
+              <p className="text-primary text-xs font-medium tracking-wider uppercase">
+                Rezidenti
+              </p>
+              <h3 className="mt-1.5 text-xl font-semibold tracking-tight">
+                Víte, kdo bude na schůzi proti — dřív, než se tam postaví
+              </h3>
+              <p className="text-muted-foreground mt-2 max-w-md text-sm">
+                AI z vašich poznámek pochopí námitky a motivace každého souseda, takže víte,
+                s kým a o čem mluvit.
+              </p>
+              <div className="mt-auto pt-6">
+                <div className="bg-muted/40 flex flex-col gap-4 rounded-xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04] ring-inset dark:shadow-none dark:ring-white/[0.04]">
+                  <div className="flex items-center justify-between">
+                    <div data-avatar-row className="flex -space-x-2">
+                      {["JN", "MK", "PV", "AH", "TS"].map((initials, i) => (
+                        <span
+                          key={initials}
+                          className={`border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-semibold text-white ${
+                            ["bg-emerald-500", "bg-emerald-600", "bg-amber-500", "bg-rose-500", "bg-emerald-500"][i]
+                          }`}
+                        >
+                          {initials}
+                        </span>
+                      ))}
+                      <span className="bg-muted text-muted-foreground border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-medium">
+                        +19
+                      </span>
+                    </div>
                     <span
-                      key={initials}
-                      className={`flex size-9 items-center justify-center rounded-full border-2 border-background text-xs font-semibold text-white ${
-                        ["bg-emerald-500", "bg-emerald-600", "bg-amber-500", "bg-rose-500", "bg-emerald-500"][i]
-                      }`}
+                      data-count="16"
+                      data-suffix=" z 24 pro"
+                      className="text-muted-foreground text-xs tabular-nums"
                     >
-                      {initials}
+                      16 z 24 pro
                     </span>
-                  ))}
-                  <span className="bg-muted text-muted-foreground border-background flex size-9 items-center justify-center rounded-full border-2 text-xs font-medium">
-                    +19
-                  </span>
-                </div>
-                <div className="bg-muted h-2.5 overflow-hidden rounded-full">
-                  <div className="flex h-full">
-                    <div className="w-[67%] bg-emerald-500" />
-                    <div className="w-[21%] bg-amber-500" />
-                    <div className="w-[12%] bg-rose-500" />
+                  </div>
+                  <div className="bg-muted h-2.5 overflow-hidden rounded-full">
+                    <div data-fill-bar className="flex h-full">
+                      <div className="w-[67%] bg-emerald-500" />
+                      <div className="w-[21%] bg-amber-500" />
+                      <div className="w-[12%] bg-rose-500" />
+                    </div>
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      Podporuje
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-amber-500" />
+                      Váhá
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-rose-500" />
+                      Proti
+                    </span>
                   </div>
                 </div>
-                <div className="text-muted-foreground flex items-center gap-4 text-xs">
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-emerald-500" />
-                    Podporuje
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-amber-500" />
-                    Váhá
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-rose-500" />
-                    Proti
-                  </span>
-                </div>
               </div>
             </div>
 
-            {/* AI asistent — chat bubbles */}
-            <div data-reveal className="bg-muted/30 flex flex-col gap-6 rounded-3xl border p-7">
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <Bot className="size-5" />
-                </span>
-                <h3 className="text-lg font-semibold">AI asistent</h3>
-                <p className="text-muted-foreground text-sm">
-                  Zeptejte se na cokoliv — od technických detailů po argumenty na schůzi SVJ.
-                </p>
-              </div>
-              <div className="mt-auto flex flex-col gap-2 text-xs">
-                <p className="bg-primary text-primary-foreground max-w-[85%] self-end rounded-2xl rounded-br-sm px-3 py-2">
-                  Vyplatí se nám zateplit fasádu?
-                </p>
-                <p className="bg-muted max-w-[85%] self-start rounded-2xl rounded-bl-sm px-3 py-2">
-                  Při vašich nákladech na teplo ušetříte ~530 tis. Kč ročně…
-                </p>
-              </div>
-            </div>
-
-            {/* Finanční přehled — mini bar chart */}
-            <div data-reveal className="bg-muted/30 flex flex-col gap-6 rounded-3xl border p-7">
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <ChartLine className="size-5" />
-                </span>
-                <h3 className="text-lg font-semibold">Finanční přehled</h3>
-                <p className="text-muted-foreground text-sm">
-                  Rozpočty, cashflow a úspory na jednom místě. Víte, kdy se vám investice vrátí.
-                </p>
-              </div>
-              <div className="mt-auto flex h-20 items-end gap-2">
-                {[35, 55, 45, 70, 60, 85, 100].map((height, i) => (
-                  <div
-                    key={i}
-                    className={`flex-1 rounded-t-md ${i >= 5 ? "bg-primary" : "bg-primary/25"}`}
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Kalkulačka — wide card with sample row */}
+            {/* AI asistent — live chat transcript */}
             <div
               data-reveal
-              className="bg-muted/30 flex flex-col justify-between gap-6 rounded-3xl border p-7 md:col-span-2"
+              className="bg-card flex flex-col overflow-hidden rounded-2xl ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
             >
-              <div className="flex flex-col gap-3">
-                <span className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-xl">
-                  <Calculator className="size-5" />
+              <div className="border-border/60 flex items-center gap-2 border-b px-5 py-3">
+                <span className="size-2 rounded-full bg-emerald-500" />
+                <span className="text-muted-foreground text-xs font-medium">
+                  AI asistent · online
                 </span>
-                <h3 className="text-lg font-semibold">Kalkulačka renovací</h3>
-                <p className="text-muted-foreground max-w-md text-sm">
-                  Zadejte parametry domu a během minuty zjistíte orientační náklady, úspory a
-                  návratnost jednotlivých renovací.
+              </div>
+              <div data-chat className="flex flex-1 flex-col gap-2.5 p-5 text-xs">
+                <p className="bg-primary text-primary-foreground max-w-[88%] self-end rounded-2xl rounded-br-md px-3 py-2">
+                  Soused tvrdí, že se zateplení nevyplatí. Co mu mám říct?
+                </p>
+                <p className="bg-muted max-w-[88%] self-start rounded-2xl rounded-bl-md px-3 py-2">
+                  Při vašich nákladech na teplo ušetříte ~530 tis. Kč ročně. Tady jsou tři
+                  argumenty…
+                </p>
+                <span className="bg-muted mt-0.5 flex gap-1 self-start rounded-2xl rounded-bl-md px-3 py-2.5">
+                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:0ms]" />
+                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:150ms]" />
+                  <span className="bg-muted-foreground/50 size-1.5 animate-bounce rounded-full [animation-delay:300ms]" />
+                </span>
+              </div>
+            </div>
+
+            {/* Finanční přehled — edge-bleed chart with annotation */}
+            <div
+              data-reveal
+              className="bg-card relative overflow-hidden rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
+            >
+              <p className="text-primary text-xs font-medium tracking-wider uppercase">
+                Finance
+              </p>
+              <h3 className="mt-1.5 text-lg font-semibold tracking-tight">
+                Víte, kdy se investice vrátí
+              </h3>
+              <div className="border-border/70 -mx-7 mt-6 border-t border-dashed px-7 pt-10">
+                <div data-bar-chart className="border-border/60 flex h-24 items-end gap-1.5 border-b pb-px">
+                  {[35, 55, 45, 70, 60, 85, 100].map((height, i) => (
+                    <div key={i} className="relative flex h-full flex-1 items-end">
+                      {i === 6 && (
+                        <span className="bg-foreground text-background absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap">
+                          9. rok
+                        </span>
+                      )}
+                      <div
+                        data-bar
+                        className={`w-full rounded-t-[3px] ${i === 6 ? "bg-primary" : "bg-primary/15"}`}
+                        style={{ height: `${height}%` }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Kalkulačka — full-width strip with flat metric columns */}
+            <div
+              data-reveal
+              className="bg-card flex flex-col gap-8 rounded-2xl p-7 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] md:col-span-3 md:flex-row md:items-center dark:ring-white/[0.06]"
+            >
+              <div className="md:max-w-sm md:flex-1">
+                <p className="text-primary text-xs font-medium tracking-wider uppercase">
+                  Kalkulačka
+                </p>
+                <h3 className="mt-1.5 text-lg font-semibold tracking-tight">
+                  Čísla za minutu, ne za měsíc
+                </h3>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Zadejte parametry domu a zjistíte orientační náklady, úspory a návratnost
+                  jednotlivých renovací.
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="bg-background rounded-xl border p-4">
-                  <p className="text-muted-foreground text-xs">Náklady</p>
-                  <p className="font-mono font-semibold">4,8 mil. Kč</p>
+              <dl className="divide-border/60 grid flex-1 grid-cols-3 md:divide-x">
+                <div className="flex flex-col gap-1 md:px-6 md:first:pl-0 md:last:pr-0">
+                  <dt className="text-muted-foreground text-xs">Náklady</dt>
+                  <dd className="text-lg font-semibold tabular-nums">
+                    <span data-count="4.8" data-decimals="1" data-suffix=" mil. Kč">
+                      4,8 mil. Kč
+                    </span>
+                  </dd>
                 </div>
-                <div className="bg-background rounded-xl border p-4">
-                  <p className="text-muted-foreground text-xs">Úspora ročně</p>
-                  <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    530 tis. Kč
-                  </p>
+                <div className="flex flex-col gap-1 md:px-6">
+                  <dt className="text-muted-foreground text-xs">Úspora ročně</dt>
+                  <dd className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <span data-count="530" data-suffix=" tis. Kč">
+                      530 tis. Kč
+                    </span>
+                  </dd>
                 </div>
-                <div className="bg-background rounded-xl border p-4">
-                  <p className="text-muted-foreground text-xs">Návratnost</p>
-                  <p className="font-mono font-semibold">9 let</p>
+                <div className="flex flex-col gap-1 md:px-6 md:last:pr-0">
+                  <dt className="text-muted-foreground text-xs">Návratnost</dt>
+                  <dd className="text-lg font-semibold tabular-nums">
+                    <span data-count="9" data-suffix=" let">
+                      9 let
+                    </span>
+                  </dd>
                 </div>
-              </div>
+              </dl>
             </div>
           </div>
         </section>
@@ -489,19 +658,38 @@ export default function Page() {
                 Tři kroky od nápadu ke schválené renovaci.
               </p>
             </div>
-            <div className="grid gap-10 md:grid-cols-3 md:gap-8">
-              {steps.map((step, index) => (
-                <div key={step.title} data-reveal className="relative flex flex-col gap-3 pt-10">
-                  <span
-                    className="text-foreground/[7%] pointer-events-none absolute -top-4 left-0 text-8xl font-bold select-none"
-                    aria-hidden
-                  >
-                    {index + 1}
-                  </span>
-                  <h3 className="text-lg font-semibold">{step.title}</h3>
-                  <p className="text-muted-foreground text-sm">{step.description}</p>
-                </div>
-              ))}
+            <div data-steps className="relative">
+              {/* Curved progress line threading the three steps */}
+              <svg
+                className="text-primary pointer-events-none absolute -top-6 left-0 hidden h-28 w-full md:block"
+                viewBox="0 0 1200 112"
+                fill="none"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <path
+                  data-steps-line
+                  d="M 44 72 C 180 8, 300 8, 440 56 S 700 120, 840 60 C 940 18, 1060 24, 1164 56"
+                  stroke="currentColor"
+                  strokeOpacity="0.35"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="relative grid gap-10 md:grid-cols-3 md:gap-8">
+                {steps.map((step, index) => (
+                  <div key={step.title} data-reveal className="relative flex flex-col gap-3 pt-10">
+                    <span
+                      className="text-foreground/[7%] pointer-events-none absolute -top-4 left-0 text-8xl font-bold select-none"
+                      aria-hidden
+                    >
+                      {index + 1}
+                    </span>
+                    <h3 className="text-lg font-semibold">{step.title}</h3>
+                    <p className="text-muted-foreground text-sm">{step.description}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -510,41 +698,76 @@ export default function Page() {
         <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
           <div data-reveal className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-              Jaké renovace s námi naplánujete
+              Jaké renovace s námi naplánujete a prosadíte
             </h2>
             <p className="text-muted-foreground mt-3 text-lg text-pretty">
               Ukázka projektů z typického bytového domu. Čísla jsou orientační — ta vaše si
               spočítáte v kalkulačce.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            data-reveal
+            className="bg-card overflow-hidden rounded-2xl ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] dark:ring-white/[0.06]"
+          >
+            <div className="border-border/60 bg-muted/30 flex items-center justify-between border-b px-6 py-3.5">
+              <p className="text-sm font-semibold tracking-tight">Bělohorská 1042/18</p>
+              <p className="text-muted-foreground text-xs">
+                4 projekty · <span className="tabular-nums">24</span> jednotek
+              </p>
+            </div>
+            <div className="text-muted-foreground border-border/60 hidden grid-cols-[1.6fr_1fr_1fr_0.8fr_8.5rem] gap-4 border-b px-6 py-2.5 text-xs md:grid">
+              <span>Projekt</span>
+              <span className="text-right">Náklady</span>
+              <span className="text-right">Úspora energií</span>
+              <span className="text-right">Návratnost</span>
+              <span className="text-right">Stav</span>
+            </div>
             {projects.map((project) => (
               <div
                 key={project.name}
-                data-reveal
-                className="bg-card flex flex-col gap-5 rounded-3xl border p-6 transition-transform duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+                className="border-border/40 hover:bg-muted/30 flex flex-col gap-3 border-b px-6 py-4 transition-colors last:border-b-0 md:grid md:grid-cols-[1.6fr_1fr_1fr_0.8fr_8.5rem] md:items-center md:gap-4"
               >
-                <div className="flex flex-col gap-2">
-                  <p className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-                    <span className={`size-2 rounded-full ${project.dot}`} />
+                <div className="flex items-center justify-between md:contents">
+                  <h3 className="text-sm font-medium tracking-tight">{project.name}</h3>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium md:hidden ${project.pill}`}
+                  >
                     {project.status}
-                  </p>
-                  <h3 className="text-lg font-semibold">{project.name}</h3>
+                  </span>
                 </div>
-                <dl className="mt-auto flex flex-col gap-2 border-t pt-4 text-sm">
-                  <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Náklady</dt>
-                    <dd className="font-mono font-medium">{project.cost}</dd>
+                <div className="grid grid-cols-3 gap-2 md:contents">
+                  <div className="md:text-right">
+                    <p className="text-muted-foreground text-[11px] md:hidden">Náklady</p>
+                    <p className="text-sm tabular-nums">{project.cost}</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Úspora energií</dt>
-                    <dd className="font-mono font-medium">{project.savings}</dd>
+                  <div className="md:text-right">
+                    <p className="text-muted-foreground text-[11px] md:hidden">Úspora</p>
+                    <p
+                      className={`text-sm tabular-nums ${
+                        project.savings !== "—"
+                          ? "font-medium text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {project.savings}
+                    </p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="text-muted-foreground">Návratnost</dt>
-                    <dd className="font-mono font-medium">{project.payback}</dd>
+                  <div className="md:text-right">
+                    <p className="text-muted-foreground text-[11px] md:hidden">Návratnost</p>
+                    <p
+                      className={`text-sm tabular-nums ${
+                        project.payback === "—" ? "text-muted-foreground" : "font-medium"
+                      }`}
+                    >
+                      {project.payback}
+                    </p>
                   </div>
-                </dl>
+                </div>
+                <span
+                  className={`hidden shrink-0 justify-self-end rounded-full px-2 py-0.5 text-[11px] font-medium md:inline-flex ${project.pill}`}
+                >
+                  {project.status}
+                </span>
               </div>
             ))}
           </div>
@@ -558,13 +781,7 @@ export default function Page() {
             </div>
             <div className="flex flex-col gap-3">
               {faqs.map((faq) => (
-                <details key={faq.question} data-reveal className="group rounded-2xl border px-5 py-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden">
-                    {faq.question}
-                    <ChevronDown className="text-muted-foreground size-4 shrink-0 transition-transform group-open:rotate-180" />
-                  </summary>
-                  <p className="text-muted-foreground mt-3 text-sm">{faq.answer}</p>
-                </details>
+                <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
               ))}
             </div>
           </div>
@@ -586,10 +803,11 @@ export default function Page() {
             />
             <div className="relative flex flex-col items-center gap-6">
               <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-balance sm:text-5xl">
-                Začněte plánovat renovaci ještě dnes
+                Příští schůze SVJ může dopadnout jinak
               </h2>
               <p className="max-w-md text-pretty opacity-90">
-                Stačí pár minut a uvidíte, kolik váš dům může ušetřit.
+                Za pár minut budete vědět, kolik váš dům ušetří — a s čím přesvědčíte
+                i ty, kteří váhají.
               </p>
               <Button
                 size="lg"
@@ -618,7 +836,8 @@ export default function Page() {
               Noodles
             </Link>
             <p className="text-muted-foreground max-w-xs text-sm">
-              Plánování renovací bytových domů — jednoduše a s čísly, kterým rozumí celé SVJ.
+              Naplánujte renovaci bytového domu a získejte pro ni podporu celého SVJ —
+              s čísly a argumenty, kterým rozumí každý soused.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-10 text-sm">

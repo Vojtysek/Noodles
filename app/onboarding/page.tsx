@@ -17,15 +17,16 @@ import {
   Thermometer,
   Wind,
   Sun,
+  Star,
 } from "lucide-react"
+
+import { createClient } from "@/lib/supabase/client"
 
 const BASE = "https://ags.cuzk.gov.cz/arcgis/rest/services/RUIAN/MapServer"
 const PRICE_PER_WINDOW = 12_000
-const PRICE_PER_INSTALL = 1_000
 
 type RepairCalc = {
   numberOfUnits: number
-  windowCount: number
   rentYears: number
   isFirstRepair: boolean
 }
@@ -34,6 +35,7 @@ type BuildingData = {
   units: number | null
   floors: number | null
   yearBuilt: number | null
+  zastavenaFlocha: number | null
 }
 type RenovationType = {
   id: string
@@ -48,28 +50,28 @@ const RENOVATIONS: RenovationType[] = [
     id: "insulation",
     label: "Zateplení fasády",
     icon: Layers,
-    available: false,
+    available: true,
   },
-  { id: "roof", label: "Zateplení střechy", icon: Home, available: false },
+  { id: "roof", label: "Zateplení střechy", icon: Home, available: true },
   {
     id: "blinds",
     label: "Venkovní žaluzie",
     icon: SlidersHorizontal,
-    available: false,
+    available: true,
   },
   {
     id: "heatpump",
     label: "Tepelné čerpadlo",
     icon: Thermometer,
-    available: false,
+    available: true,
   },
-  { id: "heating", label: "Vytápění", icon: Flame, available: false },
-  { id: "recuperation", label: "Rekuperace", icon: Wind, available: false },
-  { id: "photovoltaics", label: "Fotovoltaika", icon: Sun, available: false },
+  { id: "heating", label: "Vytápění", icon: Flame, available: true },
+  { id: "recuperation", label: "Rekuperace", icon: Wind, available: true },
+  { id: "photovoltaics", label: "Fotovoltaika", icon: Sun, available: true },
 ]
 
-function calcRepair(c: RepairCalc) {
-  const alpha = c.windowCount * (PRICE_PER_WINDOW + PRICE_PER_INSTALL)
+function calcRepair(c: RepairCalc, windowCount: number) {
+  const alpha = windowCount * PRICE_PER_WINDOW
   const maxRentTime = alpha < 1_500_000 ? 10 : 15
   const maxRentPerUnit = c.isFirstRepair ? 250_000 : 750_000
   const finalRent = Math.min(alpha, maxRentPerUnit * c.numberOfUnits)
@@ -81,6 +83,96 @@ function calcRepair(c: RepairCalc) {
     monthlyPerUnit,
     cappedByMax: alpha > maxRentPerUnit * c.numberOfUnits,
   }
+}
+
+const RENOVATION_PRIORITY: Record<string, string[]> = {
+  F: [
+    "insulation",
+    "windows",
+    "roof",
+    "heating",
+    "heatpump",
+    "recuperation",
+    "blinds",
+    "photovoltaics",
+  ],
+  E: [
+    "insulation",
+    "windows",
+    "roof",
+    "heatpump",
+    "heating",
+    "recuperation",
+    "blinds",
+    "photovoltaics",
+  ],
+  D: [
+    "windows",
+    "heatpump",
+    "insulation",
+    "heating",
+    "roof",
+    "recuperation",
+    "blinds",
+    "photovoltaics",
+  ],
+  C: [
+    "heatpump",
+    "heating",
+    "windows",
+    "recuperation",
+    "insulation",
+    "roof",
+    "blinds",
+    "photovoltaics",
+  ],
+  B: [
+    "heatpump",
+    "recuperation",
+    "heating",
+    "photovoltaics",
+    "blinds",
+    "windows",
+    "insulation",
+    "roof",
+  ],
+  A: [
+    "photovoltaics",
+    "heatpump",
+    "recuperation",
+    "blinds",
+    "heating",
+    "windows",
+    "insulation",
+    "roof",
+  ],
+}
+
+const DEFAULT_PRIORITY = [
+  "insulation",
+  "windows",
+  "heatpump",
+  "heating",
+  "roof",
+  "recuperation",
+  "blinds",
+  "photovoltaics",
+]
+
+function getSortedRenovations(grade: string | null): {
+  sorted: RenovationType[]
+  starId: string
+} {
+  const order =
+    grade && RENOVATION_PRIORITY[grade]
+      ? RENOVATION_PRIORITY[grade]
+      : DEFAULT_PRIORITY
+  const sorted = [...RENOVATIONS].sort((a, b) => {
+    const ai = order.indexOf(a.id)
+    const bi = order.indexOf(b.id)
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+  })
+  return { sorted, starId: order[0] }
 }
 
 function stripDiacritics(str: string) {
@@ -174,14 +266,6 @@ const STEP_META = [
     title: "Co chcete renovovat?",
     desc: "Vyberte oblast pro výpočet příspěvku do fondu oprav.",
   },
-  {
-    title: "Parametry opravy",
-    desc: "Nastavte počet jednotek, oken a dobu splácení.",
-  },
-  {
-    title: "Výsledek kalkulace",
-    desc: "Orientační měsíční příspěvek na jednu jednotku.",
-  },
 ]
 
 const BUILDING_FIELDS = [
@@ -193,6 +277,13 @@ const BUILDING_FIELDS = [
     unit: "",
   },
   { label: "Počet podlaží", key: "floors" as const, min: 1, max: 60, unit: "" },
+  {
+    label: "Zastavěná plocha",
+    key: "zastavenaFlocha" as const,
+    min: 50,
+    max: 2000,
+    unit: "m²",
+  },
   {
     label: "Rok dokončení",
     key: "yearBuilt" as const,
@@ -219,17 +310,18 @@ export default function CalculatorPage() {
   const [insulated, setInsulated] = useState(false)
   const [newWindows, setNewWindows] = useState(false)
   const [showPenb, setShowPenb] = useState(false)
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
 
   const [repair, setRepair] = useState<RepairCalc>({
     numberOfUnits: 20,
-    windowCount: 120,
-    rentYears: 4,
+    rentYears: 10,
     isFirstRepair: true,
   })
 
-  const calc = calcRepair(repair)
-  const selectedRenovation = RENOVATIONS.find((r) => r.id === selected)
+  const derivedWindowCount = Math.round(
+    ((building?.zastavenaFlocha ?? 400) * (building?.floors ?? 4) * 0.15) / 2.25
+  )
+  const calc = calcRepair(repair, derivedWindowCount)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -325,6 +417,9 @@ export default function CalculatorPage() {
         units,
         floors: so?.pocetpodlazi ?? null,
         yearBuilt: so?.dokonceni ? new Date(so.dokonceni).getFullYear() : null,
+        zastavenaFlocha: so?.["st_area(shape)"]
+          ? Math.round(so["st_area(shape)"])
+          : null,
       })
       if (units) setR("numberOfUnits", Math.min(50, Math.max(5, units)))
     } catch (e) {
@@ -336,7 +431,7 @@ export default function CalculatorPage() {
     }
   }
 
-  function handleCta() {
+  async function handleCta() {
     if (step === 0) {
       if (building) {
         setStep(1)
@@ -350,10 +445,36 @@ export default function CalculatorPage() {
     } else if (step === 1) {
       setStep(2)
     } else if (step === 2) {
-      if (selected) setStep(3)
-    } else if (step === 3) {
-      setStep(4)
-    } else if (step === 4) {
+      if (selected.length === 0) return
+      const year = building?.yearBuilt ?? null
+      const pts = year ? calcEnergyScore(year, insulated, newWindows) : null
+      const g = pts != null ? energyGrade(pts) : null
+      const displayGrade = energyLabel ?? g?.grade ?? null
+      const selectedLabels = selected.map(
+        (id) => RENOVATIONS.find((r) => r.id === id)?.label ?? id
+      )
+      try {
+        const supabase = createClient()
+        await supabase.from("buildings").insert({
+          address: building?.address ?? null,
+          units: repair.numberOfUnits,
+          floors: building?.floors ?? null,
+          year_built: building?.yearBuilt ?? null,
+          zastavena_plocha: building?.zastavenaFlocha ?? null,
+          energy_grade: displayGrade,
+          insulated,
+          new_windows: newWindows,
+          selected_renovations: selectedLabels,
+          monthly_per_unit: Math.round(calc.monthlyPerUnit),
+          total_cost: calc.alpha,
+          final_rent: calc.finalRent,
+          rent_years: repair.rentYears,
+          window_count: derivedWindowCount,
+          capped_by_max: calc.cappedByMax,
+        })
+      } catch {
+        // continue to dashboard even if save fails
+      }
       router.push("/dashboard")
     }
   }
@@ -365,17 +486,15 @@ export default function CalculatorPage() {
         : query.trim()
           ? "Vyhledat"
           : "Přeskočit"
-      : step === 3
-        ? "Vypočítat"
-        : step === 4
-          ? "Hotovo"
-          : "Pokračovat"
+      : step === 2
+        ? "Zobrazit výsledky"
+        : "Pokračovat"
 
-  const ctaDisabled = loading || (step === 2 && !selected)
+  const ctaDisabled = loading || (step === 2 && selected.length === 0)
 
   const progressDots = (
     <div className="flex justify-center gap-1.5">
-      {[0, 1, 2, 3, 4].map((i) => (
+      {[0, 1, 2].map((i) => (
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-primary" : "w-1.5 bg-border"}`}
@@ -573,10 +692,8 @@ export default function CalculatorPage() {
                         <p className="font-semibold">
                           {g ? g.label : "Rok výstavby neznámý"}
                         </p>
-                        {pts != null ? (
+                        {year != null ? (
                           <p className="mt-0.5 text-xs text-muted-foreground">
-                            {pts}{" "}
-                            {pts === 1 ? "bod" : pts < 5 ? "body" : "bodů"} ·
                             rok {year}
                           </p>
                         ) : (
@@ -602,7 +719,6 @@ export default function CalculatorPage() {
                                 className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
                               >
                                 {label}
-                                {label === "Ano" ? " (−2 b.)" : ""}
                               </button>
                             )
                           })}
@@ -621,7 +737,6 @@ export default function CalculatorPage() {
                                 className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
                               >
                                 {label}
-                                {label === "Nová" ? " (−1 b.)" : ""}
                               </button>
                             )
                           })}
@@ -668,198 +783,75 @@ export default function CalculatorPage() {
                 )
               })()}
 
-            {/* Step 2 — Renovation grid */}
-            {step === 2 && (
-              <div className="grid grid-cols-3 gap-2">
-                {RENOVATIONS.map((r) => {
-                  const isSelected = selected === r.id
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() =>
-                        r.available ? setSelected(r.id) : undefined
-                      }
-                      disabled={!r.available}
-                      className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
-                        isSelected
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : r.available
-                            ? "border-border hover:border-primary/40 hover:bg-muted/50"
-                            : "cursor-not-allowed border-border opacity-35"
-                      }`}
-                    >
-                      <r.icon
-                        className={`size-7 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
-                        strokeWidth={1.5}
-                      />
-                      <span
-                        className={`text-xs leading-tight font-medium ${isSelected ? "text-primary" : ""}`}
-                      >
-                        {r.label}
-                      </span>
-                      {!r.available && (
-                        <span className="absolute -top-1.5 -right-1.5 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground">
-                          brzy
-                        </span>
-                      )}
-                      {isSelected && (
-                        <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary">
-                          <CheckCircle2 className="size-3 text-primary-foreground" />
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Step 3 — Sliders */}
-            {step === 3 &&
-              (selected === "windows" ? (
-                <div className="flex flex-col divide-y divide-border">
-                  {(
-                    [
-                      {
-                        label: "Počet jednotek",
-                        key: "numberOfUnits" as const,
-                        min: 5,
-                        max: 50,
-                        step: 1,
-                        unit: "ks",
-                      },
-                      {
-                        label: "Počet oken",
-                        key: "windowCount" as const,
-                        min: 10,
-                        max: 300,
-                        step: 1,
-                        unit: "ks",
-                        ticks: [10, 30, 60, 100, 150, 200, 300] as const,
-                      },
-                      {
-                        label: "Doba splácení",
-                        key: "rentYears" as const,
-                        min: 1,
-                        max: calc.maxRentTime,
-                        step: 1,
-                        unit: "let",
-                      },
-                    ] as const
-                  ).map(({ label, key, min, max, step: s, unit, ...rest }) => {
-                    const ticks = "ticks" in rest ? rest.ticks : undefined
-                    return (
-                      <div key={key} className="py-3">
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">
-                            {label}
-                          </span>
-                          <span className="text-sm font-semibold tabular-nums">
-                            {(repair[key] as number).toLocaleString("cs-CZ")}
-                            <span className="ml-1 text-xs font-normal text-muted-foreground">
-                              {unit}
-                            </span>
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={min}
-                          max={max}
-                          step={s}
-                          value={repair[key]}
-                          list={ticks ? `ticks-${key}` : undefined}
-                          onChange={(e) => setR(key, Number(e.target.value))}
-                          className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
-                        />
-                        {ticks && (
-                          <>
-                            <datalist id={`ticks-${key}`}>
-                              {ticks.map((t) => (
-                                <option key={t} value={t} />
-                              ))}
-                            </datalist>
-                            <div className="relative mt-0.5 h-3">
-                              {ticks.map((t) => (
-                                <span
-                                  key={t}
-                                  className="absolute -translate-x-1/2 text-[9px] text-muted-foreground/60"
-                                  style={{
-                                    left: `${((t - min) / (max - min)) * 100}%`,
-                                  }}
-                                >
-                                  {t}
-                                </span>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )
-                  })}
-                  <div className="flex items-center justify-between py-3">
-                    <span className="text-xs text-muted-foreground">
-                      Typ opravy
-                    </span>
-                    <div className="flex gap-1.5">
-                      {(["První", "Opakovaná"] as const).map((label) => {
-                        const active =
-                          label === "První"
-                            ? repair.isFirstRepair
-                            : !repair.isFirstRepair
+            {/* Step 2 — Renovation grid with recommendation */}
+            {step === 2 &&
+              (() => {
+                const year = building?.yearBuilt ?? null
+                const pts = year
+                  ? calcEnergyScore(year, insulated, newWindows)
+                  : null
+                const g = pts != null ? energyGrade(pts) : null
+                const displayGrade = energyLabel ?? g?.grade ?? null
+                const { sorted: sortedRenovations, starId } =
+                  getSortedRenovations(displayGrade)
+                return (
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      {sortedRenovations.map((r) => {
+                        const isSelected = selected.includes(r.id)
+                        const isStar = r.id === starId
                         return (
                           <button
-                            key={label}
+                            key={r.id}
                             onClick={() =>
-                              setR("isFirstRepair", label === "První")
+                              r.available
+                                ? setSelected((prev) =>
+                                    prev.includes(r.id)
+                                      ? prev.filter((id) => id !== r.id)
+                                      : [...prev, r.id]
+                                  )
+                                : undefined
                             }
-                            className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                            disabled={!r.available}
+                            className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
+                              isSelected
+                                ? "border-primary bg-primary/5 shadow-sm"
+                                : r.available
+                                  ? "border-border hover:border-primary/40 hover:bg-muted/50"
+                                  : "cursor-not-allowed border-border opacity-35"
+                            }`}
                           >
-                            {label}
+                            <r.icon
+                              className={`size-7 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                              strokeWidth={1.5}
+                            />
+                            <span
+                              className={`text-xs leading-tight font-medium ${isSelected ? "text-primary" : ""}`}
+                            >
+                              {r.label}
+                            </span>
+                            {isStar && (
+                              <span className="absolute -top-1.5 -left-1.5">
+                                <Star className="size-3.5 fill-amber-400 text-amber-400 drop-shadow-sm" />
+                              </span>
+                            )}
+                            {!r.available && (
+                              <span className="absolute -top-1.5 -right-1.5 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground">
+                                brzy
+                              </span>
+                            )}
+                            {isSelected && (
+                              <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary">
+                                <CheckCircle2 className="size-3 text-primary-foreground" />
+                              </span>
+                            )}
                           </button>
                         )
                       })}
                     </div>
                   </div>
-                </div>
-              ) : (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  Kalkulačka pro tuto oblast je v přípravě.
-                </p>
-              ))}
-
-            {/* Step 4 — Results */}
-            {step === 4 && (
-              <div className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl border">
-                {[
-                  { label: "Celková cena opravy", value: calc.alpha },
-                  {
-                    label: "Cena na jednotku",
-                    value: Math.round(calc.alpha / repair.numberOfUnits),
-                  },
-                  {
-                    label: "Splácitelná částka",
-                    value: calc.finalRent,
-                    warn: calc.cappedByMax,
-                  },
-                  {
-                    label: "Měsíčně / jednotka",
-                    value: Math.round(calc.monthlyPerUnit),
-                    highlight: true,
-                  },
-                ].map(({ label, value, warn, highlight }) => (
-                  <div
-                    key={label}
-                    className={`flex items-center justify-between px-4 py-3 text-sm ${highlight ? "bg-primary/5" : ""}`}
-                  >
-                    <span className="text-muted-foreground">{label}</span>
-                    <span
-                      className={`font-semibold tabular-nums ${highlight ? "text-primary" : ""} ${warn ? "text-amber-600 dark:text-amber-400" : ""}`}
-                    >
-                      {value.toLocaleString("cs-CZ")} Kč
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                )
+              })()}
 
             {/* Progress + CTA */}
             <div className="mt-auto flex flex-col gap-3 pt-2">

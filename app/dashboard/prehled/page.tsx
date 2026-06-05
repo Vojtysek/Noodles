@@ -15,9 +15,11 @@ import {
   Wallet,
 } from "lucide-react"
 
+import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
 import { Roadmap, type RoadmapItem } from "@/components/dashboard/roadmap"
+import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
 import {
   fmtCzk,
   fmtCzkShort,
@@ -29,6 +31,32 @@ import {
   type ScenarioTone,
   type Sentiment,
 } from "@/lib/mock-data"
+
+type BuildingCalc = {
+  address: string | null
+  units: number
+  energy_grade: string | null
+  selected_renovations: string[]
+  monthly_per_unit: number
+  total_cost: number
+  final_rent: number
+  rent_years: number
+  capped_by_max: boolean
+}
+
+function gradeBadgeClass(grade: string) {
+  const map: Record<string, string> = {
+    "A++": "bg-emerald-700 text-white",
+    "A+": "bg-emerald-600 text-white",
+    A: "bg-emerald-500 text-white",
+    B: "bg-lime-500 text-white",
+    C: "bg-yellow-400 text-zinc-900",
+    D: "bg-orange-400 text-white",
+    E: "bg-orange-600 text-white",
+    F: "bg-red-600 text-white",
+  }
+  return map[grade] ?? "bg-muted text-muted-foreground"
+}
 
 const START_YEAR = 2026
 const START_MONTH = 0 // leden
@@ -138,6 +166,29 @@ function computeScenario(scenario: Scenario) {
 export default function PrehledPage() {
   const [scenarioId, setScenarioId] = useState(scenarios[1].id)
   const [supportCounts, setSupportCounts] = useState(() => countSentiments(initialPersonas))
+  // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
+  const [splashOpen, setSplashOpen] = useState(false)
+  const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("splash") === "1") {
+      setSplashOpen(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data } = await createClient()
+          .from("buildings")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single()
+        if (data) setBuildingCalc(data as BuildingCalc)
+      } catch {}
+    })()
+  }, [])
 
   // Živé počty postojů ze stejného API jako stránka Rezidenti; mock jako záloha.
   useEffect(() => {
@@ -193,14 +244,75 @@ export default function PrehledPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+      {splashOpen && (
+        <ScenarioSplash
+          onClose={() => setSplashOpen(false)}
+          onSelect={(id) => setScenarioId(id)}
+        />
+      )}
+
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold">Přehled</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Vše podstatné o rekonstrukcích SVJ Letná 24 na jednom místě — bez tabulek a odborných
-          pojmů.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">Přehled</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Vše podstatné o rekonstrukcích SVJ Letná 24 na jednom místě — bez tabulek a odborných
+            pojmů.
+          </p>
+        </div>
+        {process.env.NODE_ENV === "development" && (
+          <button
+            onClick={() => setSplashOpen(true)}
+            className="shrink-0 rounded-md border border-dashed px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Dev: splash
+          </button>
+        )}
       </div>
+
+      {/* Výsledek kalkulace z onboardingu */}
+      {buildingCalc && (
+        <div className="rounded-lg border bg-muted/20 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Výsledek vaší kalkulace</p>
+              {buildingCalc.address && (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{buildingCalc.address}</p>
+              )}
+            </div>
+            {buildingCalc.energy_grade && (
+              <span
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${gradeBadgeClass(buildingCalc.energy_grade)}`}
+              >
+                {buildingCalc.energy_grade}
+              </span>
+            )}
+          </div>
+          {buildingCalc.selected_renovations.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {buildingCalc.selected_renovations.map((r) => (
+                <span key={r} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                  {r}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Měsíčně / byt</p>
+              <p className="text-base font-semibold tabular-nums text-primary">
+                {buildingCalc.monthly_per_unit.toLocaleString("cs-CZ")} Kč
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Celková cena opravy</p>
+              <p className="text-base font-semibold tabular-nums">
+                {buildingCalc.total_cost.toLocaleString("cs-CZ")} Kč
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stav domu — vstupní dlaždice */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
