@@ -1,121 +1,228 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Presentation, Download, Loader2, Check, User } from "lucide-react"
+import {
+  FileText,
+  Presentation,
+  Download,
+  Loader2,
+  Check,
+  CircleCheck,
+  UserRound,
+  BookOpenText,
+  Sparkles,
+  Building2,
+  Users,
+  ChartPie,
+  Lightbulb,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { exportTypes, exportHistory, personas, projects } from "@/lib/mock-data"
+import {
+  exportTypes,
+  exportHistory,
+  distributionTips,
+  personas,
+  projects,
+  fmtCzkShort,
+} from "@/lib/mock-data"
+
+const TYPE_ICONS: Record<string, typeof FileText> = {
+  "overall-brief": FileText,
+  persona: UserRound,
+  "overall-detail": BookOpenText,
+  presentation: Presentation,
+}
 
 export default function ExportyPage() {
+  const [selectedTypeId, setSelectedTypeId] = useState(exportTypes[0].id)
   const [personaId, setPersonaId] = useState(personas[0].id)
   const [projectId, setProjectId] = useState<string>("all")
-  const [generating, setGenerating] = useState<string | null>(null)
-  const [done, setDone] = useState<string | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]
+  const selectedPersona = personas.find((p) => p.id === personaId)
+  const scopedProjects = projectId === "all" ? projects : projects.filter((p) => p.id === projectId)
+  const totalBudget = scopedProjects.reduce((sum, p) => sum + p.budget, 0)
 
   // Mock generování — pouze vizuální stav, žádný skutečný export.
-  function generate(id: string) {
-    setGenerating(id)
-    setDone(null)
+  function generate() {
+    setGenerating(true)
+    setDone(false)
     setTimeout(() => {
-      setGenerating(null)
-      setDone(id)
-      setTimeout(() => setDone((d) => (d === id ? null : d)), 2500)
+      setGenerating(false)
+      setDone(true)
+      setTimeout(() => setDone(false), 2500)
     }, 1200)
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold">Exporty</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Personalizované výstupy z agregovaných dat — materiály pro různé situace a publika. Zatím
-          mock bez skutečného generování.
+          PDF a prezentace z agregovaných dat — materiály pro různé situace a publika. Zatím mock
+          bez skutečného generování.
         </p>
       </div>
 
-      {/* Context filter */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">Kontext exportu:</span>
-        <select
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value="all">Všechny projekty</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+      {/* Context: project scope + stats */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-primary/5 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <p className="text-sm font-medium">Co exportovat</p>
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="h-8 rounded-lg border border-border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value="all">Všechny projekty</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-4 rounded-lg bg-background px-3 py-1.5 text-xs">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Building2 className="size-3.5" />
+            <span className="font-medium text-foreground tabular-nums">
+              {scopedProjects.length}
+            </span>
+            {scopedProjects.length === 1 ? "projekt" : "projekty"}
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Users className="size-3.5" />
+            <span className="font-medium text-foreground tabular-nums">{personas.length}</span>
+            rezidentů
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <ChartPie className="size-3.5" />
+            <span className="font-medium text-foreground tabular-nums">
+              {fmtCzkShort(totalBudget)}
+            </span>
+          </span>
+        </div>
       </div>
 
-      {/* Export type cards */}
+      {/* Export type cards — clickable, selected gets outline */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {exportTypes.map((exp) => (
-          <div key={exp.id} className="flex flex-col gap-3 rounded-lg border p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  {exp.format === "PPTX" ? (
-                    <Presentation className="size-4" />
-                  ) : (
-                    <FileText className="size-4" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{exp.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {exp.format} · {exp.pages}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <p className="flex-1 text-xs leading-relaxed text-muted-foreground">
-              {exp.description}
-            </p>
-
-            {exp.needsPersona && (
-              <div className="flex items-center gap-2">
-                <User className="size-3.5 shrink-0 text-muted-foreground" />
-                <select
-                  value={personaId}
-                  onChange={(e) => setPersonaId(e.target.value)}
-                  className="h-8 flex-1 rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  {personas.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} — {p.role}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <Button
-              variant={done === exp.id ? "secondary" : "outline"}
-              onClick={() => generate(exp.id)}
-              disabled={generating !== null}
-              className="w-full"
-            >
-              {generating === exp.id ? (
-                <Loader2 className="animate-spin" />
-              ) : done === exp.id ? (
-                <Check />
-              ) : (
-                <Download />
+        {exportTypes.map((exp) => {
+          const Icon = TYPE_ICONS[exp.id] ?? FileText
+          const selected = exp.id === selectedTypeId
+          return (
+            <button
+              key={exp.id}
+              onClick={() => setSelectedTypeId(exp.id)}
+              aria-pressed={selected}
+              className={cn(
+                "flex flex-col gap-3 rounded-lg border p-4 text-left transition-all",
+                selected
+                  ? "border-primary/60 bg-primary/5 ring-3 ring-primary/15"
+                  : "hover:bg-muted/50"
               )}
-              {generating === exp.id
-                ? "Generuji…"
-                : done === exp.id
-                  ? "Připraveno (mock)"
-                  : "Vygenerovat"}
-            </Button>
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div
+                  className={cn(
+                    "flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors",
+                    selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                  )}
+                >
+                  <Icon className="size-4.5" />
+                </div>
+                {selected && <CircleCheck className="size-4.5 shrink-0 text-primary" />}
+              </div>
+              <div>
+                <p className="text-sm font-medium">{exp.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {exp.description}
+                </p>
+              </div>
+              <div className="mt-auto flex flex-wrap items-center gap-2 text-xs">
+                <span
+                  className={cn(
+                    "rounded-md px-1.5 py-0.5 font-medium",
+                    selected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {exp.pages}
+                </span>
+                <span className="text-muted-foreground">{exp.bestFor}</span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Generate panel */}
+      <div className="rounded-lg border p-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="size-4 text-primary" />
+          <p className="text-sm font-medium">Vygenerovat dokument</p>
+        </div>
+
+        {selectedType.needsPersona && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <UserRound className="size-3.5" />
+              Pro rezidenta:
+            </span>
+            <select
+              value={personaId}
+              onChange={(e) => setPersonaId(e.target.value)}
+              className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {personas.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — {p.role}
+                </option>
+              ))}
+            </select>
           </div>
-        ))}
+        )}
+
+        <div className="mt-3 rounded-lg bg-muted/50 p-4">
+          <p className="text-xs font-medium text-muted-foreground">Dokument bude obsahovat:</p>
+          <div className="mt-2.5 grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+            {selectedType.includes.map((item) => (
+              <div key={item} className="flex items-center gap-2 text-sm">
+                <CircleCheck className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Button onClick={generate} disabled={generating} className="mt-3 w-full" size="lg">
+          {generating ? <Loader2 className="animate-spin" /> : done ? <Check /> : <Download />}
+          {generating
+            ? "Generuji…"
+            : done
+              ? "Připraveno ke stažení (mock)"
+              : selectedType.needsPersona && selectedPersona
+                ? `${selectedType.cta} — ${selectedPersona.name}`
+                : selectedType.cta}
+        </Button>
+      </div>
+
+      {/* Distribution tips */}
+      <div className="rounded-lg border bg-primary/5 p-4">
+        <div className="flex items-center gap-2">
+          <Lightbulb className="size-4 text-primary" />
+          <p className="text-sm font-medium text-primary">Tipy k distribuci</p>
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+          {distributionTips.map((tip) => (
+            <div key={tip.title}>
+              <p className="text-sm font-medium">{tip.title}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{tip.tip}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Export history */}

@@ -407,7 +407,10 @@ export type ExportType = {
   description: string
   format: "PDF" | "PPTX"
   pages: string
+  bestFor: string
   needsPersona: boolean
+  includes: string[]
+  cta: string
 }
 
 export const exportTypes: ExportType[] = [
@@ -418,7 +421,15 @@ export const exportTypes: ExportType[] = [
       "Obecné informace o projektech, základní data a hlavní argumenty. Vhodné pro nástěnku nebo hromadný e-mail vlastníkům.",
     format: "PDF",
     pages: "2–3 strany",
+    bestFor: "Nejlepší pro: zaneprázdněné rezidenty",
     needsPersona: false,
+    includes: [
+      "Přehled projektů a přínosů",
+      "Klíčová čísla na jedné straně",
+      "Hlavní argumenty pro rekonstrukci",
+      "Dopad na fond oprav",
+    ],
+    cta: "Vygenerovat stručný přehled (PDF)",
   },
   {
     id: "persona",
@@ -427,7 +438,15 @@ export const exportTypes: ExportType[] = [
       "Výběr dat a argumentů upravený pro konkrétní personu — připravený k přímému předložení danému rezidentovi.",
     format: "PDF",
     pages: "3–4 strany",
+    bestFor: "Nejlepší pro: jednání 1 : 1",
     needsPersona: true,
+    includes: [
+      "Argumenty šité na míru personě",
+      "Odpovědi na její hlavní námitky",
+      "Dopad na její měsíční náklady",
+      "Relevantní úspory a přínosy",
+    ],
+    cta: "Vygenerovat personalizovaný PDF",
   },
   {
     id: "overall-detail",
@@ -436,7 +455,17 @@ export const exportTypes: ExportType[] = [
       "Rozšířená verze se všemi důležitými detaily: rozpočty, rozpady nákladů, predikce návratnosti a harmonogramy.",
     format: "PDF",
     pages: "10–15 stran",
+    bestFor: "Nejlepší pro: analytické povahy",
     needsPersona: false,
+    includes: [
+      "Přehled projektů a přínosů",
+      "Finanční rozpad po položkách",
+      "Návratnost a predikce úspor",
+      "Harmonogram a milníky",
+      "Technické specifikace",
+      "Rizika a rezervy",
+    ],
+    cta: "Vygenerovat detailní report (PDF)",
   },
   {
     id: "presentation",
@@ -445,7 +474,34 @@ export const exportTypes: ExportType[] = [
       "Nejdůležitější metriky a grafy ve formě snímků — připraveno pro promítání na schůzi SVJ.",
     format: "PPTX",
     pages: "8–10 snímků",
+    bestFor: "Nejlepší pro: schůze SVJ",
     needsPersona: false,
+    includes: [
+      "Klíčové metriky a grafy",
+      "Porovnání projektů",
+      "Mluvící body ke každému snímku",
+      "Příprava na časté dotazy",
+    ],
+    cta: "Vygenerovat prezentaci (PPTX)",
+  },
+]
+
+export const distributionTips = [
+  {
+    title: "Pro analytické rezidenty",
+    tip: "Pošlete detailní report e-mailem 3–5 dní před schůzí. Potřebují čas na prostudování.",
+  },
+  {
+    title: "Pro rozhodné povahy",
+    tip: "Použijte stručný přehled. Začněte návratností a harmonogramem, buďte struční.",
+  },
+  {
+    title: "Pro vztahové rezidenty",
+    tip: "Předejte dokument osobně s krátkým vysvětlením. Zdůrazněte přínos pro celý dům.",
+  },
+  {
+    title: "Pro schůze SVJ",
+    tip: "Promítejte prezentaci a mějte detailní report po ruce jako zálohu na dotazy.",
   },
 ]
 
@@ -500,4 +556,13 @@ export const exportHistory: ExportHistoryItem[] = [
 
 export function fmtCzk(value: number): string {
   return `${value.toLocaleString("cs-CZ")} Kč`
+}
+
+export function fmtCzkShort(value: number): string {
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000)
+    return `${(value / 1_000_000).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} mil. Kč`
+  if (abs >= 1_000)
+    return `${(value / 1_000).toLocaleString("cs-CZ", { maximumFractionDigits: 0 })} tis. Kč`
+  return fmtCzk(value)
 }
