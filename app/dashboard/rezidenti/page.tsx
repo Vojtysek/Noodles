@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   Plus,
   Sparkles,
@@ -73,7 +73,42 @@ export default function RezidentiPage() {
   const [newName, setNewName] = useState("")
   const [newBrief, setNewBrief] = useState("")
   const [adding, setAdding] = useState(false)
+  const [loadingPersonas, setLoadingPersonas] = useState(true)
   const [search, setSearch] = useState("")
+
+  useEffect(() => {
+    fetch("/api/personas")
+      .then((r) => r.json())
+      .then((rows: Array<{
+        id: string
+        name: string
+        role: string
+        unit: string
+        status: "zpracovano" | "ceka"
+        sentiment: Sentiment
+        brief: string
+        structured: Persona["structured"]
+      }>) => {
+        if (!Array.isArray(rows) || rows.length === 0) return
+        const fromDb: Persona[] = rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          role: r.role,
+          unit: r.unit,
+          status: r.status,
+          sentiment: r.sentiment,
+          brief: r.brief,
+          structured: r.structured,
+        }))
+        setPersonaList((prev) => {
+          const dbIds = new Set(fromDb.map((p) => p.id))
+          return [...fromDb, ...prev.filter((p) => !dbIds.has(p.id))]
+        })
+        setSelectedPersonaId(fromDb[0].id)
+      })
+      .catch(() => {/* keep mock data on error */})
+      .finally(() => setLoadingPersonas(false))
+  }, [])
   const [sentimentFilter, setSentimentFilter] = useState<Sentiment | "all">("all")
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>(initialPersonas[0].id)
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0].id)
@@ -200,29 +235,43 @@ export default function RezidentiPage() {
 
       {/* Sentiment summary */}
       <div className="grid grid-cols-3 gap-3">
-        {counts.map(({ sentiment, count }) => {
-          const cfg = SENTIMENTS[sentiment]
-          const active = sentimentFilter === sentiment
-          return (
-            <button
-              key={sentiment}
-              onClick={() => setSentimentFilter(active ? "all" : sentiment)}
-              className={cn(
-                "rounded-lg border px-4 py-3 text-left transition-colors",
-                active ? cfg.activeCard : "hover:bg-muted/50"
-              )}
-            >
-              <div className={cn("flex items-center gap-1.5 text-xs font-medium", cfg.text)}>
-                <cfg.icon className="size-3.5" />
-                {cfg.label}
-              </div>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{count}</p>
-              <p className="text-xs text-muted-foreground">
-                {Math.round((count / personaList.length) * 100)} % rezidentů
-              </p>
-            </button>
-          )
-        })}
+        {loadingPersonas
+          ? SENTIMENT_ORDER.map((sentiment) => {
+              const cfg = SENTIMENTS[sentiment]
+              return (
+                <div key={sentiment} className="rounded-lg border px-4 py-3">
+                  <div className={cn("flex items-center gap-1.5 text-xs font-medium", cfg.text)}>
+                    <cfg.icon className="size-3.5" />
+                    {cfg.label}
+                  </div>
+                  <div className="mt-1 h-8 w-8 animate-pulse rounded-md bg-muted" />
+                  <div className="mt-1 h-3 w-20 animate-pulse rounded bg-muted" />
+                </div>
+              )
+            })
+          : counts.map(({ sentiment, count }) => {
+              const cfg = SENTIMENTS[sentiment]
+              const active = sentimentFilter === sentiment
+              return (
+                <button
+                  key={sentiment}
+                  onClick={() => setSentimentFilter(active ? "all" : sentiment)}
+                  className={cn(
+                    "rounded-lg border px-4 py-3 text-left transition-colors",
+                    active ? cfg.activeCard : "hover:bg-muted/50"
+                  )}
+                >
+                  <div className={cn("flex items-center gap-1.5 text-xs font-medium", cfg.text)}>
+                    <cfg.icon className="size-3.5" />
+                    {cfg.label}
+                  </div>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">{count}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {Math.round((count / personaList.length) * 100)} % rezidentů
+                  </p>
+                </button>
+              )
+            })}
       </div>
 
       {/* Master–detail */}
@@ -240,8 +289,14 @@ export default function RezidentiPage() {
             />
           </div>
 
-          <div className="flex max-h-[60svh] flex-col gap-4 overflow-y-auto rounded-lg border p-2 lg:max-h-[calc(100svh-220px)]">
-            {grouped.length === 0 && (
+          <div className="relative flex max-h-[60svh] flex-col gap-4 overflow-y-auto rounded-lg border p-2 lg:max-h-[calc(100svh-220px)]">
+            {loadingPersonas && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-lg bg-background/70 text-sm text-muted-foreground backdrop-blur-sm">
+                <Sparkles className="size-4 animate-spin" />
+                Načítám…
+              </div>
+            )}
+            {grouped.length === 0 && !loadingPersonas && (
               <p className="px-2 py-6 text-center text-sm text-muted-foreground">
                 Žádný rezident neodpovídá hledání.
               </p>

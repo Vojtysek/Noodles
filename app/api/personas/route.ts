@@ -3,6 +3,20 @@ import { openai } from "@/lib/ai/client";
 import { characterizePersona } from "@/lib/ai/instructions/characterizePersona";
 import { createClient } from "@/lib/supabase/server";
 
+export async function GET() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("personas")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  return Response.json(data);
+}
+
 export async function POST(req: NextRequest) {
   const { name, brief, role = "Nová persona", unit = "—" } = await req.json() as {
     name: string;
