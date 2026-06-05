@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import gsap from "gsap"
+import { useGSAP } from "@gsap/react"
 import {
   ArrowRight,
   CalendarClock,
@@ -169,6 +171,20 @@ export default function PrehledPage() {
   // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
   const [splashOpen, setSplashOpen] = useState(false)
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
+      tl.from("[data-pr-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0).from(
+        "[data-pr-reveal]",
+        { y: 32, autoAlpha: 0, duration: 0.7, stagger: 0.1 },
+        0.15
+      )
+    },
+    { scope: rootRef }
+  )
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("splash") === "1") {
@@ -243,7 +259,17 @@ export default function PrehledPage() {
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div ref={rootRef} className="relative mx-auto flex w-full max-w-5xl flex-col gap-8">
+      {/* Ambient blobs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-emerald-500/8 blur-[120px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-40 top-1/3 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
+      />
+
       {splashOpen && (
         <ScenarioSplash
           onClose={() => setSplashOpen(false)}
@@ -252,10 +278,16 @@ export default function PrehledPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div data-pr-header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">Přehled</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="h-px w-7 bg-emerald-500/60" />
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
+              SVJ Letná 24
+            </p>
+          </div>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Přehled</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Vše podstatné o rekonstrukcích SVJ Letná 24 na jednom místě — bez tabulek a odborných
             pojmů.
           </p>
@@ -272,7 +304,7 @@ export default function PrehledPage() {
 
       {/* Výsledek kalkulace z onboardingu */}
       {buildingCalc && (
-        <div className="rounded-lg border bg-muted/20 p-4">
+        <div className="rounded-2xl border bg-gradient-to-br from-muted/40 to-muted/10 p-4 lg:rounded-bl-[3rem] lg:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-medium">Výsledek vaší kalkulace</p>
@@ -315,12 +347,12 @@ export default function PrehledPage() {
       )}
 
       {/* Stav domu — vstupní dlaždice */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-pr-reveal className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tiles.map((tile) => (
           <Link
             key={tile.label}
             href={tile.href}
-            className="group rounded-lg border bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
+            className="group rounded-2xl border bg-muted/40 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg"
           >
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <tile.icon className="size-3.5 shrink-0 text-primary" />
@@ -333,11 +365,14 @@ export default function PrehledPage() {
       </div>
 
       {/* Tři scénáře */}
-      <div className="flex flex-col gap-3">
+      <div data-pr-reveal className="flex flex-col gap-3">
         <div>
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Jak se do toho pustit?
-          </p>
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              Jak se do toho pustit?
+            </p>
+          </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Tři připravené cesty — od nejlevnější po kompletní. Vyberte si a níže uvidíte, jak
             dlouho potrvá a co bude stát.
@@ -354,8 +389,10 @@ export default function PrehledPage() {
                 onClick={() => setScenarioId(s.id)}
                 aria-pressed={active}
                 className={cn(
-                  "flex flex-col gap-3 rounded-lg border p-4 text-left transition-all",
-                  active ? tone.selected : "hover:bg-muted/50"
+                  "flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
+                  active
+                    ? cn(tone.selected, "scale-[1.02] shadow-xl")
+                    : "hover:scale-[1.01] hover:bg-muted/50 hover:shadow-lg"
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -402,7 +439,7 @@ export default function PrehledPage() {
       </div>
 
       {/* Harmonogram vybraného scénáře */}
-      <div className="rounded-lg border p-4 sm:p-5">
+      <div data-pr-reveal className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
         <p className="text-sm font-medium">Jak to půjde za sebou — {scenario.name}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Projekty se realizují postupně, jeden po druhém. Celkem{" "}
@@ -414,7 +451,10 @@ export default function PrehledPage() {
       </div>
 
       {/* Vyplatí se to? */}
-      <div className="rounded-lg border p-4 sm:p-5">
+      <div
+        data-pr-reveal
+        className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-br-[3rem]"
+      >
         <p className="text-sm font-medium">Vyplatí se to?</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {result.breakEvenYear !== null ? (
@@ -461,10 +501,10 @@ export default function PrehledPage() {
       </div>
 
       {/* Kam dál */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div data-pr-reveal className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Link
           href="/dashboard/financials"
-          className="group flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors hover:bg-muted/50"
+          className="group flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
         >
           <SlidersHorizontal className="size-4 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
@@ -477,7 +517,7 @@ export default function PrehledPage() {
         </Link>
         <Link
           href="/dashboard/exporty"
-          className="group flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors hover:bg-muted/50"
+          className="group flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
         >
           <FileDown className="size-4 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
