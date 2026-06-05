@@ -1,17 +1,15 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import gsap from "gsap"
 import {
   Wallet,
   TrendingDown,
-  TrendingUp,
   CalendarClock,
+  HandCoins,
   Layers,
   CircleCheck,
-  Scale,
-  TriangleAlert,
   Star,
-  Hammer,
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
@@ -21,7 +19,6 @@ import { cn } from "@/lib/utils"
 import {
   BreakdownBars,
   ComparisonLineChart,
-  DonutChart,
   seriesCrossing,
 } from "@/components/dashboard/charts"
 import {
@@ -57,6 +54,44 @@ function sameIdSet(a: readonly ProjectId[], b: readonly ProjectId[]): boolean {
   if (a.length !== b.length) return false
   const set = new Set(a)
   return b.every((id) => set.has(id))
+}
+
+/**
+ * Animovaná částka — při změně hodnoty (scénář, horizont) plynule přepočítá
+ * číslo na obrazovce. Stejný count-up vzor jako chipy na Přehledu / landingu.
+ */
+function AnimatedCzk({ value, className }: { value: number; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const prev = useRef(0)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el.textContent = fmtCzkShort(value)
+      prev.current = value
+      return
+    }
+    const counter = { v: prev.current }
+    const tween = gsap.to(counter, {
+      v: value,
+      duration: 0.9,
+      ease: "power2.out",
+      onUpdate() {
+        el.textContent = fmtCzkShort(counter.v)
+      },
+    })
+    prev.current = value
+    return () => {
+      tween.kill()
+    }
+  }, [value])
+
+  return (
+    <span ref={ref} className={cn("tabular-nums", className)}>
+      {fmtCzkShort(value)}
+    </span>
+  )
 }
 
 export default function FinancialsPage() {
@@ -168,6 +203,9 @@ export default function FinancialsPage() {
   }, [selected, single, horizon])
 
   const spentPct = Math.round((agg.spent / agg.budget) * 100)
+  const savingsPct = Math.round((agg.savingsPerYear / agg.annualCost) * 100)
+  const afterBarPct = Math.round((agg.annualWithNow / agg.annualWithoutNow) * 100)
+  const profitable = agg.lossAtHorizon > 0
   const scopeLabel = activeScenario
     ? activeScenario.name
     : single
@@ -179,27 +217,36 @@ export default function FinancialsPage() {
     breakEvenYearNum !== null ? String(breakEvenYearNum) : `za horizontem ${horizon} let`
 
   const kpis = [
-    { icon: Wallet, label: "Investice", value: fmtCzkShort(agg.budget), accent: null },
+    {
+      icon: Wallet,
+      label: "Investice",
+      value: fmtCzkShort(agg.budget),
+      sub: "jednorázově, vč. rezerv",
+      accent: null,
+    },
     {
       icon: TrendingDown,
       label: "Roční úspora",
       value: fmtCzkShort(agg.savingsPerYear),
+      sub: `−${savingsPct.toLocaleString("cs-CZ")} % ročních nákladů`,
       accent: "text-emerald-600 dark:text-emerald-400",
     },
     {
       icon: CalendarClock,
       label: "Bod zlomu",
       value: breakEvenYearNum !== null ? String(breakEvenYearNum) : `> ${horizon} let`,
+      sub:
+        breakEvenYearNum !== null
+          ? `rok, kdy se investice vrátí`
+          : "mimo zvolený horizont",
       accent: null,
     },
     {
-      icon: TriangleAlert,
-      label: "Ztráta bez akce",
-      value: fmtCzkShort(Math.abs(agg.lossAtHorizon)),
-      accent:
-        agg.lossAtHorizon > 0
-          ? "text-rose-600 dark:text-rose-400"
-          : "text-emerald-600 dark:text-emerald-400",
+      icon: HandCoins,
+      label: "Fond oprav",
+      value: `+${fmtCzk(agg.fundIncreasePerFlat)}`,
+      sub: "na byt měsíčně po dobu splácení",
+      accent: null,
     },
   ]
 
@@ -215,59 +262,169 @@ export default function FinancialsPage() {
         className="pointer-events-none absolute -right-40 top-1/4 -z-10 size-96 rounded-full bg-emerald-500/8 blur-[120px]"
       />
 
-      {/* Header */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Hero — verdikt na první pohled (tmavý pruh jako na Přehledu)        */}
+      {/* ------------------------------------------------------------------ */}
       <div
-        className="anim-in flex flex-col"
+        className="anim-in relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950 text-white"
         style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
       >
-        <div className="flex items-center gap-2.5">
-          <span aria-hidden className="h-px w-7 bg-emerald-500/60" />
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
-            Dva scénáře, jedno rozhodnutí
-          </p>
+        {/* Barevné záře — rose (nečinnost) vlevo, emerald (rekonstrukce) vpravo */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -left-24 -z-10 size-80 rounded-full bg-rose-500/15 blur-[100px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -bottom-28 -z-10 size-96 rounded-full bg-emerald-500/20 blur-[110px]"
+        />
+
+        <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
+          {/* Levá část — titulek + hlavní číslo */}
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span aria-hidden className="h-px w-7 bg-emerald-300/70" />
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-300 uppercase">
+                Dva scénáře, jedno rozhodnutí
+              </p>
+            </div>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Finance</h1>
+            <p className="mt-1.5 text-sm text-white/60">
+              Rekonstrukce vs. nečinnost — kolik vás stojí každá cesta.
+            </p>
+
+            <div className="mt-7">
+              <p className="text-sm text-white/70">
+                {profitable ? "Rekonstrukce ušetří" : "Do návratnosti chybí"}
+              </p>
+              <p
+                className={cn(
+                  "mt-1 text-4xl font-bold tracking-tight sm:text-5xl",
+                  profitable ? "text-emerald-300" : "text-amber-300"
+                )}
+              >
+                <AnimatedCzk value={Math.abs(agg.lossAtHorizon)} />
+              </p>
+              <p className="mt-2 text-xs text-white/50">
+                {profitable ? (
+                  <>
+                    za {horizon} let oproti nečinnosti
+                    {breakEvenYearNum !== null && (
+                      <> · vyplatí se od roku {breakEvenYearNum}</>
+                    )}
+                  </>
+                ) : (
+                  <>na horizontu {horizon} let — zkuste delší horizont</>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Pravá část — skleněná karta Dnes / Potom (vzor z landingu) */}
+          <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/15 backdrop-blur-md">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-white/70">Roční náklady domu</span>
+              <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-emerald-300">
+                −{savingsPct.toLocaleString("cs-CZ")} %
+              </span>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-3">
+                <span className="w-10 shrink-0 text-[11px] text-white/50">Dnes</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full w-full rounded-full bg-white/35" />
+                </div>
+                <span className="w-20 shrink-0 text-right text-xs tabular-nums text-white/70">
+                  {fmtCzkShort(agg.annualWithoutNow)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-10 shrink-0 text-[11px] text-white/50">Potom</span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-emerald-400 transition-[width] duration-700 ease-out"
+                    style={{ width: `${afterBarPct}%` }}
+                  />
+                </div>
+                <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-emerald-300">
+                  {fmtCzkShort(agg.annualWithNow)}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-pretty text-white/60">
+              Úspora{" "}
+              <span className="font-semibold tabular-nums text-emerald-300">
+                {fmtCzk(agg.savingsPerYear)} ročně
+              </span>{" "}
+              po dokončení vybraných projektů
+            </p>
+          </div>
         </div>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Finance</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Rekonstrukce vs. nečinnost — kolik vás stojí každá cesta.
-        </p>
       </div>
 
-      {/* Výběr scénáře — hlavní ovládací prvek */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Ovládání — scénář + horizont na jednom řádku                        */}
+      {/* ------------------------------------------------------------------ */}
       <div
         className="anim-in flex flex-col gap-3"
-        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.15s" } as React.CSSProperties}
+        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.1s" } as React.CSSProperties}
       >
-        <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-          Vyberte scénář
-        </span>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
-            {scenarios.map((s) => {
-              const active = activeScenario?.id === s.id
-              return (
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              Scénář
+            </span>
+            <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+              {scenarios.map((s) => {
+                const active = activeScenario?.id === s.id
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => selectScenario(s)}
+                    aria-pressed={active}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
+                      active
+                        ? "bg-background text-foreground shadow"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
+                    {s.name}
+                  </button>
+                )
+              })}
+            </div>
+            {!activeScenario && (
+              <span className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3.5 py-1.5 text-sm font-medium text-muted-foreground">
+                <span className="size-2 shrink-0 rounded-full bg-muted-foreground/50" />
+                Vlastní výběr
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              Horizont
+            </span>
+            <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+              {HORIZONS.map((h) => (
                 <button
-                  key={s.id}
-                  onClick={() => selectScenario(s)}
-                  aria-pressed={active}
+                  key={h}
+                  onClick={() => setHorizon(h)}
+                  aria-pressed={h === horizon}
                   className={cn(
-                    "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
-                    active
+                    "rounded-full px-3 py-1.5 text-sm font-medium transition-all tabular-nums",
+                    h === horizon
                       ? "bg-background text-foreground shadow"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
-                  {s.name}
+                  {h} let
                 </button>
-              )
-            })}
+              ))}
+            </div>
           </div>
-          {!activeScenario && (
-            <span className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3.5 py-1.5 text-sm font-medium text-muted-foreground">
-              <span className="size-2 shrink-0 rounded-full bg-muted-foreground/50" />
-              Vlastní výběr
-            </span>
-          )}
         </div>
 
         {/* Tagline + rozpočet aktivního scénáře */}
@@ -368,299 +525,273 @@ export default function FinancialsPage() {
         </div>
       </div>
 
-      {/* Horizon + KPIs */}
+      {/* ------------------------------------------------------------------ */}
+      {/* KPI pruh — ploché sloupce s předěly (vzor z landingu)               */}
+      {/* ------------------------------------------------------------------ */}
+      <dl
+        className="anim-in grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60"
+        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.2s" } as React.CSSProperties}
+      >
+        {kpis.map((kpi) => (
+          <div key={kpi.label} className="flex flex-col gap-1 lg:px-6 lg:first:pl-0 lg:last:pr-0">
+            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <kpi.icon className="size-3.5 shrink-0 text-primary" />
+              {kpi.label}
+            </dt>
+            <dd className={cn("text-xl font-semibold tabular-nums sm:text-2xl", kpi.accent)}>
+              {kpi.value}
+            </dd>
+            <p className="text-xs text-muted-foreground">{kpi.sub}</p>
+          </div>
+        ))}
+      </dl>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Porovnání scénářů — grafy s kontextem                               */}
+      {/* ------------------------------------------------------------------ */}
       <div
         className="anim-in flex flex-col gap-3"
-        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.25s" } as React.CSSProperties}
+        style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.3s" } as React.CSSProperties}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
-            <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-              Porovnání scénářů — {scopeLabel}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 rounded-full border bg-background/60 p-0.5 backdrop-blur-sm">
-            {HORIZONS.map((h) => (
-              <button
-                key={h}
-                onClick={() => setHorizon(h)}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-xs font-medium transition-colors tabular-nums",
-                  h === horizon
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {h} let
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {kpis.map((kpi) => (
-            <div
-              key={kpi.label}
-              className="rounded-2xl border bg-muted/40 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <kpi.icon className="size-3.5 shrink-0 text-primary" />
-                {kpi.label}
-              </div>
-              <p className={cn("mt-1 text-lg font-semibold tabular-nums", kpi.accent)}>
-                {kpi.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Scenario side-by-side */}
-      <div
-        className="anim-in relative grid grid-cols-1 gap-3 lg:grid-cols-2"
-        style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.35s" } as React.CSSProperties}
-      >
-        {/* VS odznak mezi kartami (jen desktop) */}
-        <span className="absolute left-1/2 top-1/2 z-10 hidden size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-background text-[11px] font-bold text-muted-foreground shadow-sm lg:flex">
-          VS
-        </span>
-
-        {/* Scénář A — bez rekonstrukce */}
-        <div className="relative overflow-hidden rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50/60 via-background to-background transition-shadow hover:shadow-xl dark:border-rose-500/20 dark:from-rose-950/25 dark:via-background dark:to-background lg:rounded-bl-[3rem]">
-          <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 to-rose-500/60" />
-          <div className="p-5 sm:p-6">
-            <div className="flex items-center gap-3.5">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/12 ring-1 ring-rose-500/20">
-                <TrendingUp className="size-5 text-rose-600 dark:text-rose-400" />
-              </span>
-              <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-rose-500 uppercase dark:text-rose-400">
-                  Scénář A
-                </p>
-                <p className="text-base font-bold leading-tight">Bez rekonstrukce</p>
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <p className="text-xs text-muted-foreground">Celkem za {horizon} let</p>
-              <p className="mt-0.5 text-3xl font-bold tabular-nums text-rose-600 dark:text-rose-400 sm:text-4xl">
-                {fmtCzkShort(agg.cumWithoutEnd)}
-              </p>
-            </div>
-
-            <div className="mt-5 divide-y divide-rose-100/80 border-t border-rose-100/80 text-sm dark:divide-rose-500/10 dark:border-rose-500/10">
-              <div className="flex items-baseline justify-between gap-2 py-2.5">
-                <span className="text-muted-foreground">Roční náklady dnes</span>
-                <span className="font-semibold tabular-nums">{fmtCzkShort(agg.annualWithoutNow)}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-2 py-2.5">
-                <span className="text-muted-foreground">Roční náklady za {horizon} let</span>
-                <span className="font-semibold tabular-nums text-rose-600 dark:text-rose-400">{fmtCzkShort(agg.annualWithoutEnd)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Scénář B — s rekonstrukcí */}
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/60 via-background to-background transition-shadow hover:shadow-xl dark:border-emerald-500/20 dark:from-emerald-950/25 dark:via-background dark:to-background lg:rounded-br-[3rem]">
-          <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-500/60" />
-          <div className="p-5 sm:p-6">
-            <div className="flex items-center gap-3.5">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/12 ring-1 ring-emerald-500/20">
-                <Hammer className="size-5 text-emerald-600 dark:text-emerald-400" />
-              </span>
-              <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
-                  Scénář B
-                </p>
-                <p className="text-base font-bold leading-tight">S rekonstrukcí</p>
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <p className="text-xs text-muted-foreground">Celkem vč. investice za {horizon} let</p>
-              <p className="mt-0.5 text-3xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 sm:text-4xl">
-                {fmtCzkShort(agg.cumWithEnd)}
-              </p>
-            </div>
-
-            <div className="mt-5 divide-y divide-emerald-100/80 border-t border-emerald-100/80 text-sm dark:divide-emerald-500/10 dark:border-emerald-500/10">
-              <div className="flex items-baseline justify-between gap-2 py-2.5">
-                <span className="text-muted-foreground">Jednorázová investice</span>
-                <span className="font-semibold tabular-nums">{fmtCzkShort(agg.budget)}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-2 py-2.5">
-                <span className="text-muted-foreground">Roční náklady po rekonstrukci</span>
-                <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{fmtCzkShort(agg.annualWithNow)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Delta callout */}
-      <div
-        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.45s" } as React.CSSProperties}
-        className={cn(
-          "anim-in flex items-center gap-3 rounded-2xl border px-4 py-3",
-          agg.lossAtHorizon > 0
-            ? "border-rose-500/30 bg-rose-500/5"
-            : "border-emerald-500/30 bg-emerald-500/5"
-        )}
-      >
-        <Scale
-          className={cn(
-            "size-5 shrink-0",
-            agg.lossAtHorizon > 0
-              ? "text-rose-600 dark:text-rose-400"
-              : "text-emerald-600 dark:text-emerald-400"
-          )}
-        />
-        <p className="text-sm">
-          {agg.lossAtHorizon > 0 ? (
-            <>
-              Nečinnost vyjde za {horizon} let o{" "}
-              <span className="font-semibold text-rose-600 tabular-nums dark:text-rose-400">
-                {fmtCzkShort(agg.lossAtHorizon)}
-              </span>{" "}
-              dráž.
-            </>
-          ) : (
-            <>
-              Investice se za {horizon} let ještě nevrátí — chybí{" "}
-              <span className="font-semibold tabular-nums">
-                {fmtCzkShort(Math.abs(agg.lossAtHorizon))}
-              </span>
-              . Zkuste delší horizont.
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* Comparison charts */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-          <p className="text-sm font-medium">Roční náklady</p>
-          <div className="mt-4">
-            <ComparisonLineChart
-              series={[
-                {
-                  label: "Bez rekonstrukce",
-                  color: WITHOUT_COLOR,
-                  points: agg.annualSeries.without,
-                },
-                {
-                  label: "S rekonstrukcí",
-                  color: WITH_COLOR,
-                  points: agg.annualSeries.with,
-                },
-              ]}
-              formatValue={fmtCzkShort}
-            />
-          </div>
-        </div>
-
-        <div data-fin-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-          <p className="text-sm font-medium">Kumulativní náklady vč. investice</p>
-          <div className="mt-4">
-            <ComparisonLineChart
-              series={[
-                {
-                  label: "Bez rekonstrukce",
-                  color: WITHOUT_COLOR,
-                  points: agg.cumSeries.without,
-                },
-                {
-                  label: "S rekonstrukcí (vč. investice)",
-                  color: WITH_COLOR,
-                  points: agg.cumSeries.with,
-                },
-              ]}
-              formatValue={fmtCzkShort}
-              marker={
-                agg.breakEvenPos !== null
-                  ? { position: agg.breakEvenPos, label: `Bod zlomu ${breakEvenLabel}` }
-                  : null
-              }
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Budget detail */}
-      <div data-fin-block className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-          <p className="text-sm font-medium">Čerpání rozpočtu</p>
-          <div className="mt-4">
-            <DonutChart percent={spentPct} label="rozpočtu vyčerpáno" />
-          </div>
-          <div className="mt-4 flex flex-col gap-1 rounded-xl bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
-            <span>
-              Vyčerpáno{" "}
-              <span className="font-medium text-foreground tabular-nums">{fmtCzk(agg.spent)}</span> z{" "}
-              <span className="font-medium text-foreground tabular-nums">{fmtCzk(agg.budget)}</span>
-            </span>
-            <span>
-              Navýšení fondu oprav:{" "}
-              <span className="font-medium text-foreground tabular-nums">
-                {fmtCzk(agg.fundIncreasePerFlat)} / byt / měsíc
-              </span>
-              {!single && <span className="ml-1">(součet za vybrané scénáře)</span>}
-            </span>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-          <p className="text-sm font-medium">Rozpad nákladů</p>
-          <div className="mt-4">
-            <BreakdownBars data={agg.costBreakdown} formatValue={fmtCzkShort} />
-          </div>
-        </div>
-      </div>
-
-      {/* Cost items table */}
-      <div data-fin-block>
-        <div className="mb-3 flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
           <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Položky rozpočtu — {scopeLabel}
+            Porovnání scénářů — {scopeLabel}
           </p>
         </div>
-        <div className="overflow-x-auto rounded-2xl border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                <th className="px-4 py-2.5 font-medium">Položka</th>
-                {!single && <th className="px-4 py-2.5 font-medium">Scénář</th>}
-                <th className="px-4 py-2.5 font-medium">Dodavatel</th>
-                <th className="px-4 py-2.5 text-right font-medium">Částka</th>
-                <th className="px-4 py-2.5 text-right font-medium">Podíl</th>
-              </tr>
-            </thead>
-            <tbody>
-              {agg.costItems.map((row) => (
-                <tr
-                  key={`${row.project}-${row.item}`}
-                  className="border-b transition-colors last:border-b-0 hover:bg-muted/40"
-                >
-                  <td className="px-4 py-2.5 font-medium">{row.item}</td>
-                  {!single && (
-                    <td className="px-4 py-2.5">
-                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        {row.project}
-                      </span>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          {/* Vyplatí se to? — kumulativní náklady s bodem zlomu */}
+          <div
+            data-fin-block
+            className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-bl-[3rem]"
+          >
+            {/* Ručně kreslené sluníčko v rohu — stejný motiv jako na Přehledu */}
+            <svg
+              aria-hidden
+              className="pointer-events-none absolute top-3 right-4 size-16 text-emerald-500/30"
+              viewBox="0 0 64 64"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="32" cy="32" r="11" />
+              <path d="M32 6 V14 M32 50 V58 M6 32 H14 M50 32 H58 M13 13 L19 19 M45 45 L51 51 M51 13 L45 19 M19 45 L13 51" />
+            </svg>
+            <p className="text-sm font-medium">Vyplatí se to?</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Kumulativní náklady vč. investice za {horizon} let
+            </p>
+            <div className="mt-4 flex gap-6">
+              <div>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="size-2 shrink-0 rounded-full bg-rose-500" />
+                  Bez rekonstrukce
+                </p>
+                <p className="mt-0.5 font-semibold tabular-nums text-rose-600 dark:text-rose-400">
+                  {fmtCzkShort(agg.cumWithoutEnd)}
+                </p>
+              </div>
+              <div>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="size-2 shrink-0 rounded-full bg-emerald-500" />
+                  S rekonstrukcí
+                </p>
+                <p className="mt-0.5 font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {fmtCzkShort(agg.cumWithEnd)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <ComparisonLineChart
+                series={[
+                  {
+                    label: "Bez rekonstrukce",
+                    color: WITHOUT_COLOR,
+                    points: agg.cumSeries.without,
+                  },
+                  {
+                    label: "S rekonstrukcí (vč. investice)",
+                    color: WITH_COLOR,
+                    points: agg.cumSeries.with,
+                  },
+                ]}
+                formatValue={fmtCzkShort}
+                marker={
+                  agg.breakEvenPos !== null
+                    ? { position: agg.breakEvenPos, label: `Bod zlomu ${breakEvenLabel}` }
+                    : null
+                }
+              />
+            </div>
+          </div>
+
+          {/* Roční náklady — vývoj v čase */}
+          <div
+            data-fin-block
+            className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+          >
+            <p className="text-sm font-medium">Roční náklady</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Bez rekonstrukce rostou s cenami energií — úspora se každý rok zvětšuje
+            </p>
+            <div className="mt-4 flex gap-6">
+              <div>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="size-2 shrink-0 rounded-full bg-rose-500" />
+                  Za {horizon} let bez akce
+                </p>
+                <p className="mt-0.5 font-semibold tabular-nums text-rose-600 dark:text-rose-400">
+                  {fmtCzkShort(agg.annualWithoutEnd)}
+                </p>
+              </div>
+              <div>
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="size-2 shrink-0 rounded-full bg-emerald-500" />
+                  Po rekonstrukci
+                </p>
+                <p className="mt-0.5 font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {fmtCzkShort(agg.annualWithEnd)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <ComparisonLineChart
+                series={[
+                  {
+                    label: "Bez rekonstrukce",
+                    color: WITHOUT_COLOR,
+                    points: agg.annualSeries.without,
+                  },
+                  {
+                    label: "S rekonstrukcí",
+                    color: WITH_COLOR,
+                    points: agg.annualSeries.with,
+                  },
+                ]}
+                formatValue={fmtCzkShort}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Rozpočet — čerpání, rozpad a položky                                */}
+      {/* ------------------------------------------------------------------ */}
+      <div
+        className="anim-in flex flex-col gap-3"
+        style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.4s" } as React.CSSProperties}
+      >
+        <div className="flex items-center gap-2.5">
+          <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            Rozpočet — {scopeLabel}
+          </p>
+        </div>
+
+        <div data-fin-block className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.4fr]">
+          {/* Čerpání rozpočtu — progress místo donutu */}
+          <div className="flex flex-col rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
+            <p className="text-sm font-medium">Čerpání rozpočtu</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Kolik z rozpočtu už je proinvestováno
+            </p>
+            <p className="mt-5 text-3xl font-bold tabular-nums">
+              {spentPct.toLocaleString("cs-CZ")} %
+            </p>
+            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+                style={{ width: `${spentPct}%` }}
+              />
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between text-xs text-muted-foreground">
+              <span>
+                Vyčerpáno{" "}
+                <span className="font-medium text-foreground tabular-nums">
+                  {fmtCzkShort(agg.spent)}
+                </span>
+              </span>
+              <span className="tabular-nums">z {fmtCzkShort(agg.budget)}</span>
+            </div>
+            <div className="mt-auto flex items-baseline justify-between gap-2 border-t pt-3 text-sm">
+              <span className="text-muted-foreground">Navýšení fondu oprav</span>
+              <span className="font-semibold tabular-nums">
+                +{fmtCzk(agg.fundIncreasePerFlat)} / byt / měsíc
+              </span>
+            </div>
+          </div>
+
+          {/* Rozpad nákladů */}
+          <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
+            <p className="text-sm font-medium">Rozpad nákladů</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {single ? "Hlavní položky projektu" : "Rozpočet po projektech"}
+            </p>
+            <div className="mt-4">
+              <BreakdownBars data={agg.costBreakdown} formatValue={fmtCzkShort} />
+            </div>
+          </div>
+        </div>
+
+        {/* Položky rozpočtu — tabulka s hlavičkovým pruhem (vzor z landingu) */}
+        <div data-fin-block className="overflow-hidden rounded-2xl border bg-background/60 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/30 px-5 py-3.5">
+            <p className="text-sm font-semibold tracking-tight">Položky rozpočtu</p>
+            <p className="text-xs text-muted-foreground">
+              <span className="tabular-nums">{agg.costItems.length}</span> položek ·{" "}
+              <span className="tabular-nums">{fmtCzkShort(agg.budget)}</span>
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
+                  <th className="px-5 py-2.5 font-medium">Položka</th>
+                  {!single && <th className="px-5 py-2.5 font-medium">Projekt</th>}
+                  <th className="px-5 py-2.5 font-medium">Dodavatel</th>
+                  <th className="px-5 py-2.5 text-right font-medium">Částka</th>
+                  <th className="px-5 py-2.5 text-right font-medium">Podíl</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agg.costItems.map((row) => (
+                  <tr
+                    key={`${row.project}-${row.item}`}
+                    className="border-b border-border/40 transition-colors last:border-b-0 hover:bg-muted/30"
+                  >
+                    <td className="px-5 py-2.5 font-medium">{row.item}</td>
+                    {!single && (
+                      <td className="px-5 py-2.5">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {row.project}
+                        </span>
+                      </td>
+                    )}
+                    <td className="px-5 py-2.5 text-muted-foreground">{row.supplier}</td>
+                    <td className="px-5 py-2.5 text-right tabular-nums">{fmtCzk(row.amount)}</td>
+                    <td className="px-5 py-2.5 text-right text-muted-foreground tabular-nums">
+                      {row.share.toLocaleString("cs-CZ")} %
                     </td>
-                  )}
-                  <td className="px-4 py-2.5 text-muted-foreground">{row.supplier}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{fmtCzk(row.amount)}</td>
-                  <td className="px-4 py-2.5 text-right text-muted-foreground tabular-nums">
-                    {row.share.toLocaleString("cs-CZ")} %
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t bg-muted/30 font-medium">
+                  <td className="px-5 py-2.5">Celkem</td>
+                  {!single && <td />}
+                  <td />
+                  <td className="px-5 py-2.5 text-right tabular-nums">{fmtCzk(agg.budget)}</td>
+                  <td className="px-5 py-2.5 text-right text-muted-foreground tabular-nums">
+                    100 %
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
     </div>
