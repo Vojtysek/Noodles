@@ -26,6 +26,7 @@ import {
   type Sentiment,
   type StrategyPoint,
 } from "@/lib/mock-data"
+import { PersonaType, PERSONA_TYPES } from "@/lib/persona-types"
 
 const SENTIMENTS: Record<
   Sentiment,
@@ -88,6 +89,7 @@ export default function RezidentiPage() {
   const [generatedStrategies, setGeneratedStrategies] = useState<Record<string, StrategyPoint[]>>({})
   const [generatingStrategy, setGeneratingStrategy] = useState(false)
   const [sentimentFilter, setSentimentFilter] = useState<Sentiment | null>(null)
+  const [selectedPersonaType, setSelectedPersonaType] = useState<PersonaType | null>(null)
 
   useEffect(() => {
     fetch("/api/personas")
@@ -101,6 +103,7 @@ export default function RezidentiPage() {
         sentiment: Sentiment
         brief: string
         structured: Persona["structured"]
+        persona_type: string | null
       }>) => {
         if (!Array.isArray(rows) || rows.length === 0) return
         const fromDb: Persona[] = rows.map((r) => ({
@@ -112,6 +115,7 @@ export default function RezidentiPage() {
           sentiment: r.sentiment,
           brief: r.brief,
           structured: r.structured,
+          personaType: (r.persona_type as PersonaType | null) ?? undefined,
         }))
         setPersonaList((prev) => {
           const dbIds = new Set(fromDb.map((p) => p.id))
@@ -147,13 +151,13 @@ export default function RezidentiPage() {
   async function addPersona() {
     const name = newName.trim()
     const brief = newBrief.trim()
-    if (!name || !brief || adding) return
+    if (!name || adding) return
     setAdding(true)
     try {
       const res = await fetch("/api/personas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, brief }),
+        body: JSON.stringify({ name, brief: brief || undefined, personaType: selectedPersonaType ?? undefined }),
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json() as {
@@ -181,6 +185,7 @@ export default function RezidentiPage() {
       setNewName("")
       setNewBrief("")
       setShowForm(false)
+      setSelectedPersonaType(null)
     } catch (err) {
       console.error(err)
     } finally {
@@ -254,7 +259,7 @@ export default function RezidentiPage() {
         <h1 className="text-xl font-semibold">Rezidenti</h1>
         <Button onClick={() => setShowForm((v) => !v)}>
           {showForm ? <X /> : <Plus />}
-          {showForm ? "Zavřít" : "Nová persona"}
+          {showForm ? "Zavřít" : "Nový rezident"}
         </Button>
       </div>
 
@@ -271,9 +276,28 @@ export default function RezidentiPage() {
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Jméno persony, např. Pan Černý"
+              placeholder="Jméno rezidenta, např. Pan Černý"
               className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
+            {/* Persona type selection */}
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(PERSONA_TYPES) as [PersonaType, typeof PERSONA_TYPES[PersonaType]][]).map(([key, pt]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedPersonaType(selectedPersonaType === key ? null : key)}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-xl border p-2 text-xs transition-all w-[4.5rem]",
+                    selectedPersonaType === key
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                  )}
+                >
+                  <img src={pt.imagePath} alt={pt.name} className="h-10 w-10 rounded-lg object-cover" />
+                  <span className="text-center leading-tight">{pt.name}</span>
+                </button>
+              ))}
+            </div>
             <textarea
               value={newBrief}
               onChange={(e) => setNewBrief(e.target.value)}
@@ -285,7 +309,7 @@ export default function RezidentiPage() {
               <Button variant="ghost" onClick={() => setShowForm(false)} disabled={adding}>
                 Zrušit
               </Button>
-              <Button onClick={addPersona} disabled={!newName.trim() || !newBrief.trim() || adding}>
+              <Button onClick={addPersona} disabled={!newName.trim() || adding}>
                 <Sparkles className={adding ? "animate-spin" : ""} />
                 {adding ? "Analyzuji…" : "Uložit personu"}
               </Button>
@@ -370,6 +394,11 @@ export default function RezidentiPage() {
                     <p className={cn("text-xs", cfg.cardMuted)}>
                       {persona.role} · {persona.unit}
                     </p>
+                    {persona.personaType && (
+                      <p className={cn("text-[10px] mt-0.5 opacity-70", cfg.cardMuted)}>
+                        {PERSONA_TYPES[persona.personaType].name}
+                      </p>
+                    )}
                   </div>
                   <div className={cn("flex items-center gap-1.5 text-xs font-medium", cfg.cardMuted)}>
                     <SentimentIcon className="size-3.5" />
@@ -415,6 +444,16 @@ export default function RezidentiPage() {
                 <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                   <Clock className="size-3" />
                   Čeká na zpracování
+                </span>
+              )}
+              {selectedPersona.personaType && (
+                <span className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  <img
+                    src={PERSONA_TYPES[selectedPersona.personaType].imagePath}
+                    alt={PERSONA_TYPES[selectedPersona.personaType].name}
+                    className="size-3 rounded-sm object-cover"
+                  />
+                  {PERSONA_TYPES[selectedPersona.personaType].name}
                 </span>
               )}
             </div>
