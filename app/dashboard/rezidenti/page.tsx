@@ -169,6 +169,7 @@ export default function RezidentiPage() {
         sentiment: Sentiment
         brief: string
         structured: Persona["structured"]
+        persona_type: string | null
       }
       const persona: Persona = {
         id: data.id,
@@ -179,6 +180,7 @@ export default function RezidentiPage() {
         sentiment: data.sentiment,
         brief: data.brief,
         structured: data.structured,
+        personaType: (data.persona_type as PersonaType | null) ?? undefined,
       }
       setPersonaList((prev) => [persona, ...prev])
       setSelectedPersonaId(persona.id)
