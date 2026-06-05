@@ -23,9 +23,9 @@ import { cn } from "@/lib/utils"
 import {
   personas as initialPersonas,
   projects,
-  getStrategy,
   type Persona,
   type Sentiment,
+  type StrategyPoint,
 } from "@/lib/mock-data"
 
 // Jemné barevné odlišení postoje rezidenta k rekonstrukcím.
@@ -116,14 +116,29 @@ export default function RezidentiPage() {
   const [editingBrief, setEditingBrief] = useState(false)
   const [draftBrief, setDraftBrief] = useState("")
   const [regenerating, setRegenerating] = useState(false)
+  const [generatedStrategies, setGeneratedStrategies] = useState<Record<string, StrategyPoint[]>>({})
+  const [generatingStrategy, setGeneratingStrategy] = useState(false)
 
   useEffect(() => {
     setEditingBrief(false)
     setDraftBrief("")
   }, [selectedPersonaId])
 
+  useEffect(() => {
+    setGeneratedStrategies({})
+    if (!selectedPersonaId) return
+    const controller = new AbortController()
+    fetch(`/api/personas/${selectedPersonaId}/strategies`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(r.statusText)
+        return r.json()
+      })
+      .then((data: Record<string, StrategyPoint[]>) => setGeneratedStrategies(data))
+      .catch((err: unknown) => { if ((err as Error).name !== "AbortError") console.error(err) })
+    return () => controller.abort()
+  }, [selectedPersonaId])
+
   const selectedPersona = personaList.find((p) => p.id === selectedPersonaId)
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? projects[0]
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -186,6 +201,25 @@ export default function RezidentiPage() {
       console.error(err)
     } finally {
       setAdding(false)
+    }
+  }
+
+  async function generateStrategyForPersona() {
+    if (!selectedPersona || generatingStrategy) return
+    setGeneratingStrategy(true)
+    try {
+      const res = await fetch(`/api/personas/${selectedPersona.id}/strategies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: selectedProjectId }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const strategies = await res.json() as StrategyPoint[]
+      setGeneratedStrategies((prev) => ({ ...prev, [selectedProjectId]: strategies }))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setGeneratingStrategy(false)
     }
   }
 
@@ -554,43 +588,55 @@ export default function RezidentiPage() {
                 <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                   Argumentační strategie
                 </p>
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    onClick={generateStrategyForPersona}
+                    disabled={!selectedPersona.structured || generatingStrategy}
+                  >
+                    <Sparkles className={generatingStrategy ? "animate-spin" : ""} />
+                    {generatingStrategy ? "Generuji…" : "Vygenerovat strategie"}
+                  </Button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                {getStrategy(selectedPersona, selectedProject).map((point, i) => (
-                  <div
-                    key={point.title}
-                    className="flex items-start gap-3 rounded-lg border px-4 py-3"
-                  >
-                    <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary tabular-nums">
-                      {i + 1}
+                {generatedStrategies[selectedProjectId] ? (
+                  generatedStrategies[selectedProjectId].map((point, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 rounded-lg border px-4 py-3"
+                    >
+                      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary tabular-nums">
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{point.title}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                          {point.detail}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{point.title}</p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                        {point.detail}
-                      </p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-start gap-3 rounded-lg border border-dashed px-4 py-3 opacity-60">
+                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Klikněte na &bdquo;Vygenerovat strategie&ldquo; pro personalizovanou argumentaci na míru této personě a projektu.
+                    </p>
                   </div>
-                ))}
-                <div className="flex items-start gap-3 rounded-lg border border-dashed px-4 py-3 opacity-60">
-                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    V další fázi tuto strategii vygeneruje AI agent na míru z briefu persony a dat
-                    projektu.
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </div>
