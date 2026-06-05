@@ -277,11 +277,7 @@ export default function RezidentiPage() {
       {/* Ambient blobs */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-[28rem] rounded-full bg-emerald-500/12 blur-[130px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-40 top-1/3 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]"
+        className="pointer-events-none absolute -right-40 top-1/3 -z-10 size-[28rem] rounded-full bg-blue-500/10 blur-[130px]"
       />
 
       {/* Header */}
@@ -290,14 +286,14 @@ export default function RezidentiPage() {
         style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
       >
         <div className="flex items-center gap-2.5">
-          <span aria-hidden className="h-px w-7 bg-emerald-500/70" />
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
+          <span aria-hidden className="h-px w-7 bg-primary/60" />
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
             Argumentační příprava
           </p>
         </div>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Rezidenti</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Vyberte typ souseda a připravte si argumenty dřív, než se na schůzi postaví proti.
+          Připravte si argumenty na sousedy dřív, než se na schůzi postaví proti.
         </p>
       </div>
 
@@ -357,8 +353,8 @@ export default function RezidentiPage() {
                         : "bg-background/60 backdrop-blur-sm hover:-translate-y-0.5 hover:shadow-lg"
                     )}
                   >
-                    <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-emerald-500/10">
-                      <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-primary/10">
+                      <span className="text-2xl font-bold text-primary">
                         {initials(p.name)}
                       </span>
                     </div>
@@ -375,8 +371,8 @@ export default function RezidentiPage() {
             onClick={() => setShowForm((v) => !v)}
             aria-expanded={showForm}
             className={cn(
-              "flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/50 hover:shadow-lg",
-              showForm && "border-emerald-500/60 bg-emerald-500/5"
+              "flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed p-3 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg",
+              showForm && "border-primary/60 bg-primary/5"
             )}
           >
             <span className="flex size-10 items-center justify-center rounded-full bg-muted">
@@ -454,7 +450,7 @@ export default function RezidentiPage() {
                   className="size-14 shrink-0 rounded-2xl object-cover"
                 />
               ) : (
-                <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-bold text-primary">
                   {initials(subject.persona.name)}
                 </span>
               )}
@@ -540,7 +536,7 @@ export default function RezidentiPage() {
               ].map((block) => (
                 <div key={block.title} className="rounded-xl border bg-muted/20 px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <block.icon className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <block.icon className="size-3.5 text-primary" />
                     <p className="text-xs font-medium">{block.title}</p>
                   </div>
                   <ul className="mt-2 flex flex-col gap-1">
@@ -564,7 +560,10 @@ export default function RezidentiPage() {
           <div className="rounded-xl border bg-muted/20 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="font-medium">Argumentační strategie</p>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" />
+                  <p className="text-sm font-medium">Argumentační strategie</p>
+                </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Jak tento typ souseda přesvědčit pro vybraný scénář.
                 </p>
@@ -609,7 +608,7 @@ export default function RezidentiPage() {
                     key={i}
                     className="flex items-start gap-3 rounded-lg border bg-background px-4 py-3"
                   >
-                    <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-medium text-emerald-600 tabular-nums dark:text-emerald-400">
+                    <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground tabular-nums shadow-sm">
                       {i + 1}
                     </div>
                     <div className="min-w-0">
@@ -622,7 +621,7 @@ export default function RezidentiPage() {
                 ))
               ) : (
                 <div className="flex items-start gap-3 rounded-lg border border-dashed px-4 py-3 opacity-60">
-                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-primary" />
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     {profile
                       ? `Pro scénář „${scenario.name}“ zatím nejsou strategie — vygenerujte je tlačítkem výše.`
