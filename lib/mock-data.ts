@@ -1,4 +1,5 @@
 // Mock data pro dashboard — pouze FE vrstva, bez napojení na Supabase / AI.
+import { PersonaType } from '@/lib/persona-types'
 
 export type ProjectId = "fasada" | "okna" | "strecha" | "vytah"
 
@@ -247,6 +248,7 @@ export type Persona = {
     motivations: string[]
     rejects: string[]
   } | null
+  personaType?: PersonaType
 }
 
 export const personas: Persona[] = [
