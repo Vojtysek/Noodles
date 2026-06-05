@@ -264,9 +264,6 @@ export default function PrehledPage() {
   const scenario = dynamicScenarios.find((s) => s.id === scenarioId) ?? dynamicScenarios[0]
   const result = useMemo(() => computeScenario(scenario), [scenario])
 
-  const inProgress = projects.filter((p) => p.status === "realizace")
-  const inApproval = projects.filter((p) => p.status === "schvalovani")
-  const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0)
   const finishLabel = monthLabel(result.totalMonths).replace("od ", "")
 
   const tiles = [
@@ -276,27 +273,31 @@ export default function PrehledPage() {
       value: `${supportCounts.podporuje} z ${supportCounts.total}`,
       detail: "rezidentů rekonstrukce podporuje",
       href: "/dashboard/rezidenti",
+      mock: false,
     },
     {
       icon: Wallet,
-      label: "Celý plán",
-      value: fmtCzkShort(totalBudget),
-      detail: `${projects.length} projekty čekají na rozhodnutí`,
+      label: "Celkové náklady",
+      value: buildingCalc ? fmtCzkShort(buildingCalc.total_cost) : "—",
+      detail: buildingCalc ? "váš výpočet z kalkulace" : "projděte kalkulaci pro odhad",
       href: "/dashboard/financials",
+      mock: false,
     },
     {
       icon: Hammer,
       label: "Právě probíhá",
-      value: inProgress.length > 0 ? inProgress.map((p) => p.shortName).join(", ") : "Nic",
-      detail: inProgress.length > 0 ? "stavba běží podle plánu" : "žádná stavba neprobíhá",
+      value: "—",
+      detail: "zatím bez aktivní stavby",
       href: "/dashboard/financials",
+      mock: true,
     },
     {
       icon: CalendarClock,
       label: "Čeká na schválení",
-      value: inApproval.length > 0 ? inApproval.map((p) => p.shortName).join(", ") : "Nic",
+      value: "—",
       detail: "rozhodne nejbližší schůze SVJ",
       href: "/dashboard/exporty",
+      mock: true,
     },
   ]
 
@@ -396,9 +397,14 @@ export default function PrehledPage() {
             href={tile.href}
             className="group rounded-2xl border bg-muted/40 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg"
           >
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <tile.icon className="size-3.5 shrink-0 text-primary" />
-              {tile.label}
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <tile.icon className="size-3.5 shrink-0 text-primary" />
+                {tile.label}
+              </div>
+              {tile.mock && (
+                <span className="text-[9px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium shrink-0">k doplnění</span>
+              )}
             </div>
             <p className="mt-1 truncate text-lg font-semibold tabular-nums">{tile.value}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{tile.detail}</p>

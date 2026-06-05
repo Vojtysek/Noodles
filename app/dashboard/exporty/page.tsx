@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import {
@@ -25,10 +25,14 @@ import {
   exportTypes,
   exportHistory,
   distributionTips,
-  personas,
+  personas as mockPersonas,
   projects,
   fmtCzkShort,
+  type Persona,
+  type Sentiment,
 } from "@/lib/mock-data"
+import { PERSONA_TYPES } from "@/lib/persona-types"
+import type { PersonaType } from "@/lib/persona-types"
 
 const TYPE_ICONS: Record<string, typeof FileText> = {
   "overall-brief": FileText,
@@ -39,14 +43,41 @@ const TYPE_ICONS: Record<string, typeof FileText> = {
 
 export default function ExportyPage() {
   const [selectedTypeId, setSelectedTypeId] = useState(exportTypes[0].id)
-  const [personaId, setPersonaId] = useState(personas[0].id)
+  const [personaList, setPersonaList] = useState<Persona[]>(mockPersonas)
+  const [personaId, setPersonaId] = useState(mockPersonas[0].id)
   const [projectId, setProjectId] = useState<string>("all")
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
+  // Fetch real personas from Supabase, merge with mock fallback
+  useEffect(() => {
+    fetch("/api/personas")
+      .then((r) => r.json())
+      .then((rows: Array<{
+        id: string; name: string; role: string; unit: string
+        status: "zpracovano" | "ceka"; sentiment: Sentiment; brief: string
+        structured: Persona["structured"]; persona_type: string | null
+      }>) => {
+        if (!Array.isArray(rows) || rows.length === 0) return
+        const fromDb: Persona[] = rows.map((r) => ({
+          id: r.id, name: r.name, role: r.role, unit: r.unit,
+          status: r.status, sentiment: r.sentiment, brief: r.brief,
+          structured: r.structured,
+          personaType: r.persona_type && r.persona_type in PERSONA_TYPES
+            ? (r.persona_type as PersonaType) : undefined,
+        }))
+        setPersonaList((prev) => {
+          const dbIds = new Set(fromDb.map((p) => p.id))
+          return [...fromDb, ...prev.filter((p) => !dbIds.has(p.id))]
+        })
+        setPersonaId(fromDb[0].id)
+      })
+      .catch(() => {/* keep mock personas on error */})
+  }, [])
+
   const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]
-  const selectedPersona = personas.find((p) => p.id === personaId)
+  const selectedPersona = personaList.find((p) => p.id === personaId)
   const scopedProjects = projectId === "all" ? projects : projects.filter((p) => p.id === projectId)
   const totalBudget = scopedProjects.reduce((sum, p) => sum + p.budget, 0)
 
@@ -139,7 +170,7 @@ export default function ExportyPage() {
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Users className="size-3.5" />
-            <span className="font-medium text-foreground tabular-nums">{personas.length}</span>
+            <span className="font-medium text-foreground tabular-nums">{personaList.length}</span>
             rezidentů
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -232,7 +263,7 @@ export default function ExportyPage() {
               onChange={(e) => setPersonaId(e.target.value)}
               className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              {personas.map((p) => (
+              {personaList.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} — {p.role}
                 </option>
