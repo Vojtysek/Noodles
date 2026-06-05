@@ -1,8 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
+import { useEffect, useState } from "react"
 import {
   FileText,
   Presentation,
@@ -48,7 +46,6 @@ export default function ExportyPage() {
   const [projectId, setProjectId] = useState<string>("all")
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
 
   // Fetch real personas from Supabase, merge with mock fallback
   useEffect(() => {
@@ -81,25 +78,6 @@ export default function ExportyPage() {
   const scopedProjects = projectId === "all" ? projects : projects.filter((p) => p.id === projectId)
   const totalBudget = scopedProjects.reduce((sum, p) => sum + p.budget, 0)
 
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
-      tl.from("[data-ex-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0)
-        .from(
-          "[data-ex-block]",
-          { y: 28, autoAlpha: 0, duration: 0.6, stagger: 0.08 },
-          0.15
-        )
-        .from(
-          "[data-ex-card]",
-          { y: 24, autoAlpha: 0, duration: 0.5, stagger: 0.07 },
-          0.35
-        )
-    },
-    { scope: rootRef }
-  )
-
   // Mock generování — pouze vizuální stav, žádný skutečný export.
   function generate() {
     setGenerating(true)
@@ -112,7 +90,7 @@ export default function ExportyPage() {
   }
 
   return (
-    <div ref={rootRef} className="relative mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-6">
       {/* Ambient blobs */}
       <div
         aria-hidden
@@ -124,7 +102,10 @@ export default function ExportyPage() {
       />
 
       {/* Header */}
-      <div data-ex-header>
+      <div
+        className="anim-in"
+        style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
+      >
         <div className="flex items-center gap-2.5">
           <span aria-hidden className="h-px w-7 bg-primary/60" />
           <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
@@ -139,8 +120,8 @@ export default function ExportyPage() {
 
       {/* Context: project scope + stats */}
       <div
-        data-ex-block
-        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-3"
+        className="anim-in flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-3"
+        style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.15s" } as React.CSSProperties}
       >
         <div className="flex items-center gap-3">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
@@ -184,24 +165,31 @@ export default function ExportyPage() {
       </div>
 
       {/* Export type cards — clickable, selected gets outline */}
-      <div data-ex-block className="flex items-center gap-3">
+      <div
+        className="anim-in flex items-center gap-3"
+        style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.23s" } as React.CSSProperties}
+      >
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
           2
         </span>
         <p className="text-sm font-medium">Pro koho dokument je</p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {exportTypes.map((exp) => {
+        {exportTypes.map((exp, i) => {
           const Icon = TYPE_ICONS[exp.id] ?? FileText
           const selected = exp.id === selectedTypeId
           return (
             <button
               key={exp.id}
-              data-ex-card
               onClick={() => setSelectedTypeId(exp.id)}
               aria-pressed={selected}
+              style={{
+                "--ai-y": "24px",
+                "--ai-dur": "0.5s",
+                "--ai-delay": `${0.35 + i * 0.07}s`,
+              } as React.CSSProperties}
               className={cn(
-                "flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
+                "anim-in flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
                 selected
                   ? "scale-[1.02] border-primary/60 bg-primary/5 shadow-xl ring-3 ring-primary/15"
                   : "hover:scale-[1.02] hover:bg-muted/50 hover:shadow-lg"
@@ -241,7 +229,10 @@ export default function ExportyPage() {
       </div>
 
       {/* Generate panel */}
-      <div data-ex-block className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm">
+      <div
+        className="anim-in rounded-2xl border bg-background/60 p-4 backdrop-blur-sm"
+        style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.31s" } as React.CSSProperties}
+      >
         <div className="flex items-center gap-3">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
             3
@@ -298,8 +289,8 @@ export default function ExportyPage() {
 
       {/* Distribution tips */}
       <div
-        data-ex-block
-        className="rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] p-4"
+        className="anim-in rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] p-4"
+        style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.39s" } as React.CSSProperties}
       >
         <div className="flex items-center gap-2">
           <Lightbulb className="size-4 text-primary" />
@@ -316,7 +307,10 @@ export default function ExportyPage() {
       </div>
 
       {/* Export history */}
-      <div data-ex-block>
+      <div
+        className="anim-in"
+        style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.47s" } as React.CSSProperties}
+      >
         <div className="mb-3 flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
           <div className="flex items-center gap-2">

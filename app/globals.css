@@ -145,3 +145,25 @@
     animation: none;
   }
 }
+
+/* Generic entrance animation — replaces GSAP `.from({ autoAlpha, y })` tweens.
+   CSS `backwards` fill keeps elements correct before/after the run, so React
+   re-renders (e.g. late Supabase data) never leave content stuck invisible.
+   Choreography is driven by inline CSS vars: --ai-x, --ai-y, --ai-dur, --ai-delay. */
+@keyframes anim-in {
+  from {
+    opacity: 0;
+    translate: var(--ai-x, 0) var(--ai-y, 0);
+  }
+}
+
+.anim-in {
+  animation: anim-in var(--ai-dur, 0.6s) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--ai-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-in {
+    animation: none;
+  }
+}

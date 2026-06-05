@@ -1,9 +1,7 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
-import gsap from "gsap"
-import { useGSAP } from "@gsap/react"
 import {
   Wallet,
   TrendingDown,
@@ -50,26 +48,6 @@ export default function FinancialsPage() {
   // Výchozí výběr: projekt s nejvyšší prioritou (největší dopad).
   const [selectedIds, setSelectedIds] = useState<ProjectId[]>([projectsByPriority[0].id])
   const [horizon, setHorizon] = useState(15)
-  const rootRef = useRef<HTMLDivElement>(null)
-
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
-      tl.from("[data-fin-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0)
-        .from(
-          "[data-fin-block]",
-          { y: 32, autoAlpha: 0, duration: 0.7, stagger: 0.1 },
-          0.15
-        )
-        .from(
-          "[data-fin-scenario]",
-          { y: 40, autoAlpha: 0, duration: 0.7, stagger: 0.12 },
-          0.45
-        )
-    },
-    { scope: rootRef }
-  )
 
   const allSelected = selectedIds.length === projects.length
 
@@ -199,7 +177,7 @@ export default function FinancialsPage() {
   ]
 
   return (
-    <div ref={rootRef} className="relative mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8">
       {/* Ambient blobs */}
       <div
         aria-hidden
@@ -211,7 +189,10 @@ export default function FinancialsPage() {
       />
 
       {/* Header */}
-      <div data-fin-header>
+      <div
+        className="anim-in"
+        style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
+      >
         <div className="flex items-center gap-2.5">
           <span aria-hidden className="h-px w-7 bg-emerald-500/60" />
           <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
@@ -229,7 +210,10 @@ export default function FinancialsPage() {
       </div>
 
       {/* Project mix & match */}
-      <div data-fin-block className="flex flex-col gap-2.5">
+      <div
+        className="anim-in flex flex-col gap-2.5"
+        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.15s" } as React.CSSProperties}
+      >
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -308,7 +292,10 @@ export default function FinancialsPage() {
       </div>
 
       {/* Horizon + KPIs */}
-      <div data-fin-block className="flex flex-col gap-3">
+      <div
+        className="anim-in flex flex-col gap-3"
+        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.25s" } as React.CSSProperties}
+      >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
@@ -355,8 +342,8 @@ export default function FinancialsPage() {
       {/* Scenario side-by-side */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <div
-          data-fin-scenario
-          className="relative overflow-hidden rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-rose-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-bl-[3rem]"
+          className="anim-in relative overflow-hidden rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-rose-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-bl-[3rem]"
+          style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.45s" } as React.CSSProperties}
         >
           <div
             aria-hidden
@@ -393,8 +380,8 @@ export default function FinancialsPage() {
         </div>
 
         <div
-          data-fin-scenario
-          className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-br-[3rem]"
+          className="anim-in relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-500/[0.02] p-4 transition-shadow hover:shadow-lg sm:p-5 lg:rounded-br-[3rem]"
+          style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.57s" } as React.CSSProperties}
         >
           <div
             aria-hidden
@@ -435,9 +422,9 @@ export default function FinancialsPage() {
 
       {/* Delta callout */}
       <div
-        data-fin-block
+        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.35s" } as React.CSSProperties}
         className={cn(
-          "flex items-center gap-3 rounded-2xl border px-4 py-3",
+          "anim-in flex items-center gap-3 rounded-2xl border px-4 py-3",
           agg.lossAtHorizon > 0
             ? "border-rose-500/30 bg-rose-500/5"
             : "border-emerald-500/30 bg-emerald-500/5"
