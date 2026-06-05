@@ -1,1 +1,2 @@
-DONT USE WORKTREES!
+- DONT USE WORKTREES!
+- on any coding tasks use subagents

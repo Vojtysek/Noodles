@@ -17,7 +17,10 @@ import {
   Thermometer,
   Wind,
   Sun,
+  Star,
 } from "lucide-react"
+
+import { createClient } from "@/lib/supabase/client"
 
 const BASE = "https://ags.cuzk.gov.cz/arcgis/rest/services/RUIAN/MapServer"
 const PRICE_PER_WINDOW = 12_000
@@ -80,6 +83,27 @@ function calcRepair(c: RepairCalc, windowCount: number) {
     monthlyPerUnit,
     cappedByMax: alpha > maxRentPerUnit * c.numberOfUnits,
   }
+}
+
+const RENOVATION_PRIORITY: Record<string, string[]> = {
+  F: ["insulation", "windows", "roof", "heating", "heatpump", "recuperation", "blinds", "photovoltaics"],
+  E: ["insulation", "windows", "roof", "heatpump", "heating", "recuperation", "blinds", "photovoltaics"],
+  D: ["windows", "heatpump", "insulation", "heating", "roof", "recuperation", "blinds", "photovoltaics"],
+  C: ["heatpump", "heating", "windows", "recuperation", "insulation", "roof", "blinds", "photovoltaics"],
+  B: ["heatpump", "recuperation", "heating", "photovoltaics", "blinds", "windows", "insulation", "roof"],
+  A: ["photovoltaics", "heatpump", "recuperation", "blinds", "heating", "windows", "insulation", "roof"],
+}
+
+const DEFAULT_PRIORITY = ["insulation", "windows", "heatpump", "heating", "roof", "recuperation", "blinds", "photovoltaics"]
+
+function getSortedRenovations(grade: string | null): { sorted: RenovationType[]; starId: string } {
+  const order = (grade && RENOVATION_PRIORITY[grade]) ? RENOVATION_PRIORITY[grade] : DEFAULT_PRIORITY
+  const sorted = [...RENOVATIONS].sort((a, b) => {
+    const ai = order.indexOf(a.id)
+    const bi = order.indexOf(b.id)
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+  })
+  return { sorted, starId: order[0] }
 }
 
 function stripDiacritics(str: string) {
@@ -342,7 +366,7 @@ export default function CalculatorPage() {
     }
   }
 
-  function handleCta() {
+  async function handleCta() {
     if (step === 0) {
       if (building) {
         setStep(1)
@@ -358,6 +382,35 @@ export default function CalculatorPage() {
     } else if (step === 2) {
       if (selected.length > 0) setStep(3)
     } else if (step === 3) {
+      const year = building?.yearBuilt ?? null
+      const pts = year ? calcEnergyScore(year, insulated, newWindows) : null
+      const g = pts != null ? energyGrade(pts) : null
+      const displayGrade = energyLabel ?? g?.grade ?? null
+      const selectedLabels = selected.map(
+        (id) => RENOVATIONS.find((r) => r.id === id)?.label ?? id
+      )
+      try {
+        const supabase = createClient()
+        await supabase.from("buildings").insert({
+          address: building?.address ?? null,
+          units: repair.numberOfUnits,
+          floors: building?.floors ?? null,
+          year_built: building?.yearBuilt ?? null,
+          zastavena_plocha: building?.zastavenaFlocha ?? null,
+          energy_grade: displayGrade,
+          insulated,
+          new_windows: newWindows,
+          selected_renovations: selectedLabels,
+          monthly_per_unit: Math.round(calc.monthlyPerUnit),
+          total_cost: calc.alpha,
+          final_rent: calc.finalRent,
+          rent_years: repair.rentYears,
+          window_count: derivedWindowCount,
+          capped_by_max: calc.cappedByMax,
+        })
+      } catch {
+        // continue to dashboard even if save fails
+      }
       router.push("/dashboard")
     }
   }
@@ -666,56 +719,76 @@ export default function CalculatorPage() {
                 )
               })()}
 
-            {/* Step 2 — Renovation grid */}
-            {step === 2 && (
-              <div className="grid grid-cols-3 gap-2">
-                {RENOVATIONS.map((r) => {
-                  const isSelected = selected.includes(r.id)
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() =>
-                        r.available
-                          ? setSelected((prev) =>
-                              prev.includes(r.id)
-                                ? prev.filter((id) => id !== r.id)
-                                : [...prev, r.id]
-                            )
-                          : undefined
-                      }
-                      disabled={!r.available}
-                      className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
-                        isSelected
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : r.available
-                            ? "border-border hover:border-primary/40 hover:bg-muted/50"
-                            : "cursor-not-allowed border-border opacity-35"
-                      }`}
-                    >
-                      <r.icon
-                        className={`size-7 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
-                        strokeWidth={1.5}
-                      />
-                      <span
-                        className={`text-xs leading-tight font-medium ${isSelected ? "text-primary" : ""}`}
-                      >
-                        {r.label}
-                      </span>
-                      {!r.available && (
-                        <span className="absolute -top-1.5 -right-1.5 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground">
-                          brzy
-                        </span>
-                      )}
-                      {isSelected && (
-                        <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary">
-                          <CheckCircle2 className="size-3 text-primary-foreground" />
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+            {/* Step 2 — Renovation grid with recommendation */}
+            {step === 2 && (() => {
+              const year = building?.yearBuilt ?? null
+              const pts = year ? calcEnergyScore(year, insulated, newWindows) : null
+              const g = pts != null ? energyGrade(pts) : null
+              const displayGrade = energyLabel ?? g?.grade ?? null
+              const { sorted: sortedRenovations, starId } = getSortedRenovations(displayGrade)
+              return (
+                <div className="flex flex-col gap-3">
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Star className="size-3 fill-amber-400 text-amber-400" />
+                    {displayGrade
+                      ? <>Seřazeno podle doporučení pro třídu&nbsp;<strong className="text-foreground">{displayGrade}</strong></>
+                      : "Obecné doporučení — zadejte rok výstavby pro přesnější pořadí"
+                    }
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {sortedRenovations.map((r) => {
+                      const isSelected = selected.includes(r.id)
+                      const isStar = r.id === starId
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() =>
+                            r.available
+                              ? setSelected((prev) =>
+                                  prev.includes(r.id)
+                                    ? prev.filter((id) => id !== r.id)
+                                    : [...prev, r.id]
+                                )
+                              : undefined
+                          }
+                          disabled={!r.available}
+                          className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
+                            isSelected
+                              ? "border-primary bg-primary/5 shadow-sm"
+                              : r.available
+                                ? "border-border hover:border-primary/40 hover:bg-muted/50"
+                                : "cursor-not-allowed border-border opacity-35"
+                          }`}
+                        >
+                          <r.icon
+                            className={`size-7 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                            strokeWidth={1.5}
+                          />
+                          <span className={`text-xs leading-tight font-medium ${isSelected ? "text-primary" : ""}`}>
+                            {r.label}
+                          </span>
+                          {isStar && (
+                            <span className="absolute -top-1.5 -left-1.5">
+                              <Star className="size-3.5 fill-amber-400 text-amber-400 drop-shadow-sm" />
+                            </span>
+                          )}
+                          {!r.available && (
+                            <span className="absolute -top-1.5 -right-1.5 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground">
+                              brzy
+                            </span>
+                          )}
+                          {isSelected && (
+                            <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary">
+                              <CheckCircle2 className="size-3 text-primary-foreground" />
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Step 3 — Results */}
             {step === 3 && (
