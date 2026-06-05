@@ -47,24 +47,24 @@ const RENOVATIONS: RenovationType[] = [
     id: "insulation",
     label: "Zateplení fasády",
     icon: Layers,
-    available: false,
+    available: true,
   },
-  { id: "roof", label: "Zateplení střechy", icon: Home, available: false },
+  { id: "roof", label: "Zateplení střechy", icon: Home, available: true },
   {
     id: "blinds",
     label: "Venkovní žaluzie",
     icon: SlidersHorizontal,
-    available: false,
+    available: true,
   },
   {
     id: "heatpump",
     label: "Tepelné čerpadlo",
     icon: Thermometer,
-    available: false,
+    available: true,
   },
-  { id: "heating", label: "Vytápění", icon: Flame, available: false },
-  { id: "recuperation", label: "Rekuperace", icon: Wind, available: false },
-  { id: "photovoltaics", label: "Fotovoltaika", icon: Sun, available: false },
+  { id: "heating", label: "Vytápění", icon: Flame, available: true },
+  { id: "recuperation", label: "Rekuperace", icon: Wind, available: true },
+  { id: "photovoltaics", label: "Fotovoltaika", icon: Sun, available: true },
 ]
 
 function calcRepair(c: RepairCalc, windowCount: number) {
@@ -225,7 +225,7 @@ export default function CalculatorPage() {
 
   const [repair, setRepair] = useState<RepairCalc>({
     numberOfUnits: 20,
-    rentYears: 4,
+    rentYears: 10,
     isFirstRepair: true,
   })
 
