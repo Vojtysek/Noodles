@@ -495,8 +495,9 @@ export default function RezidentiPage() {
                       setDraftBrief(selectedPersona.brief)
                       setEditingBrief(true)
                     }}
-                    className="absolute -top-1 -right-1 hidden rounded-md p-1 text-muted-foreground hover:bg-background hover:text-foreground group-hover/brief:flex"
+                    className="absolute -top-1 -right-1 hidden rounded-md p-1 text-muted-foreground hover:bg-background hover:text-foreground group-hover/brief:flex focus-visible:flex"
                     title="Upravit popis"
+                    aria-label="Upravit popis"
                   >
                     <Pencil className="size-3.5" />
                   </button>
