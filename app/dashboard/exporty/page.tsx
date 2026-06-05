@@ -26,7 +26,11 @@ import {
   type Persona,
   type Scenario,
   type Sentiment,
+  type Scenario,
 } from "@/lib/mock-data"
+import { createClient } from "@/lib/supabase/client"
+import { buildDynamicScenarios } from "@/lib/scenarios"
+import { ARCHETYPES } from "@/lib/archetypes"
 import { userScenarios } from "@/lib/scenarios"
 import { createClient } from "@/lib/supabase/client"
 import { PERSONA_TYPES } from "@/lib/persona-types"
@@ -45,6 +49,7 @@ export default function ExportyPage() {
   const [personaId, setPersonaId] = useState<string>("")
   const [scenarios, setScenarios] = useState<Scenario[]>([])
   const [scenarioId, setScenarioId] = useState<string>("all")
+  const [dynamicScenarios, setDynamicScenarios] = useState<Scenario[]>(scenarios)
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -98,7 +103,7 @@ export default function ExportyPage() {
 
   const selectedType = exportTypes.find((t) => t.id === selectedTypeId) ?? exportTypes[0]
   const selectedPersona = personaList.find((p) => p.id === personaId)
-  const selectedScenario = scenarios.find((s) => s.id === scenarioId)
+  const selectedScenario = dynamicScenarios.find((s) => s.id === scenarioId)
 
   // Mock generování — pouze vizuální stav, žádný skutečný export.
   function generate() {
