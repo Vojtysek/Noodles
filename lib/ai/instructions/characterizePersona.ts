@@ -1,8 +1,11 @@
-export function buildCharacterizePersonaPrompt(personaType?: { name: string; aiHint: string }): string {
+import { PersonaType, PERSONA_TYPES } from '@/lib/persona-types'
+
+export function buildCharacterizePersonaPrompt(personaType?: PersonaType): string {
   let prompt = `Jsi expert na analýzu rezidentů bytového domu v kontextu SVJ a renovačních projektů.`
 
   if (personaType) {
-    prompt += `\n\nTyp rezidenta: ${personaType.name}. ${personaType.aiHint}`
+    const pt = PERSONA_TYPES[personaType]
+    prompt += `\n\nTyp rezidenta: ${pt.name}. ${pt.aiHint}`
   }
 
   prompt += `\n\nNa základě volného popisu rezidenta (brief) vrátíš strukturovanou JSON analýzu.
