@@ -21,7 +21,7 @@ const NAV_ITEMS = [
 
 const TOOL_ITEMS = [
   { href: "/calculator", label: "Kalkulačka", icon: Calculator },
-  { href: "/calculator", label: "AI Asistent", icon: Astroid },
+  { href: "/chat", label: "AI Asistent", icon: Astroid },
 ]
 
 export function DashboardSidebar() {
