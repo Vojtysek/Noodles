@@ -21,14 +21,14 @@ import {
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
+import { prices } from "./prices"
 
 const BASE = "https://ags.cuzk.gov.cz/arcgis/rest/services/RUIAN/MapServer"
-const PRICE_PER_WINDOW = 12_000
 
 type RepairCalc = {
   numberOfUnits: number
   rentYears: number
-  isFirstRepair: boolean
+  isPartial: boolean
 }
 type BuildingData = {
   address: string
@@ -70,18 +70,81 @@ const RENOVATIONS: RenovationType[] = [
   { id: "photovoltaics", label: "Fotovoltaika", icon: Sun, available: true },
 ]
 
-function calcRepair(c: RepairCalc, windowCount: number) {
-  const alpha = windowCount * PRICE_PER_WINDOW
+// --- Dynamický model nákladů renovace ----------------------------------------
+// Geometrie odvozená z RÚIAN dat. "facade" ≈ zastavěná plocha × počet pater;
+// 15 % fasády tvoří okna, 85 % plná stěna; okno ≈ 2,25 m².
+function buildingGeometry(b: BuildingData | null) {
+  const footprint = b?.zastavenaFlocha ?? 400
+  const floors = b?.floors ?? 4
+  const facade = footprint * floors
+  const windowArea = facade * 0.15
+  const wallArea = facade * 0.85
+  const windowCount = Math.round(windowArea / 2.25)
+  return { footprint, floors, facade, windowArea, wallArea, windowCount }
+}
+
+type Geometry = ReturnType<typeof buildingGeometry>
+
+// Náklady jedné renovace (Kč). Plošné položky škálují s obálkou budovy,
+// zdroje tepla / komfort jsou na byt. Ceny pochází z prices.ts.
+function renovationCost(id: string, g: Geometry, units: number): number {
+  switch (id) {
+    case "windows": // Okna — počet oken × 12000
+      return g.windowCount * prices.window
+    case "insulation": // Zateplení fasády — plocha stěn × 1800
+      return Math.round(g.wallArea * prices.zatepleniM2)
+    case "roof": // Zateplení střechy — zastavěná plocha × patra × 2000
+      return Math.round(g.footprint * prices.zatepleniStrechyM2)
+    case "blinds": // Venkovní žaluzie — počet oken × 12000
+      return g.windowCount * prices.venkovniZaluzie
+    case "heatpump": // Tepelné čerpadlo — 150000 / byt
+      return units * prices.tepelneCerpadlo
+    case "heating": // Vytápění (centrální) — 500000 / byt
+      return units * prices.centrálníVytapeni
+    case "recuperation": // Rekuperace — 50000 / byt
+      return units * prices.rekuperace
+    case "photovoltaics": // Fotovoltaika — 50000 / byt
+      return units * prices.fotovoltaika
+    default:
+      return 0
+  }
+}
+
+// Rozpad nákladů pro aktuálně vybrané renovace.
+function renovationBreakdown(
+  selected: string[],
+  g: Geometry,
+  units: number
+): { id: string; label: string; cost: number }[] {
+  return selected.map((id) => ({
+    id,
+    label: RENOVATIONS.find((r) => r.id === id)?.label ?? id,
+    cost: renovationCost(id, g, units),
+  }))
+}
+
+function calcRepair(c: RepairCalc, totalCost: number) {
+  const alpha = totalCost
   const maxRentTime = alpha < 1_500_000 ? 10 : 15
-  const maxRentPerUnit = c.isFirstRepair ? 250_000 : 750_000
-  const finalRent = Math.min(alpha, maxRentPerUnit * c.numberOfUnits)
-  const monthlyPerUnit = finalRent / c.numberOfUnits / c.rentYears / 12
+  // Bezúročná půjčka (SFPI): strop na bytovou jednotku dle rozsahu renovace.
+  const maxLoanPerUnit = 750_000
+  const loanCap = maxLoanPerUnit * c.numberOfUnits
+  const loan = Math.min(alpha, loanCap) // bezúročná půjčka po zastropování
+  const overCap = Math.max(0, alpha - loan) // nad rámec → vlastní zdroje / fond
+  const monthlyPerUnit =
+    c.numberOfUnits > 0 && c.rentYears > 0
+      ? loan / c.numberOfUnits / c.rentYears / 12
+      : 0
   return {
     alpha,
     maxRentTime,
-    finalRent,
+    maxLoanPerUnit,
+    loanCap,
+    loan,
+    finalRent: loan, // alias pro stávající konzumenty (uložení do Supabase)
+    overCap,
     monthlyPerUnit,
-    cappedByMax: alpha > maxRentPerUnit * c.numberOfUnits,
+    cappedByMax: alpha > loanCap,
   }
 }
 
@@ -293,6 +356,46 @@ const BUILDING_FIELDS = [
   },
 ] as const
 
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
+}
+
+// Plynulé počítadlo — animuje z poslední zobrazené hodnoty na cílovou (ease-out).
+function useCountUp(target: number, durationMs = 700) {
+  const [display, setDisplay] = useState(target)
+  const displayRef = useRef(target)
+  const rafRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      displayRef.current = target
+      setDisplay(target) // eslint-disable-line react-hooks/set-state-in-effect
+      return
+    }
+    const from = displayRef.current
+    if (from === target) return
+    let start: number | null = null
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+    const tick = (now: number) => {
+      if (start === null) start = now
+      const t = Math.min(1, (now - start) / durationMs)
+      const value = from + (target - from) * ease(t)
+      displayRef.current = value
+      setDisplay(value)
+      if (t < 1) rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [target, durationMs])
+
+  return display
+}
+
 export default function CalculatorPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
@@ -315,13 +418,18 @@ export default function CalculatorPage() {
   const [repair, setRepair] = useState<RepairCalc>({
     numberOfUnits: 20,
     rentYears: 10,
-    isFirstRepair: true,
+    isPartial: true,
   })
 
-  const derivedWindowCount = Math.round(
-    ((building?.zastavenaFlocha ?? 400) * (building?.floors ?? 4) * 0.15) / 2.25
-  )
-  const calc = calcRepair(repair, derivedWindowCount)
+  const geom = buildingGeometry(building)
+  const derivedWindowCount = geom.windowCount
+  const breakdown = renovationBreakdown(selected, geom, repair.numberOfUnits)
+  const totalCost = breakdown.reduce((sum, item) => sum + item.cost, 0)
+  const calc = calcRepair(repair, totalCost)
+  const animatedAlpha = useCountUp(calc.alpha)
+  const animatedLoan = useCountUp(calc.loan)
+  const animatedOver = useCountUp(calc.overCap)
+  const animatedMonthly = useCountUp(calc.monthlyPerUnit)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -507,7 +615,7 @@ export default function CalculatorPage() {
     <Button
       onClick={handleCta}
       size="lg"
-      className="w-full rounded-xl"
+      className="w-full rounded-xl transition-transform active:scale-[0.99]"
       disabled={ctaDisabled}
     >
       {loading && <Loader2 className="animate-spin" />}
@@ -522,7 +630,7 @@ export default function CalculatorPage() {
         <div className="flex min-h-svh flex-col">
           <div
             key={step}
-            className="mx-auto flex w-full max-w-lg flex-1 animate-in flex-col justify-center gap-5 px-6 py-8 duration-200 fade-in slide-in-from-bottom-3"
+            className="mx-auto flex w-full max-w-lg flex-1 animate-in flex-col justify-center gap-5 px-6 py-8 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] fade-in slide-in-from-bottom-4"
           >
             <div>
               <h2 className="text-xl font-semibold">{STEP_META[0].title}</h2>
@@ -550,7 +658,7 @@ export default function CalculatorPage() {
                   <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
                 )}
                 {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute top-full right-0 left-0 z-20 mt-1 overflow-hidden rounded-lg border border-border bg-background shadow-lg">
+                  <div className="absolute top-full right-0 left-0 z-20 mt-1 animate-in overflow-hidden rounded-lg border border-border bg-background shadow-lg duration-200 fade-in slide-in-from-top-1">
                     {suggestions.map((s) => (
                       <button
                         key={s}
@@ -655,14 +763,15 @@ export default function CalculatorPage() {
         <>
           <button
             onClick={() => setStep((s) => s - 1)}
-            className="flex items-center gap-1 px-6 pt-5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="group flex items-center gap-1 px-6 pt-5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ChevronLeft className="size-4" /> Zpět
+            <ChevronLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-0.5" />{" "}
+            Zpět
           </button>
 
           <div
             key={step}
-            className="mx-auto flex w-full max-w-lg flex-1 animate-in flex-col gap-5 px-6 pt-3 pb-8 duration-200 fade-in slide-in-from-bottom-3"
+            className="mx-auto flex w-full max-w-lg flex-1 animate-in flex-col gap-5 px-6 pt-3 pb-8 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] fade-in slide-in-from-bottom-4"
           >
             <div>
               <h2 className="text-xl font-semibold">{STEP_META[step].title}</h2>
@@ -797,12 +906,13 @@ export default function CalculatorPage() {
                 return (
                   <div className="flex flex-col gap-3">
                     <div className="grid grid-cols-3 gap-2">
-                      {sortedRenovations.map((r) => {
+                      {sortedRenovations.map((r, i) => {
                         const isSelected = selected.includes(r.id)
                         const isStar = r.id === starId
                         return (
                           <button
                             key={r.id}
+                            style={{ animationDelay: `${i * 45}ms` }}
                             onClick={() =>
                               r.available
                                 ? setSelected((prev) =>
@@ -813,7 +923,7 @@ export default function CalculatorPage() {
                                 : undefined
                             }
                             disabled={!r.available}
-                            className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
+                            className={`relative flex animate-in flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] fill-mode-both zoom-in-95 fade-in active:scale-[0.97] ${
                               isSelected
                                 ? "border-primary bg-primary/5 shadow-sm"
                                 : r.available
@@ -841,7 +951,7 @@ export default function CalculatorPage() {
                               </span>
                             )}
                             {isSelected && (
-                              <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary">
+                              <span className="absolute top-2 right-2 flex size-4 animate-in items-center justify-center rounded-full bg-primary duration-200 zoom-in">
                                 <CheckCircle2 className="size-3 text-primary-foreground" />
                               </span>
                             )}
@@ -852,21 +962,27 @@ export default function CalculatorPage() {
 
                     {/* Nastavení výpočtu */}
                     <div className="flex flex-col divide-y divide-border rounded-xl border">
-                      {/* isFirstRepair toggle */}
+                      {/* Rozsah renovace → strop bezúročné půjčky */}
                       <div className="flex items-center justify-between px-4 py-3">
                         <div>
-                          <span className="text-sm">Navýšení fondu oprav</span>
+                          <span className="text-sm">Rozsah renovace</span>
                           <p className="mt-0.5 text-xs text-muted-foreground">
-                            Maximální povolená výše závisí na historii fondu.
+                            Dílčí: půjčka max 250 000 Kč/byt · Větší: 750 000
+                            Kč/byt.
                           </p>
                         </div>
                         <div className="flex gap-1.5">
-                          {([["Poprvé", true], ["Již dříve", false]] as const).map(([label, val]) => {
-                            const active = repair.isFirstRepair === val
+                          {(
+                            [
+                              ["Dílčí", true],
+                              ["Větší", false],
+                            ] as const
+                          ).map(([label, val]) => {
+                            const active = repair.isPartial === val
                             return (
                               <button
                                 key={label}
-                                onClick={() => setR("isFirstRepair", val)}
+                                onClick={() => setR("isPartial", val)}
                                 className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
                               >
                                 {label}
@@ -879,42 +995,116 @@ export default function CalculatorPage() {
                       {/* rentYears selector */}
                       <div className="flex items-center justify-between px-4 py-3">
                         <div>
-                          <span className="text-sm">Splácení z fondu oprav</span>
+                          <span className="text-sm">
+                            Splácení z fondu oprav
+                          </span>
                           <p className="mt-0.5 text-xs text-muted-foreground">
                             Délka splácení ovlivňuje výši měsíčního příspěvku.
                           </p>
                         </div>
                         <div className="flex gap-1.5">
-                          {[5, 7, 10, 12, 15].filter((y) => y <= calc.maxRentTime).map((y) => {
-                            const active = repair.rentYears === y
-                            return (
-                              <button
-                                key={y}
-                                onClick={() => setR("rentYears", y)}
-                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                              >
-                                {y} r.
-                              </button>
-                            )
-                          })}
+                          {[5, 7, 10, 12, 15]
+                            .filter((y) => y <= calc.maxRentTime)
+                            .map((y) => {
+                              const active = repair.rentYears === y
+                              return (
+                                <button
+                                  key={y}
+                                  onClick={() => setR("rentYears", y)}
+                                  className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                                >
+                                  {y} r.
+                                </button>
+                              )
+                            })}
                         </div>
                       </div>
                     </div>
 
-                    {/* Live preview */}
+                    {/* Live preview — dynamický rozpočet podle výběru */}
                     {selected.length > 0 && (
-                      <div className="flex items-center justify-between rounded-xl border px-4 py-3">
-                        <div>
-                          <p className="text-sm font-semibold">
-                            {Math.round(calc.monthlyPerUnit).toLocaleString("cs-CZ")} Kč
-                          </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">Měsíčně / byt</p>
+                      <div className="flex animate-in flex-col overflow-hidden rounded-xl border duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] fade-in slide-in-from-bottom-2">
+                        <div className="flex flex-col divide-y divide-border">
+                          {breakdown.map((item, i) => (
+                            <div
+                              key={item.id}
+                              style={{ animationDelay: `${i * 50}ms` }}
+                              className="flex animate-in items-center justify-between px-4 py-2 duration-300 fill-mode-both fade-in slide-in-from-bottom-1"
+                            >
+                              <span className="text-xs text-muted-foreground">
+                                {item.label}
+                              </span>
+                              <span className="text-xs font-medium tabular-nums">
+                                {item.cost.toLocaleString("cs-CZ")} Kč
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold">
-                            {calc.alpha.toLocaleString("cs-CZ")} Kč
-                          </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">Celkem okna</p>
+                        {/* Souhrn: investice → bezúročná půjčka → měsíční splátka */}
+                        <div className="flex flex-col divide-y divide-border border-t">
+                          <div className="flex items-center justify-between px-4 py-2.5">
+                            <span className="text-xs text-muted-foreground">
+                              Celková investice
+                            </span>
+                            <span className="text-sm font-semibold tabular-nums">
+                              {Math.round(animatedAlpha).toLocaleString(
+                                "cs-CZ"
+                              )}{" "}
+                              Kč
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between bg-primary/5 px-4 py-2.5">
+                            <div>
+                              <p className="text-xs font-medium text-primary">
+                                Bezúročná půjčka
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                max{" "}
+                                {calc.maxLoanPerUnit.toLocaleString("cs-CZ")}{" "}
+                                Kč/byt · strop{" "}
+                                {calc.loanCap.toLocaleString("cs-CZ")} Kč
+                              </p>
+                            </div>
+                            <span className="text-sm font-semibold text-primary tabular-nums">
+                              {Math.round(animatedLoan).toLocaleString("cs-CZ")}{" "}
+                              Kč
+                            </span>
+                          </div>
+                          {calc.overCap > 0 && (
+                            <div className="flex items-center justify-between px-4 py-2.5">
+                              <div>
+                                <p className="text-xs text-muted-foreground">
+                                  Nad rámec půjčky
+                                </p>
+                                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                  z vlastních zdrojů / fondu oprav
+                                </p>
+                              </div>
+                              <span className="text-sm font-semibold tabular-nums">
+                                {Math.round(animatedOver).toLocaleString(
+                                  "cs-CZ"
+                                )}{" "}
+                                Kč
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between bg-muted/30 px-4 py-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Měsíční splátka / byt
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                splátka bezúročné půjčky na {repair.rentYears}{" "}
+                                let
+                              </p>
+                            </div>
+                            <span className="text-sm font-semibold tabular-nums">
+                              {Math.round(animatedMonthly).toLocaleString(
+                                "cs-CZ"
+                              )}{" "}
+                              Kč
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
