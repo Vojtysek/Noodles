@@ -72,6 +72,7 @@ export default function RezidentiPage() {
   const [showForm, setShowForm] = useState(false)
   const [newName, setNewName] = useState("")
   const [newBrief, setNewBrief] = useState("")
+  const [adding, setAdding] = useState(false)
   const [search, setSearch] = useState("")
   const [sentimentFilter, setSentimentFilter] = useState<Sentiment | "all">("all")
   const [selectedPersonaId, setSelectedPersonaId] = useState<string>(initialPersonas[0].id)
@@ -99,25 +100,49 @@ export default function RezidentiPage() {
     count: personaList.filter((p) => p.sentiment === sentiment).length,
   }))
 
-  function addPersona() {
+  async function addPersona() {
     const name = newName.trim()
     const brief = newBrief.trim()
-    if (!name || !brief) return
-    const persona: Persona = {
-      id: `p-${personaList.length + 1}-${name.toLowerCase().replace(/\s+/g, "-")}`,
-      name,
-      role: "Nová persona",
-      unit: "—",
-      status: "ceka",
-      sentiment: "vaha",
-      brief,
-      structured: null,
+    if (!name || !brief || adding) return
+
+    setAdding(true)
+    try {
+      const res = await fetch("/api/personas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, brief }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json() as {
+        id: string
+        name: string
+        role: string
+        unit: string
+        status: "zpracovano" | "ceka"
+        sentiment: Sentiment
+        brief: string
+        structured: Persona["structured"]
+      }
+      const persona: Persona = {
+        id: data.id,
+        name: data.name,
+        role: data.role,
+        unit: data.unit,
+        status: data.status,
+        sentiment: data.sentiment,
+        brief: data.brief,
+        structured: data.structured,
+      }
+      setPersonaList((prev) => [persona, ...prev])
+      setSelectedPersonaId(persona.id)
+      setNewName("")
+      setNewBrief("")
+      setShowForm(false)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setAdding(false)
     }
-    setPersonaList([persona, ...personaList])
-    setSelectedPersonaId(persona.id)
-    setNewName("")
-    setNewBrief("")
-    setShowForm(false)
   }
 
   return (
@@ -161,12 +186,12 @@ export default function RezidentiPage() {
               className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowForm(false)}>
+              <Button variant="ghost" onClick={() => setShowForm(false)} disabled={adding}>
                 Zrušit
               </Button>
-              <Button onClick={addPersona} disabled={!newName.trim() || !newBrief.trim()}>
-                <Sparkles />
-                Uložit personu
+              <Button onClick={addPersona} disabled={!newName.trim() || !newBrief.trim() || adding}>
+                <Sparkles className={adding ? "animate-spin" : ""} />
+                {adding ? "Analyzuji…" : "Uložit personu"}
               </Button>
             </div>
           </div>

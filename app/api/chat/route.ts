@@ -1,53 +1,43 @@
 import { NextRequest } from "next/server";
+import { openai } from "@/lib/ai/client";
+import { characterizePersona } from "@/lib/ai/instructions/characterizePersona";
+import { generateArguments } from "@/lib/ai/instructions/generateArguments";
+
+const INSTRUCTIONS = {
+  characterizePersona,
+  generateArguments,
+} as const;
+
+export type InstructionType = keyof typeof INSTRUCTIONS;
 
 export async function POST(req: NextRequest) {
-  const { message, sessionId } = await req.json();
+  const { message, instruction = "generateArguments" } = await req.json() as {
+    message: string;
+    instruction?: InstructionType;
+  };
 
-  const n8nRes = await fetch(process.env.N8N_WEBHOOK_URL!, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatInput: message, sessionId }),
+  const systemPrompt = INSTRUCTIONS[instruction] ?? INSTRUCTIONS.generateArguments;
+
+  const stream = await openai.chat.completions.create({
+    model: "gpt-4o",
+    stream: true,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: message },
+    ],
   });
 
-  if (!n8nRes.ok || !n8nRes.body) {
-    const body = await n8nRes.text();
-    return new Response(JSON.stringify({ error: body }), {
-      status: n8nRes.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // N8N streaming returns NDJSON lines, not SSE.
-  // Transform each {"type":"item","content":"..."} line into SSE for the client.
   const encoder = new TextEncoder();
-  const n8nReader = n8nRes.body.getReader();
-  const decoder = new TextDecoder();
 
-  const stream = new ReadableStream({
+  const readable = new ReadableStream({
     async start(controller) {
-      let buffer = "";
-
       try {
-        while (true) {
-          const { done, value } = await n8nReader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (!line.trim()) continue;
-            try {
-              const parsed = JSON.parse(line);
-              if (parsed.type === "item" && parsed.content) {
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ text: parsed.content })}\n\n`),
-                );
-              }
-            } catch {
-              // skip malformed lines
-            }
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? "";
+          if (text) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ text })}\n\n`),
+            );
           }
         }
       } finally {
@@ -57,7 +47,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return new Response(stream, {
+  return new Response(readable, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",

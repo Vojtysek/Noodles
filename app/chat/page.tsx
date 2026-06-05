@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
+import type { InstructionType } from "@/app/api/chat/route";
 
 interface Message {
   role: "user" | "assistant";
@@ -12,12 +13,14 @@ interface QuickCard {
   label: string;
   tag: string;
   prompt: string;
+  instruction: InstructionType;
 }
 
 const QUICK_CARDS: QuickCard[] = [
   {
     label: "Skeptický investor",
     tag: "FVE",
+    instruction: "generateArguments",
     prompt: `TÉMA:
 FVE (fotovoltaika) pro bytový dům
 
@@ -44,6 +47,7 @@ VÝSTUP:
   {
     label: "Rozhodovatel ve spěchu",
     tag: "Zateplení",
+    instruction: "generateArguments",
     prompt: `TÉMA:
 Zateplení fasády bytového domu
 
@@ -70,6 +74,7 @@ VÝSTUP:
   {
     label: "Přátelský zastánce",
     tag: "Fond oprav",
+    instruction: "generateArguments",
     prompt: `TÉMA:
 Navýšení fondu oprav o 800 Kč/měsíc na byt
 
@@ -96,6 +101,7 @@ VÝSTUP:
   {
     label: "Expresivní odpůrce",
     tag: "Výměna oken",
+    instruction: "generateArguments",
     prompt: `TÉMA:
 Výměna oken za plastová trojskla v celém domě
 
@@ -125,9 +131,12 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const sessionId = useRef(crypto.randomUUID());
 
-  async function sendMessage(overrideText?: string, displayLabel?: string) {
+  async function sendMessage(
+    overrideText?: string,
+    displayLabel?: string,
+    instruction: InstructionType = "generateArguments",
+  ) {
     const text = (overrideText ?? input).trim();
     if (!text || loading) return;
 
@@ -143,7 +152,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, sessionId: sessionId.current }),
+        body: JSON.stringify({ message: text, instruction }),
       });
 
       if (!res.ok || !res.body) {
@@ -215,7 +224,7 @@ export default function ChatPage() {
                 {QUICK_CARDS.map((card) => (
                   <button
                     key={card.label}
-                    onClick={() => sendMessage(card.prompt, `${card.label} – ${card.tag}`)}
+                    onClick={() => sendMessage(card.prompt, `${card.label} – ${card.tag}`, card.instruction)}
                     className="bg-muted hover:bg-muted/70 border-border flex flex-col items-start gap-1 rounded-xl border p-4 text-left transition-colors"
                   >
                     <span className="bg-primary/10 text-primary rounded-md px-2 py-0.5 text-xs font-medium">
