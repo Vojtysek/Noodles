@@ -6,17 +6,14 @@ import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import {
   ArrowRight,
-  CalendarClock,
-  CircleCheck,
   FileDown,
-  HandCoins,
-  Hammer,
-  PiggyBank,
   SlidersHorizontal,
+  Sparkles,
   Users,
   Wallet,
 } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
@@ -47,6 +44,9 @@ type BuildingCalc = {
   capped_by_max: boolean
 }
 
+const HERO_PHOTO =
+  "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=2400&auto=format&fit=crop"
+
 function gradeBadgeClass(grade: string) {
   const map: Record<string, string> = {
     "A++": "bg-emerald-700 text-white",
@@ -58,7 +58,7 @@ function gradeBadgeClass(grade: string) {
     E: "bg-orange-600 text-white",
     F: "bg-red-600 text-white",
   }
-  return map[grade] ?? "bg-muted text-muted-foreground"
+  return map[grade] ?? "bg-white/20 text-white"
 }
 
 const START_YEAR = 2026
@@ -120,19 +120,10 @@ function buildDynamicScenarios(selectedRenovations: string[]): Scenario[] {
   ]
 }
 
-const TONE_STYLES: Record<ScenarioTone, { selected: string; dot: string }> = {
-  emerald: {
-    selected: "border-emerald-500/60 bg-emerald-500/5 ring-3 ring-emerald-500/15",
-    dot: "bg-emerald-500",
-  },
-  amber: {
-    selected: "border-amber-500/60 bg-amber-500/5 ring-3 ring-amber-500/15",
-    dot: "bg-amber-500",
-  },
-  blue: {
-    selected: "border-blue-500/60 bg-blue-500/5 ring-3 ring-blue-500/15",
-    dot: "bg-blue-500",
-  },
+const TONE_DOT: Record<ScenarioTone, string> = {
+  emerald: "bg-emerald-500",
+  amber: "bg-amber-500",
+  blue: "bg-blue-500",
 }
 
 function monthLabel(offsetMonths: number): string {
@@ -210,19 +201,6 @@ export default function PrehledPage() {
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
 
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
-      tl.from("[data-pr-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0).from(
-        "[data-pr-reveal]",
-        { y: 32, autoAlpha: 0, duration: 0.7, stagger: 0.1 },
-        0.15
-      )
-    },
-    { scope: rootRef }
-  )
-
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("splash") === "1") {
       setSplashOpen(true)
@@ -266,51 +244,58 @@ export default function PrehledPage() {
 
   const finishLabel = monthLabel(result.totalMonths).replace("od ", "")
 
-  const tiles = [
-    {
-      icon: Users,
-      label: "Podpora v domě",
-      value: `${supportCounts.podporuje} z ${supportCounts.total}`,
-      detail: "rezidentů rekonstrukce podporuje",
-      href: "/dashboard/rezidenti",
-      mock: false,
+  // Hodnoty do plovoucích chipů v hero pruhu.
+  const breakEvenYear = result.breakEvenYear
+
+  // Vstupní reveal (hlavička + sekce). Stejný vzor jako dřív.
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
+      tl.from("[data-pr-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0)
+        .from("[data-hero-photo]", { scale: 1.12, duration: 1.4, ease: "power2.out" }, 0)
+        .from("[data-hero-chip]", { y: 16, autoAlpha: 0, duration: 0.5, stagger: 0.08 }, 0.4)
+        .from("[data-pr-reveal]", { y: 32, autoAlpha: 0, duration: 0.7, stagger: 0.1 }, 0.3)
     },
-    {
-      icon: Wallet,
-      label: "Celkové náklady",
-      value: buildingCalc ? fmtCzkShort(buildingCalc.total_cost) : "—",
-      detail: buildingCalc ? "váš výpočet z kalkulace" : "projděte kalkulaci pro odhad",
-      href: "/dashboard/financials",
-      mock: false,
+    { scope: rootRef }
+  )
+
+  // Count-up číselných chipů — vzor s counter-objektem jako na landingu.
+  // Běží po načtení dat, respektuje prefers-reduced-motion.
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+      gsap.utils.toArray<HTMLElement>("[data-count-chip]").forEach((el) => {
+        const target = parseFloat(el.dataset.countChip ?? "0")
+        if (!Number.isFinite(target)) return
+        const counter = { value: 0 }
+        gsap.fromTo(
+          counter,
+          { value: 0 },
+          {
+            value: target,
+            duration: 1.2,
+            ease: "power2.out",
+            onUpdate() {
+              el.textContent = Math.round(counter.value).toLocaleString("cs-CZ")
+            },
+          }
+        )
+      })
     },
-    {
-      icon: Hammer,
-      label: "Právě probíhá",
-      value: "—",
-      detail: "zatím bez aktivní stavby",
-      href: "/dashboard/financials",
-      mock: true,
-    },
-    {
-      icon: CalendarClock,
-      label: "Čeká na schválení",
-      value: "—",
-      detail: "rozhodne nejbližší schůze SVJ",
-      href: "/dashboard/exporty",
-      mock: true,
-    },
-  ]
+    { scope: rootRef, dependencies: [supportCounts, buildingCalc, breakEvenYear] }
+  )
 
   return (
     <div ref={rootRef} className="relative mx-auto flex w-full max-w-5xl flex-col gap-8">
       {/* Ambient blobs */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-emerald-500/8 blur-[120px]"
+        className="pointer-events-none absolute -top-32 -left-40 -z-10 size-[28rem] rounded-full bg-emerald-500/12 blur-[130px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-40 top-1/3 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
+        className="pointer-events-none absolute -right-40 top-1/3 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]"
       />
 
       {splashOpen && (
@@ -320,178 +305,158 @@ export default function PrehledPage() {
         />
       )}
 
-      {/* Header */}
-      <div data-pr-header className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <span aria-hidden className="h-px w-7 bg-emerald-500/60" />
-            <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-600 uppercase dark:text-emerald-400">
-              {buildingCalc?.address ?? "Vaše SVJ"}
-            </p>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Přehled</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Vše podstatné o rekonstrukcích na jednom místě — přehled investice, úspor a
-            harmonogramu.
-          </p>
-        </div>
+      {/* Foto hero pruh */}
+      <div
+        data-pr-header
+        className="relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] min-h-[15rem] sm:min-h-[17rem]"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          data-hero-photo
+          src={HERO_PHOTO}
+          alt="Bytový dům"
+          className="absolute inset-0 -z-10 h-full w-full object-cover will-change-transform"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
+
         {process.env.NODE_ENV === "development" && (
           <button
             onClick={() => setSplashOpen(true)}
-            className="shrink-0 rounded-md border border-dashed px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="absolute top-4 right-5 z-10 rounded-md border border-dashed border-white/30 px-2.5 py-1.5 text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             Dev: splash
           </button>
         )}
-      </div>
 
-      {/* Výsledek kalkulace z onboardingu */}
-      {buildingCalc && (
-        <div className="rounded-2xl border bg-gradient-to-br from-muted/40 to-muted/10 p-4 lg:rounded-bl-[3rem] lg:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium">Výsledek vaší kalkulace</p>
-              {buildingCalc.address && (
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{buildingCalc.address}</p>
+        <div className="relative flex h-full min-h-[15rem] flex-col justify-between gap-6 p-6 sm:min-h-[17rem] sm:p-8">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span aria-hidden className="h-px w-7 bg-emerald-300/70" />
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-300 uppercase">
+                {buildingCalc?.address ?? "Vaše SVJ"}
+              </p>
+            </div>
+            <div className="mt-2 flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Přehled</h1>
+              {buildingCalc?.energy_grade && (
+                <span
+                  className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold ring-1 ring-white/20 ${gradeBadgeClass(buildingCalc.energy_grade)}`}
+                >
+                  {buildingCalc.energy_grade}
+                </span>
               )}
             </div>
-            {buildingCalc.energy_grade && (
-              <span
-                className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${gradeBadgeClass(buildingCalc.energy_grade)}`}
-              >
-                {buildingCalc.energy_grade}
-              </span>
-            )}
           </div>
-          {buildingCalc.selected_renovations.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {buildingCalc.selected_renovations.map((r) => (
-                <span key={r} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                  {r}
-                </span>
-              ))}
+
+          {buildingCalc ? (
+            /* Tři plovoucí skleněné chipy */
+            <div className="flex flex-wrap gap-2.5">
+              <div
+                data-hero-chip
+                className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
+              >
+                <Users className="size-4 shrink-0 text-emerald-300" />
+                <p className="text-sm text-white/90">
+                  <span data-count-chip={supportCounts.podporuje} className="font-semibold tabular-nums">
+                    {supportCounts.podporuje}
+                  </span>{" "}
+                  <span className="text-white/60">rezidentů podporuje</span>
+                </p>
+              </div>
+              <div
+                data-hero-chip
+                className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
+              >
+                <Wallet className="size-4 shrink-0 text-emerald-300" />
+                <p className="text-sm text-white/90">
+                  <span data-count-chip={buildingCalc.monthly_per_unit} className="font-semibold tabular-nums">
+                    {buildingCalc.monthly_per_unit.toLocaleString("cs-CZ")}
+                  </span>{" "}
+                  <span className="text-white/60">Kč / byt měsíčně</span>
+                </p>
+              </div>
+              {breakEvenYear !== null && (
+                <div
+                  data-hero-chip
+                  className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
+                >
+                  <Sparkles className="size-4 shrink-0 text-emerald-300" />
+                  <p className="text-sm text-white/90">
+                    <span className="text-white/60">Vyplatí se od roku</span>{" "}
+                    <span data-count-chip={breakEvenYear} className="font-semibold tabular-nums">
+                      {breakEvenYear}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Bez kalkulace — výzva ke spočítání úspor */
+            <div data-hero-chip>
+              <Button asChild className="h-11 rounded-full px-6 text-sm font-semibold shadow-xl">
+                <Link href="/dashboard/financials">Detailní přehled</Link>
+              </Button>
             </div>
           )}
-          <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3">
-            <div>
-              <p className="text-xs text-muted-foreground">Měsíčně / byt</p>
-              <p className="text-base font-semibold tabular-nums text-primary">
-                {buildingCalc.monthly_per_unit.toLocaleString("cs-CZ")} Kč
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Celková cena opravy</p>
-              <p className="text-base font-semibold tabular-nums">
-                {buildingCalc.total_cost.toLocaleString("cs-CZ")} Kč
-              </p>
-            </div>
-          </div>
         </div>
-      )}
-
-      {/* Stav domu — vstupní dlaždice */}
-      <div data-pr-reveal className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {tiles.map((tile) => (
-          <Link
-            key={tile.label}
-            href={tile.href}
-            className="group rounded-2xl border bg-muted/40 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg"
-          >
-            <div className="flex items-center justify-between gap-1.5">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <tile.icon className="size-3.5 shrink-0 text-primary" />
-                {tile.label}
-              </div>
-              {tile.mock && (
-                <span className="text-[9px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium shrink-0">k doplnění</span>
-              )}
-            </div>
-            <p className="mt-1 truncate text-lg font-semibold tabular-nums">{tile.value}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{tile.detail}</p>
-          </Link>
-        ))}
       </div>
 
-      {/* Tři scénáře */}
-      <div data-pr-reveal className="flex flex-col gap-3">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
-            <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-              Varianty realizace
-            </p>
+      {/* Slim přepínač variant */}
+      <div data-pr-reveal className="flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            Varianta
+          </span>
+          <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+            {dynamicScenarios.map((s) => {
+              const active = s.id === scenarioId
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setScenarioId(s.id)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
+                    active
+                      ? "bg-background text-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
+                  {s.name}
+                </button>
+              )
+            })}
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Dvě varianty realizace — vyberte a níže uvidíte harmonogram a finanční dopad.
-          </p>
         </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {dynamicScenarios.map((s) => {
-            const r = computeScenario(s)
-            const active = s.id === scenarioId
-            const tone = TONE_STYLES[s.tone]
-            return (
-              <button
-                key={s.id}
-                onClick={() => setScenarioId(s.id)}
-                aria-pressed={active}
-                className={cn(
-                  "flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200",
-                  active
-                    ? cn(tone.selected, "scale-[1.02] shadow-xl")
-                    : "hover:scale-[1.01] hover:bg-muted/50 hover:shadow-lg"
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("size-2.5 shrink-0 rounded-full", tone.dot)} />
-                    <p className="text-sm font-medium">{s.name}</p>
-                  </div>
-                  {active && <CircleCheck className="size-4 shrink-0 text-primary" />}
-                </div>
-                <p className="text-xs leading-relaxed text-muted-foreground">{s.tagline}</p>
-                <div className="mt-auto flex flex-col gap-1.5 border-t pt-3 text-sm">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <CalendarClock className="size-3.5" />
-                      Hotovo za
-                    </span>
-                    <span className="font-medium tabular-nums">
-                      {fmtDuration(r.totalMonths)}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <HandCoins className="size-3.5" />
-                      Měsíčně navíc
-                    </span>
-                    <span className="font-medium tabular-nums">
-                      {fmtCzk(r.fundIncreasePerFlat)} / byt
-                    </span>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <PiggyBank className="size-3.5" />
-                      Roční úspora
-                    </span>
-                    <span className="font-medium text-emerald-600 tabular-nums dark:text-emerald-400">
-                      {fmtCzkShort(r.savingsPerYear)}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Hotovo za <span className="tabular-nums">{fmtDuration(result.totalMonths)}</span> ·{" "}
+          <span className="tabular-nums">+{fmtCzk(result.fundIncreasePerFlat)}</span> / byt měsíčně
+        </p>
       </div>
 
       {/* Harmonogram vybraného scénáře */}
-      <div data-pr-reveal className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-        <p className="text-sm font-medium">Jak to půjde za sebou — {scenario.name}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Projekty se realizují postupně, jeden po druhém. Celkem{" "}
-          {fmtDuration(result.totalMonths)} a {fmtCzkShort(result.budget)}.
-        </p>
+      <div
+        data-pr-reveal
+        className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+      >
+        {/* Ručně kreslený domeček v rohu */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute -top-2 right-3 size-20 text-emerald-500/30"
+          viewBox="0 0 64 64"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M10 30 L32 12 L54 30" />
+          <path d="M16 28 V52 H48 V28" />
+          <path d="M28 52 V40 H36 V52" />
+          <path d="M44 18 V12 H49 V22" />
+        </svg>
+        <p className="text-sm font-medium">Harmonogram — {scenario.name}</p>
         <div className="mt-6">
           <Roadmap items={result.roadmap} finishLabel={finishLabel} />
         </div>
@@ -500,14 +465,26 @@ export default function PrehledPage() {
       {/* Vyplatí se to? */}
       <div
         data-pr-reveal
-        className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-br-[3rem]"
+        className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-br-[3rem]"
       >
+        {/* Ručně kreslené sluníčko v rohu */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute top-3 right-4 size-16 text-emerald-500/30"
+          viewBox="0 0 64 64"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="32" cy="32" r="11" />
+          <path d="M32 6 V14 M32 50 V58 M6 32 H14 M50 32 H58 M13 13 L19 19 M45 45 L51 51 M51 13 L45 19 M19 45 L13 51" />
+        </svg>
         <p className="text-sm font-medium">Vyplatí se to?</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {result.breakEvenYear !== null ? (
             <>
-              Červená čára ukazuje, kolik dům zaplatí, když se nic neudělá. Zelená totéž s
-              rekonstrukcí.{" "}
               <span className="font-medium text-foreground">
                 Od roku {result.breakEvenYear} je rekonstrukce levnější
               </span>{" "}
@@ -547,33 +524,23 @@ export default function PrehledPage() {
         </div>
       </div>
 
-      {/* Kam dál */}
-      <div data-pr-reveal className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {/* Kam dál — slim řádek */}
+      <div data-pr-reveal className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1 text-sm">
         <Link
           href="/dashboard/financials"
-          className="group flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
+          className="group inline-flex items-center gap-2 font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <SlidersHorizontal className="size-4 shrink-0 text-primary" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">Chcete si namíchat vlastní kombinaci?</p>
-            <p className="text-xs text-muted-foreground">
-              Detailní finance — libovolné projekty, horizonty a rozpady nákladů
-            </p>
-          </div>
-          <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          Vlastní kombinace projektů
+          <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
         </Link>
         <Link
           href="/dashboard/exporty"
-          className="group flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-lg"
+          className="group inline-flex items-center gap-2 font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <FileDown className="size-4 shrink-0 text-primary" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">Potřebujete přesvědčit sousedy?</p>
-            <p className="text-xs text-muted-foreground">
-              Exporty — PDF a prezentace připravené na schůzi SVJ
-            </p>
-          </div>
-          <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          Exporty na schůzi SVJ
+          <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
     </div>
