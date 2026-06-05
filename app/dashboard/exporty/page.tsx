@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import {
   FileText,
@@ -132,43 +133,85 @@ export default function ExportyPage() {
 
       {/* Context: scenario scope + stats */}
       <div
-        className="anim-in flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-3"
+        className="anim-in flex items-center gap-3"
         style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.15s" } as React.CSSProperties}
       >
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
-            1
-          </span>
-          <p className="text-sm font-medium">Co exportovat</p>
-          <select
-            value={scenarioId}
-            onChange={(e) => setScenarioId(e.target.value)}
-            className="h-8 max-w-xs rounded-lg border border-border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
+          1
+        </span>
+        <p className="text-sm font-medium">Co exportovat</p>
+      </div>
+      <div
+        className="anim-in rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-4"
+        style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.18s" } as React.CSSProperties}
+      >
+        {/* Segmented switcher */}
+        <div className="flex items-center gap-1 rounded-xl bg-background/70 p-1 shadow-sm backdrop-blur w-full">
+          {/* "All" option */}
+          <button
+            type="button"
+            onClick={() => setScenarioId("all")}
+            aria-pressed={scenarioId === "all"}
+            className={cn(
+              "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+              scenarioId === "all"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+            )}
           >
-            <option value="all">Oba scénáře</option>
-            {scenarios.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-background/80 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
-          <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
-            <Building2 className="size-3.5 shrink-0" />
-            <span className="font-medium text-foreground tabular-nums">
-              {scenarioId === "all" ? scenarios.length : 1}
+            <span className="flex items-center gap-1.5">
+              <Building2 className="size-3.5 shrink-0" />
+              Porovnání scénářů
             </span>
-            <span className="whitespace-nowrap">{scenarioId === "all" ? "scénáře" : "scénář"}</span>
-          </span>
-          <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+            <span className={cn(
+              "text-[10px] font-normal leading-tight",
+              scenarioId === "all" ? "text-primary-foreground/70" : "text-muted-foreground/60"
+            )}>
+              side-by-side přehled
+            </span>
+          </button>
+
+          {scenarios.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setScenarioId(s.id)}
+              aria-pressed={scenarioId === s.id}
+              className={cn(
+                "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+                scenarioId === s.id
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+              )}
+            >
+              <span>{s.name}</span>
+              <span className={cn(
+                "text-[10px] font-normal leading-tight",
+                scenarioId === s.id ? "text-primary-foreground/70" : "text-muted-foreground/60"
+              )}>
+                {s.projectIds.length} {s.projectIds.length === 1 ? "projekt" : "projekty"}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Stats row */}
+        <div className="mt-3 flex flex-wrap items-center gap-4 px-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
             <Users className="size-3.5 shrink-0" />
-            <span className="font-medium text-foreground tabular-nums">{personaList.length}</span>
-            <span className="whitespace-nowrap">rezidentů</span>
+            <span className="tabular-nums font-medium text-foreground">{personaList.length}</span>
+            rezidentů v domě
           </span>
           {selectedScenario && (
-            <span className="flex shrink-0 items-center gap-1.5">
-              <span className="whitespace-nowrap text-[10px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium">{selectedScenario.name}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/50">·</span>
+              <span>{selectedScenario.tagline}</span>
+            </span>
+          )}
+          {scenarioId === "all" && (
+            <span className="flex items-center gap-1.5">
+              <span className="text-muted-foreground/50">·</span>
+              <span>Oba scénáře vedle sebe — ideální pro přesvědčení nerozhodnutých</span>
             </span>
           )}
         </div>
@@ -254,22 +297,86 @@ export default function ExportyPage() {
         </div>
 
         {selectedType.needsPersona && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+          <div className="mt-4 space-y-3">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <UserRound className="size-3.5 shrink-0" />
               Pro rezidenta:
             </span>
-            <select
-              value={personaId}
-              onChange={(e) => setPersonaId(e.target.value)}
-              className="h-8 max-w-sm rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              {personaList.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} — {p.role}
-                </option>
-              ))}
-            </select>
+
+            {/* Visual card picker */}
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {personaList.map((p) => {
+                const selected = p.id === personaId
+                const imgSrc = p.personaType && p.personaType in PERSONA_TYPES
+                  ? PERSONA_TYPES[p.personaType].imagePath
+                  : null
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPersonaId(p.id)}
+                    aria-pressed={selected}
+                    className={cn(
+                      "flex shrink-0 flex-col items-center gap-1.5 rounded-xl border p-2 transition-all duration-150 w-[88px]",
+                      selected
+                        ? "border-primary/60 bg-primary/5 ring-2 ring-primary/20 shadow-md"
+                        : "border-border bg-background hover:bg-muted/60 hover:shadow-sm"
+                    )}
+                  >
+                    <div className={cn(
+                      "relative size-12 shrink-0 overflow-hidden rounded-lg",
+                      selected ? "ring-2 ring-primary/40" : "ring-1 ring-border"
+                    )}>
+                      {imgSrc ? (
+                        <Image
+                          src={imgSrc}
+                          alt={p.name}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center bg-muted">
+                          <UserRound className="size-5 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <p className={cn(
+                      "text-center text-[10px] font-medium leading-tight",
+                      selected ? "text-primary" : "text-foreground"
+                    )}>
+                      {p.name}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Selected persona info chip */}
+            {selectedPersona && (
+              <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-3 py-2.5">
+                {selectedPersona.personaType && selectedPersona.personaType in PERSONA_TYPES && (
+                  <div className="relative size-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-primary/20 mt-0.5">
+                    <Image
+                      src={PERSONA_TYPES[selectedPersona.personaType].imagePath}
+                      alt={selectedPersona.name}
+                      fill
+                      className="object-cover"
+                      sizes="36px"
+                    />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">{selectedPersona.name}</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">{selectedPersona.role}</p>
+                  {selectedPersona.brief && (
+                    <p className="mt-1 text-[11px] text-muted-foreground/80 leading-relaxed line-clamp-2">
+                      {selectedPersona.brief}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
