@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { openai } from "@/lib/ai/client";
-import { characterizePersona } from "@/lib/ai/instructions/characterizePersona";
+import { buildCharacterizePersonaPrompt } from "@/lib/ai/instructions/characterizePersona";
 import { createClient } from "@/lib/supabase/server";
+import { PersonaType } from "@/lib/persona-types";
 
 export async function PATCH(
   req: NextRequest,
@@ -10,11 +11,19 @@ export async function PATCH(
   const { id } = await params;
   const { brief } = await req.json() as { brief: string };
 
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("personas")
+    .select("persona_type")
+    .eq("id", id)
+    .single();
+  const existingPersonaType = existing?.persona_type as PersonaType | undefined;
+
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: characterizePersona },
+      { role: "system", content: buildCharacterizePersonaPrompt(existingPersonaType) },
       { role: "user", content: brief },
     ],
   });
@@ -29,7 +38,6 @@ export async function PATCH(
 
   const { sentiment, ...structured } = raw;
 
-  const supabase = await createClient();
   const { data, error } = await supabase
     .from("personas")
     .update({ brief, structured, sentiment, status: "zpracovano" })
