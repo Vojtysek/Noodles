@@ -86,18 +86,87 @@ function calcRepair(c: RepairCalc, windowCount: number) {
 }
 
 const RENOVATION_PRIORITY: Record<string, string[]> = {
-  F: ["insulation", "windows", "roof", "heating", "heatpump", "recuperation", "blinds", "photovoltaics"],
-  E: ["insulation", "windows", "roof", "heatpump", "heating", "recuperation", "blinds", "photovoltaics"],
-  D: ["windows", "heatpump", "insulation", "heating", "roof", "recuperation", "blinds", "photovoltaics"],
-  C: ["heatpump", "heating", "windows", "recuperation", "insulation", "roof", "blinds", "photovoltaics"],
-  B: ["heatpump", "recuperation", "heating", "photovoltaics", "blinds", "windows", "insulation", "roof"],
-  A: ["photovoltaics", "heatpump", "recuperation", "blinds", "heating", "windows", "insulation", "roof"],
+  F: [
+    "insulation",
+    "windows",
+    "roof",
+    "heating",
+    "heatpump",
+    "recuperation",
+    "blinds",
+    "photovoltaics",
+  ],
+  E: [
+    "insulation",
+    "windows",
+    "roof",
+    "heatpump",
+    "heating",
+    "recuperation",
+    "blinds",
+    "photovoltaics",
+  ],
+  D: [
+    "windows",
+    "heatpump",
+    "insulation",
+    "heating",
+    "roof",
+    "recuperation",
+    "blinds",
+    "photovoltaics",
+  ],
+  C: [
+    "heatpump",
+    "heating",
+    "windows",
+    "recuperation",
+    "insulation",
+    "roof",
+    "blinds",
+    "photovoltaics",
+  ],
+  B: [
+    "heatpump",
+    "recuperation",
+    "heating",
+    "photovoltaics",
+    "blinds",
+    "windows",
+    "insulation",
+    "roof",
+  ],
+  A: [
+    "photovoltaics",
+    "heatpump",
+    "recuperation",
+    "blinds",
+    "heating",
+    "windows",
+    "insulation",
+    "roof",
+  ],
 }
 
-const DEFAULT_PRIORITY = ["insulation", "windows", "heatpump", "heating", "roof", "recuperation", "blinds", "photovoltaics"]
+const DEFAULT_PRIORITY = [
+  "insulation",
+  "windows",
+  "heatpump",
+  "heating",
+  "roof",
+  "recuperation",
+  "blinds",
+  "photovoltaics",
+]
 
-function getSortedRenovations(grade: string | null): { sorted: RenovationType[]; starId: string } {
-  const order = (grade && RENOVATION_PRIORITY[grade]) ? RENOVATION_PRIORITY[grade] : DEFAULT_PRIORITY
+function getSortedRenovations(grade: string | null): {
+  sorted: RenovationType[]
+  starId: string
+} {
+  const order =
+    grade && RENOVATION_PRIORITY[grade]
+      ? RENOVATION_PRIORITY[grade]
+      : DEFAULT_PRIORITY
   const sorted = [...RENOVATIONS].sort((a, b) => {
     const ai = order.indexOf(a.id)
     const bi = order.indexOf(b.id)
@@ -196,10 +265,6 @@ const STEP_META = [
   {
     title: "Co chcete renovovat?",
     desc: "Vyberte oblast pro výpočet příspěvku do fondu oprav.",
-  },
-  {
-    title: "Výsledek kalkulace",
-    desc: "Orientační měsíční příspěvek na jednu jednotku.",
   },
 ]
 
@@ -380,8 +445,7 @@ export default function CalculatorPage() {
     } else if (step === 1) {
       setStep(2)
     } else if (step === 2) {
-      if (selected.length > 0) setStep(3)
-    } else if (step === 3) {
+      if (selected.length === 0) return
       const year = building?.yearBuilt ?? null
       const pts = year ? calcEnergyScore(year, insulated, newWindows) : null
       const g = pts != null ? energyGrade(pts) : null
@@ -422,15 +486,15 @@ export default function CalculatorPage() {
         : query.trim()
           ? "Vyhledat"
           : "Přeskočit"
-      : step === 3
-        ? "Hotovo"
+      : step === 2
+        ? "Zobrazit výsledky"
         : "Pokračovat"
 
   const ctaDisabled = loading || (step === 2 && selected.length === 0)
 
   const progressDots = (
     <div className="flex justify-center gap-1.5">
-      {[0, 1, 2, 3].map((i) => (
+      {[0, 1, 2].map((i) => (
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-primary" : "w-1.5 bg-border"}`}
@@ -720,110 +784,74 @@ export default function CalculatorPage() {
               })()}
 
             {/* Step 2 — Renovation grid with recommendation */}
-            {step === 2 && (() => {
-              const year = building?.yearBuilt ?? null
-              const pts = year ? calcEnergyScore(year, insulated, newWindows) : null
-              const g = pts != null ? energyGrade(pts) : null
-              const displayGrade = energyLabel ?? g?.grade ?? null
-              const { sorted: sortedRenovations, starId } = getSortedRenovations(displayGrade)
-              return (
-                <div className="flex flex-col gap-3">
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Star className="size-3 fill-amber-400 text-amber-400" />
-                    {displayGrade
-                      ? <>Seřazeno podle doporučení pro třídu&nbsp;<strong className="text-foreground">{displayGrade}</strong></>
-                      : "Obecné doporučení — zadejte rok výstavby pro přesnější pořadí"
-                    }
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {sortedRenovations.map((r) => {
-                      const isSelected = selected.includes(r.id)
-                      const isStar = r.id === starId
-                      return (
-                        <button
-                          key={r.id}
-                          onClick={() =>
-                            r.available
-                              ? setSelected((prev) =>
-                                  prev.includes(r.id)
-                                    ? prev.filter((id) => id !== r.id)
-                                    : [...prev, r.id]
-                                )
-                              : undefined
-                          }
-                          disabled={!r.available}
-                          className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
-                            isSelected
-                              ? "border-primary bg-primary/5 shadow-sm"
-                              : r.available
-                                ? "border-border hover:border-primary/40 hover:bg-muted/50"
-                                : "cursor-not-allowed border-border opacity-35"
-                          }`}
-                        >
-                          <r.icon
-                            className={`size-7 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
-                            strokeWidth={1.5}
-                          />
-                          <span className={`text-xs leading-tight font-medium ${isSelected ? "text-primary" : ""}`}>
-                            {r.label}
-                          </span>
-                          {isStar && (
-                            <span className="absolute -top-1.5 -left-1.5">
-                              <Star className="size-3.5 fill-amber-400 text-amber-400 drop-shadow-sm" />
+            {step === 2 &&
+              (() => {
+                const year = building?.yearBuilt ?? null
+                const pts = year
+                  ? calcEnergyScore(year, insulated, newWindows)
+                  : null
+                const g = pts != null ? energyGrade(pts) : null
+                const displayGrade = energyLabel ?? g?.grade ?? null
+                const { sorted: sortedRenovations, starId } =
+                  getSortedRenovations(displayGrade)
+                return (
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      {sortedRenovations.map((r) => {
+                        const isSelected = selected.includes(r.id)
+                        const isStar = r.id === starId
+                        return (
+                          <button
+                            key={r.id}
+                            onClick={() =>
+                              r.available
+                                ? setSelected((prev) =>
+                                    prev.includes(r.id)
+                                      ? prev.filter((id) => id !== r.id)
+                                      : [...prev, r.id]
+                                  )
+                                : undefined
+                            }
+                            disabled={!r.available}
+                            className={`relative flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 transition-all duration-150 ${
+                              isSelected
+                                ? "border-primary bg-primary/5 shadow-sm"
+                                : r.available
+                                  ? "border-border hover:border-primary/40 hover:bg-muted/50"
+                                  : "cursor-not-allowed border-border opacity-35"
+                            }`}
+                          >
+                            <r.icon
+                              className={`size-7 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                              strokeWidth={1.5}
+                            />
+                            <span
+                              className={`text-xs leading-tight font-medium ${isSelected ? "text-primary" : ""}`}
+                            >
+                              {r.label}
                             </span>
-                          )}
-                          {!r.available && (
-                            <span className="absolute -top-1.5 -right-1.5 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground">
-                              brzy
-                            </span>
-                          )}
-                          {isSelected && (
-                            <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary">
-                              <CheckCircle2 className="size-3 text-primary-foreground" />
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })}
+                            {isStar && (
+                              <span className="absolute -top-1.5 -left-1.5">
+                                <Star className="size-3.5 fill-amber-400 text-amber-400 drop-shadow-sm" />
+                              </span>
+                            )}
+                            {!r.available && (
+                              <span className="absolute -top-1.5 -right-1.5 rounded-full bg-muted px-1.5 py-px text-[9px] text-muted-foreground">
+                                brzy
+                              </span>
+                            )}
+                            {isSelected && (
+                              <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary">
+                                <CheckCircle2 className="size-3 text-primary-foreground" />
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              )
-            })()}
-
-            {/* Step 3 — Results */}
-            {step === 3 && (
-              <div className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl border">
-                {[
-                  { label: "Celková cena opravy", value: calc.alpha },
-                  {
-                    label: "Cena na jednotku",
-                    value: Math.round(calc.alpha / repair.numberOfUnits),
-                  },
-                  {
-                    label: "Splácitelná částka",
-                    value: calc.finalRent,
-                    warn: calc.cappedByMax,
-                  },
-                  {
-                    label: "Měsíčně / jednotka",
-                    value: Math.round(calc.monthlyPerUnit),
-                    highlight: true,
-                  },
-                ].map(({ label, value, warn, highlight }) => (
-                  <div
-                    key={label}
-                    className={`flex items-center justify-between px-4 py-3 text-sm ${highlight ? "bg-primary/5" : ""}`}
-                  >
-                    <span className="text-muted-foreground">{label}</span>
-                    <span
-                      className={`font-semibold tabular-nums ${highlight ? "text-primary" : ""} ${warn ? "text-amber-600 dark:text-amber-400" : ""}`}
-                    >
-                      {value.toLocaleString("cs-CZ")} Kč
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                )
+              })()}
 
             {/* Progress + CTA */}
             <div className="mt-auto flex flex-col gap-3 pt-2">
