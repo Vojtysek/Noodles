@@ -21,11 +21,9 @@ import {
 
 const BASE = "https://ags.cuzk.gov.cz/arcgis/rest/services/RUIAN/MapServer"
 const PRICE_PER_WINDOW = 12_000
-const PRICE_PER_INSTALL = 1_000
 
 type RepairCalc = {
   numberOfUnits: number
-  windowCount: number
   rentYears: number
   isFirstRepair: boolean
 }
@@ -34,6 +32,7 @@ type BuildingData = {
   units: number | null
   floors: number | null
   yearBuilt: number | null
+  zastavenaFlocha: number | null
 }
 type RenovationType = {
   id: string
@@ -68,8 +67,8 @@ const RENOVATIONS: RenovationType[] = [
   { id: "photovoltaics", label: "Fotovoltaika", icon: Sun, available: false },
 ]
 
-function calcRepair(c: RepairCalc) {
-  const alpha = c.windowCount * (PRICE_PER_WINDOW + PRICE_PER_INSTALL)
+function calcRepair(c: RepairCalc, windowCount: number) {
+  const alpha = windowCount * PRICE_PER_WINDOW
   const maxRentTime = alpha < 1_500_000 ? 10 : 15
   const maxRentPerUnit = c.isFirstRepair ? 250_000 : 750_000
   const finalRent = Math.min(alpha, maxRentPerUnit * c.numberOfUnits)
@@ -176,7 +175,7 @@ const STEP_META = [
   },
   {
     title: "Parametry opravy",
-    desc: "Nastavte počet jednotek, oken a dobu splácení.",
+    desc: "Nastavte počet jednotek a dobu splácení.",
   },
   {
     title: "Výsledek kalkulace",
@@ -193,6 +192,13 @@ const BUILDING_FIELDS = [
     unit: "",
   },
   { label: "Počet podlaží", key: "floors" as const, min: 1, max: 60, unit: "" },
+  {
+    label: "Zastavěná plocha",
+    key: "zastavenaFlocha" as const,
+    min: 50,
+    max: 2000,
+    unit: "m²",
+  },
   {
     label: "Rok dokončení",
     key: "yearBuilt" as const,
@@ -223,13 +229,21 @@ export default function CalculatorPage() {
 
   const [repair, setRepair] = useState<RepairCalc>({
     numberOfUnits: 20,
-    windowCount: 120,
     rentYears: 4,
     isFirstRepair: true,
   })
 
+<<<<<<< HEAD
   const calc = calcRepair(repair)
   const selectedRenovations = RENOVATIONS.filter((r) => selected.includes(r.id))
+=======
+  const derivedWindowCount = Math.round(
+    ((building?.zastavenaFlocha ?? 400) * (building?.floors ?? 4) * 0.15) /
+      2.25
+  )
+  const calc = calcRepair(repair, derivedWindowCount)
+  const selectedRenovation = RENOVATIONS.find((r) => r.id === selected)
+>>>>>>> 204d2da (feat: derive window count automatically from footprint × floors × 0.15 / 2.25)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -325,6 +339,7 @@ export default function CalculatorPage() {
         units,
         floors: so?.pocetpodlazi ?? null,
         yearBuilt: so?.dokonceni ? new Date(so.dokonceni).getFullYear() : null,
+        zastavenaFlocha: so?.zastavenaPlocha ?? null,
       })
       if (units) setR("numberOfUnits", Math.min(50, Math.max(5, units)))
     } catch (e) {
@@ -734,15 +749,6 @@ export default function CalculatorPage() {
                         unit: "ks",
                       },
                       {
-                        label: "Počet oken",
-                        key: "windowCount" as const,
-                        min: 10,
-                        max: 300,
-                        step: 1,
-                        unit: "ks",
-                        ticks: [10, 30, 60, 100, 150, 200, 300] as const,
-                      },
-                      {
                         label: "Doba splácení",
                         key: "rentYears" as const,
                         min: 1,
@@ -751,8 +757,7 @@ export default function CalculatorPage() {
                         unit: "let",
                       },
                     ] as const
-                  ).map(({ label, key, min, max, step: s, unit, ...rest }) => {
-                    const ticks = "ticks" in rest ? rest.ticks : undefined
+                  ).map(({ label, key, min, max, step: s, unit }) => {
                     return (
                       <div key={key} className="py-3">
                         <div className="mb-2 flex items-center justify-between">
@@ -772,32 +777,9 @@ export default function CalculatorPage() {
                           max={max}
                           step={s}
                           value={repair[key]}
-                          list={ticks ? `ticks-${key}` : undefined}
                           onChange={(e) => setR(key, Number(e.target.value))}
                           className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border accent-primary"
                         />
-                        {ticks && (
-                          <>
-                            <datalist id={`ticks-${key}`}>
-                              {ticks.map((t) => (
-                                <option key={t} value={t} />
-                              ))}
-                            </datalist>
-                            <div className="relative mt-0.5 h-3">
-                              {ticks.map((t) => (
-                                <span
-                                  key={t}
-                                  className="absolute -translate-x-1/2 text-[9px] text-muted-foreground/60"
-                                  style={{
-                                    left: `${((t - min) / (max - min)) * 100}%`,
-                                  }}
-                                >
-                                  {t}
-                                </span>
-                              ))}
-                            </div>
-                          </>
-                        )}
                       </div>
                     )
                   })}
