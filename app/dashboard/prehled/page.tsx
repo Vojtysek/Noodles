@@ -19,7 +19,8 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
 import { Roadmap, type RoadmapItem } from "@/components/dashboard/roadmap"
-import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
+import { Harmonogram } from "@/components/dashboard/harmonogram"
+
 import { userScenarios } from "@/lib/scenarios"
 import {
   fmtCzkShort,
@@ -470,7 +471,11 @@ export default function PrehledPage() {
         </svg>
         <p className="text-sm font-medium">Harmonogram — {scenario.name}</p>
         <div className="mt-6">
-          <Roadmap items={result.roadmap} finishLabel={finishLabel} />
+          <Harmonogram
+            items={result.roadmap}
+            finishLabel={finishLabel}
+            storageKey={`harmonogram-step-${buildingCalc?.id ?? "default"}`}
+          />
         </div>
       </div>
 
