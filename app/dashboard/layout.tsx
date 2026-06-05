@@ -17,7 +17,7 @@ export default function DashboardLayout({
         className="pointer-events-none fixed -right-1/4 -bottom-1/4 -z-10 size-[40rem] rounded-full bg-blue-500/5 blur-[120px]"
       />
       <DashboardSidebar />
-      <main className="min-w-0 flex-1 p-6 lg:p-8">{children}</main>
+      <main className="min-w-0 flex-1 overflow-x-hidden p-6 lg:p-8">{children}</main>
     </div>
   )
 }

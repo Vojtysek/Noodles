@@ -6,9 +6,7 @@ import {
   Users,
   ChartColumn,
   FileDown,
-  Calculator,
   Building2,
-  Astroid,
   House,
 } from "lucide-react"
 
@@ -19,11 +17,6 @@ const NAV_ITEMS = [
   { href: "/dashboard/rezidenti", label: "Rezidenti", icon: Users },
   { href: "/dashboard/financials", label: "Finance", icon: ChartColumn },
   { href: "/dashboard/exporty", label: "Exporty", icon: FileDown },
-]
-
-const TOOL_ITEMS = [
-  { href: "/calculator", label: "Kalkulačka", icon: Calculator },
-  { href: "/chat", label: "AI Asistent", icon: Astroid },
 ]
 
 export function DashboardSidebar() {
@@ -101,24 +94,6 @@ export function DashboardSidebar() {
             </Link>
           )
         })}
-
-        <p
-          className="sb-item-in px-2 pt-5 pb-1.5 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground uppercase"
-          style={{ "--sb-i": 6 } as React.CSSProperties}
-        >
-          Nástroje
-        </p>
-        {TOOL_ITEMS.map((item, i) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="sb-item-in flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
-            style={{ "--sb-i": 7 + i } as React.CSSProperties}
-          >
-            <item.icon className="size-4 shrink-0" />
-            {item.label}
-          </Link>
-        ))}
       </nav>
 
     </aside>

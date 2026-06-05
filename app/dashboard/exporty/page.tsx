@@ -90,7 +90,7 @@ export default function ExportyPage() {
   }
 
   return (
-    <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div ref={rootRef} className="relative mx-auto flex w-full max-w-6xl flex-col gap-6">
       {/* Ambient blobs */}
       <div
         aria-hidden
@@ -123,7 +123,7 @@ export default function ExportyPage() {
         className="anim-in flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-3"
         style={{ "--ai-y": "28px", "--ai-dur": "0.6s", "--ai-delay": "0.15s" } as React.CSSProperties}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
             1
           </span>
@@ -131,7 +131,7 @@ export default function ExportyPage() {
           <select
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-            className="h-8 rounded-lg border border-border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-8 max-w-xs rounded-lg border border-border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <option value="all">Všechny projekty</option>
             {projects.map((p) => (
@@ -141,25 +141,25 @@ export default function ExportyPage() {
             ))}
           </select>
         </div>
-        <div className="flex items-center gap-4 rounded-xl bg-background/80 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Building2 className="size-3.5" />
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-background/80 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
+          <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+            <Building2 className="size-3.5 shrink-0" />
             <span className="font-medium text-foreground tabular-nums">
               {scopedProjects.length}
             </span>
-            {scopedProjects.length === 1 ? "projekt" : "projekty"}
+            <span className="whitespace-nowrap">{scopedProjects.length === 1 ? "projekt" : "projekty"}</span>
           </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Users className="size-3.5" />
+          <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+            <Users className="size-3.5 shrink-0" />
             <span className="font-medium text-foreground tabular-nums">{personaList.length}</span>
-            rezidentů
+            <span className="whitespace-nowrap">rezidentů</span>
           </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <ChartPie className="size-3.5" />
+          <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+            <ChartPie className="size-3.5 shrink-0" />
             <span className="font-medium text-foreground tabular-nums">
               {fmtCzkShort(totalBudget)}
             </span>
-            <span className="text-[10px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium">mock</span>
+            <span className="whitespace-nowrap text-[10px] bg-amber-500/10 text-amber-600 rounded px-1 py-0.5 font-medium">mock</span>
           </span>
         </div>
       </div>
@@ -245,14 +245,14 @@ export default function ExportyPage() {
 
         {selectedType.needsPersona && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <UserRound className="size-3.5" />
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+              <UserRound className="size-3.5 shrink-0" />
               Pro rezidenta:
             </span>
             <select
               value={personaId}
               onChange={(e) => setPersonaId(e.target.value)}
-              className="h-8 rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-8 max-w-sm rounded-lg border border-border bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {personaList.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -339,16 +339,16 @@ export default function ExportyPage() {
                   className="border-b transition-colors last:border-b-0 hover:bg-muted/40"
                 >
                   <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {row.format === "PPTX" ? (
                         <Presentation className="size-3.5 shrink-0 text-muted-foreground" />
                       ) : (
                         <FileText className="size-3.5 shrink-0 text-muted-foreground" />
                       )}
-                      <span className="font-medium">{row.name}</span>
+                      <span className="font-medium truncate">{row.name}</span>
                       <span
                         className={cn(
-                          "rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+                          "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap",
                           row.format === "PPTX"
                             ? "bg-chart-1/20 text-chart-3"
                             : "bg-muted text-muted-foreground"
@@ -358,8 +358,8 @@ export default function ExportyPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{row.type}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{row.project}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground truncate">{row.type}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground truncate">{row.project}</td>
                   <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
                     {new Date(row.createdAt).toLocaleDateString("cs-CZ")}
                   </td>

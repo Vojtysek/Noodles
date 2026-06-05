@@ -177,7 +177,7 @@ export default function FinancialsPage() {
   ]
 
   return (
-    <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div ref={rootRef} className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
       {/* Ambient blobs */}
       <div
         aria-hidden

@@ -266,7 +266,18 @@ export default function RezidentiPage() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <h1 className="text-xl font-semibold">Rezidenti</h1>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="h-px w-7 bg-primary/60" />
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
+              Profily sousedů
+            </p>
+          </div>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Rezidenti</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Postoje a profily rezidentů — základ pro přípravu komunikace a exportů.
+          </p>
+        </div>
         <Button onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}>
           {showForm ? <X /> : <Plus />}
           {showForm ? "Zavřít" : "Nový rezident"}
@@ -391,9 +402,6 @@ export default function RezidentiPage() {
                           : "hover:scale-[1.02] hover:shadow-lg opacity-85 hover:opacity-100"
                       )}
                     >
-                      {persona.status === "ceka" && (
-                        <Clock className={cn("absolute top-3 right-3 size-3.5", cfg.cardMuted)} />
-                      )}
                       <div
                         className={cn(
                           "flex size-12 items-center justify-center rounded-full text-base font-bold text-white",
@@ -404,11 +412,11 @@ export default function RezidentiPage() {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-white">{persona.name}</p>
-                        {persona.personaType && (
-                          <p className={cn("text-[10px] mt-0.5 opacity-70", cfg.cardMuted)}>
-                            {PERSONA_TYPES[persona.personaType].name}
-                          </p>
-                        )}
+                        {/*{persona.personaType && (*/}
+                        {/*  <p className={cn("text-[10px] mt-0.5 opacity-70", cfg.cardMuted)}>*/}
+                        {/*    {PERSONA_TYPES[persona.personaType].name}*/}
+                        {/*  </p>*/}
+                        {/*)}*/}
                       </div>
                       <div className={cn("flex items-center gap-1.5 text-xs font-medium", cfg.cardMuted)}>
                         <SentimentIcon className="size-3.5" />
