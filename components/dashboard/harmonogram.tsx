@@ -1,6 +1,13 @@
 "use client"
 
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import Link from "next/link"
 import { Check, ExternalLink, RotateCcw } from "lucide-react"
 
@@ -41,11 +48,18 @@ const PRE_STEPS: HarmonogramStep[] = [
     label: "Schůzka SVJ",
     sublabel: "1 měsíc",
     hints: [
-      { text: "Připravte prezentaci s klíčovými čísly — co se bude rekonstruovat, kolik to stojí a kdy se vyplatí." },
-      { text: "Pro schválení renovace potřebujete souhlas 75 % hlasů přítomných vlastníků na schůzi SVJ." },
       {
-        text: "Dejte rezidentům export s argumenty — každý si ho může vzít domů a v klidu prostudovat.",
-        action: { label: "Vytvořit export pro rezidenty", href: "/dashboard/exporty" },
+        text: "Připravte prezentaci s klíčovými čísly — co se bude rekonstruovat, kolik to stojí a kdy se vyplatí.",
+      },
+      {
+        text: "Pro schválení renovace potřebujete nadpoloviční většinu vlastníků na schůzi SVJ.",
+      },
+      {
+        text: "Dejte rezidentům export s argumenty před schůzkou do schránky — každý si ho může doma a v klidu prostudovat.",
+        action: {
+          label: "Vytvořit export pro rezidenty",
+          href: "/dashboard/exporty",
+        },
       },
     ],
   },
@@ -55,10 +69,15 @@ const PRE_STEPS: HarmonogramStep[] = [
     label: "Renovační pas",
     sublabel: "1 měsíc",
     hints: [
-      { text: "Renovační pas je povinný dokument pro čerpání dotací NZÚ — zajistěte ho u certifikovaného energetického specialisty." },
+      {
+        text: "Renovační pas je povinný dokument pro čerpání dotací NZÚ — zajistěte ho u certifikovaného energetického specialisty.",
+      },
       {
         text: "Pošlete projektantovi stručné informace o domu a plánovaných projektech — ušetříte čas při přípravě dokumentace.",
-        action: { label: "Vytvořit export pro projektanta", href: "/dashboard/exporty" },
+        action: {
+          label: "Vytvořit export pro projektanta",
+          href: "/dashboard/exporty",
+        },
       },
     ],
   },
@@ -68,8 +87,12 @@ const PRE_STEPS: HarmonogramStep[] = [
     label: "Stavební povolení",
     sublabel: "3 měsíce",
     hints: [
-      { text: "Stavební povolení trvá typicky 2–3 měsíce — podejte žádost co nejdříve, abyste nezpomalili celý harmonogram." },
-      { text: "Potřebujete projektovou dokumentaci od certifikovaného projektanta a souhlas vlastníků." },
+      {
+        text: "Stavební povolení trvá typicky 2–3 měsíce — podejte žádost co nejdříve, abyste nezpomalili celý harmonogram.",
+      },
+      {
+        text: "Potřebujete projektovou dokumentaci od certifikovaného projektanta a souhlas vlastníků.",
+      },
     ],
   },
   {
@@ -78,8 +101,12 @@ const PRE_STEPS: HarmonogramStep[] = [
     label: "Dotace NZÚ",
     sublabel: "1 měsíc",
     hints: [
-      { text: "Dotace Nová zelená úsporám pokrývá až 50 % uznatelných nákladů na zateplení a výměnu oken." },
-      { text: "Žádost podávejte paralelně se stavebním povolením — oba procesy lze vést souběžně a ušetříte měsíc i více." },
+      {
+        text: "Dotace Nová zelená úsporám pokrývá až 50 % uznatelných nákladů na zateplení a výměnu oken.",
+      },
+      {
+        text: "Žádost podávejte paralelně se stavebním povolením — oba procesy lze vést souběžně a ušetříte měsíc i více.",
+      },
     ],
   },
   {
@@ -88,8 +115,12 @@ const PRE_STEPS: HarmonogramStep[] = [
     label: "Výběr firmy",
     sublabel: "1 měsíc",
     hints: [
-      { text: "Oslovte minimálně 3 firmy a srovnejte nabídky. Nejlevnější nemusí být nejlepší — sledujte reference a pojistku odpovědnosti." },
-      { text: "Zkontrolujte záruční podmínky, platební milníky a pokuty za prodlení — předejdete pozdějším sporům." },
+      {
+        text: "Oslovte minimálně 3 firmy a srovnejte nabídky. Nejlevnější nemusí být nejlepší — sledujte reference a pojistku odpovědnosti.",
+      },
+      {
+        text: "Zkontrolujte záruční podmínky, platební milníky a pokuty za prodlení — předejdete pozdějším sporům.",
+      },
     ],
   },
   {
@@ -98,10 +129,15 @@ const PRE_STEPS: HarmonogramStep[] = [
     label: "Schůzka SVJ",
     sublabel: "1 měsíc",
     hints: [
-      { text: "Na druhé schůzi odsouhlaste výběr stavební firmy, konečné ceny a harmonogram prací." },
+      {
+        text: "Na druhé schůzi odsouhlaste výběr stavební firmy, konečné ceny a harmonogram prací.",
+      },
       {
         text: "Připravte odpovědi na nejčastější námitky — cena, délka stavby, rušení klidu. Export pro rezidenty pomůže s argumentací.",
-        action: { label: "Vytvořit export pro rezidenty", href: "/dashboard/exporty" },
+        action: {
+          label: "Vytvořit export pro rezidenty",
+          href: "/dashboard/exporty",
+        },
       },
     ],
   },
@@ -113,8 +149,12 @@ const KOLAUDACE_STEP: HarmonogramStep = {
   label: "Kolaudace",
   sublabel: "závěr",
   hints: [
-    { text: "Před kolaudací zajistěte revize všech nových instalací (elektro, plyn, TZB) — bez nich kolaudační souhlas nezískáte." },
-    { text: "Připravte dokumentaci pro pojišťovnu o zhodnocení nemovitosti — po renovaci zpravidla klesne pojistné." },
+    {
+      text: "Před kolaudací zajistěte revize všech nových instalací (elektro, plyn, TZB) — bez nich kolaudační souhlas nezískáte.",
+    },
+    {
+      text: "Připravte dokumentaci pro pojišťovnu o zhodnocení nemovitosti — po renovaci zpravidla klesne pojistné.",
+    },
   ],
 }
 
@@ -123,8 +163,12 @@ const DOKONCENO_STEP: HarmonogramStep = {
   kind: "finish",
   label: "Dokončeno",
   hints: [
-    { text: "Gratulujeme — rekonstrukce je hotova! Dům je teď energeticky efektivnější a hodnotnější." },
-    { text: "Informujte rezidenty o výsledcích. Aktualizujte pojistnou smlouvu a provozní řád domu." },
+    {
+      text: "Gratulujeme — rekonstrukce je hotova! Dům je teď energeticky efektivnější a hodnotnější.",
+    },
+    {
+      text: "Informujte rezidenty o výsledcích. Aktualizujte pojistnou smlouvu a provozní řád domu.",
+    },
   ],
 }
 
@@ -144,7 +188,11 @@ function buildRealizaceStep(items: RoadmapItem[]): HarmonogramStep {
       kind: "renovation",
       label: "Realizace",
       sublabel: "dle zvoleného plánu",
-      hints: [{ text: "Zvolte scénář rekonstrukce výše pro zobrazení detailů realizace." }],
+      hints: [
+        {
+          text: "Zvolte scénář rekonstrukce výše pro zobrazení detailů realizace.",
+        },
+      ],
     }
   }
 
@@ -158,18 +206,28 @@ function buildRealizaceStep(items: RoadmapItem[]): HarmonogramStep {
       ? Math.max(...nonFveItems.map((i) => i.months))
       : Math.max(...items.map((i) => i.months))
 
-  const totalMonths = fveItem ? maxNonFveMonths + fveItem.months : maxNonFveMonths
+  const totalMonths = fveItem
+    ? maxNonFveMonths + fveItem.months
+    : maxNonFveMonths
 
   const hints: HintItem[] = []
   if (items.length === 1) {
-    hints.push({ text: `Probíhá: ${items[0].title}. Koordinujte s dodavatelem průběžná přejímací řízení a platební milníky.` })
+    hints.push({
+      text: `Probíhá: ${items[0].title}. Koordinujte s dodavatelem průběžná přejímací řízení a platební milníky.`,
+    })
   } else {
     const names = items.map((i) => i.title).join(", ")
-    hints.push({ text: `Práce probíhají souběžně: ${names}. Koordinujte dodavatele tak, aby si navzájem nepřekáželi.` })
+    hints.push({
+      text: `Práce probíhají souběžně: ${names}. Koordinujte dodavatele tak, aby si navzájem nepřekáželi.`,
+    })
   }
-  hints.push({ text: "Platební zálohy uvolňujte až po splnění smluvních etap. Každou závadu dokumentujte fotograficky." })
+  hints.push({
+    text: "Platební zálohy uvolňujte až po splnění smluvních etap. Každou závadu dokumentujte fotograficky.",
+  })
   if (fveItem) {
-    hints.push({ text: "Fotovoltaika se instaluje jako poslední — vyžaduje připravenou střešní konstrukci a souhlas distributora elektřiny. Podejte žádost o připojení co nejdříve (čekací doby bývají 2–4 měsíce)." })
+    hints.push({
+      text: "Fotovoltaika se instaluje jako poslední — vyžaduje připravenou střešní konstrukci a souhlas distributora elektřiny. Podejte žádost o připojení co nejdříve (čekací doby bývají 2–4 měsíce).",
+    })
   }
 
   return {
@@ -186,7 +244,12 @@ function buildRealizaceStep(items: RoadmapItem[]): HarmonogramStep {
 const TOTAL_STEPS = PRE_STEPS.length + 3
 
 function buildSteps(items: RoadmapItem[]): HarmonogramStep[] {
-  return [...PRE_STEPS, buildRealizaceStep(items), KOLAUDACE_STEP, DOKONCENO_STEP]
+  return [
+    ...PRE_STEPS,
+    buildRealizaceStep(items),
+    KOLAUDACE_STEP,
+    DOKONCENO_STEP,
+  ]
 }
 
 // ---------------------------------------------------------------------------
@@ -207,7 +270,10 @@ function StepDot({ kind, index, isCurrent, isDone, dotRef }: StepDotProps) {
 
   if (isDone) {
     return (
-      <span ref={dotRef} className={cn(base, "bg-emerald-600 text-white dark:bg-emerald-500")}>
+      <span
+        ref={dotRef}
+        className={cn(base, "bg-emerald-600 text-white dark:bg-emerald-500")}
+      >
         <Check className="size-3.5" />
       </span>
     )
@@ -218,18 +284,26 @@ function StepDot({ kind, index, isCurrent, isDone, dotRef }: StepDotProps) {
       kind === "finish"
         ? "bg-emerald-500"
         : kind === "renovation"
-        ? "bg-amber-500"
-        : "bg-blue-500"
+          ? "bg-amber-500"
+          : "bg-blue-500"
     const fill =
       kind === "finish"
         ? "bg-emerald-600 dark:bg-emerald-500"
         : kind === "renovation"
-        ? "bg-amber-500"
-        : "bg-blue-600 dark:bg-blue-500"
+          ? "bg-amber-500"
+          : "bg-blue-600 dark:bg-blue-500"
     const label = kind === "finish" ? "✓" : index + 1
     return (
-      <span ref={dotRef} className="relative flex size-7 shrink-0 items-center justify-center">
-        <span className={cn("absolute inset-0 animate-ping rounded-full opacity-25", ping)} />
+      <span
+        ref={dotRef}
+        className="relative flex size-7 shrink-0 items-center justify-center"
+      >
+        <span
+          className={cn(
+            "absolute inset-0 animate-ping rounded-full opacity-25",
+            ping
+          )}
+        />
         <span className={cn(base, "relative text-white", fill)}>{label}</span>
       </span>
     )
@@ -239,7 +313,10 @@ function StepDot({ kind, index, isCurrent, isDone, dotRef }: StepDotProps) {
     return (
       <span
         ref={dotRef}
-        className={cn(base, "border-2 border-emerald-400 bg-background text-emerald-500 dark:border-emerald-700")}
+        className={cn(
+          base,
+          "border-2 border-emerald-400 bg-background text-emerald-500 dark:border-emerald-700"
+        )}
       >
         ✓
       </span>
@@ -269,8 +346,12 @@ function StepDot({ kind, index, isCurrent, isDone, dotRef }: StepDotProps) {
 function ChatBubble({ hint, delay }: { hint: HintItem; delay: number }) {
   return (
     <div
-      className="flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "both", animationDuration: "280ms" }}
+      className="flex animate-in items-start gap-3 fade-in slide-in-from-bottom-2"
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+        animationDuration: "280ms",
+      }}
     >
       <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white ring-2 ring-background">
         AI
@@ -280,7 +361,7 @@ function ChatBubble({ hint, delay }: { hint: HintItem; delay: number }) {
         <div className="relative max-w-prose rounded-2xl rounded-tl-sm bg-muted px-4 py-3 text-sm leading-relaxed text-foreground">
           <span
             aria-hidden
-            className="absolute -left-1 top-2.5 size-3 rotate-45 bg-muted"
+            className="absolute top-2.5 -left-1 size-3 rotate-45 bg-muted"
             style={{ clipPath: "polygon(0 0, 100% 0, 0 100%)" }}
           />
           {hint.text}
@@ -290,10 +371,12 @@ function ChatBubble({ hint, delay }: { hint: HintItem; delay: number }) {
           <div className="relative max-w-prose rounded-2xl rounded-tl-sm border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-900 dark:bg-blue-950/40">
             <span
               aria-hidden
-              className="absolute -left-px top-2.5 size-3 rotate-45 border-l border-t border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40"
+              className="absolute top-2.5 -left-px size-3 rotate-45 border-t border-l border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40"
             />
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Doporučená akce</p>
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                Doporučená akce
+              </p>
               <Button
                 asChild
                 size="sm"
@@ -336,7 +419,9 @@ export function Harmonogram({
 
   const containerRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
-  const dotRefs = useRef<(HTMLSpanElement | null)[]>(new Array(TOTAL_STEPS).fill(null))
+  const dotRefs = useRef<(HTMLSpanElement | null)[]>(
+    new Array(TOTAL_STEPS).fill(null)
+  )
 
   // ── Restore from localStorage ────────────────────────────────────────────
   useEffect(() => {
@@ -396,7 +481,9 @@ export function Harmonogram({
   const markDone = useCallback(() => {
     setCurrentStep((prev) => {
       const next = Math.min(prev + 1, TOTAL_STEPS - 1)
-      try { localStorage.setItem(storageKey, String(next)) } catch {}
+      try {
+        localStorage.setItem(storageKey, String(next))
+      } catch {}
       return next
     })
     setHintsKey((k) => k + 1)
@@ -405,19 +492,21 @@ export function Harmonogram({
   const reset = useCallback(() => {
     setCurrentStep(0)
     setHintsKey((k) => k + 1)
-    try { localStorage.removeItem(storageKey) } catch {}
+    try {
+      localStorage.removeItem(storageKey)
+    } catch {}
   }, [storageKey])
 
   const activeStep = steps[currentStep]
   const isFinished = currentStep >= TOTAL_STEPS - 1
-  const accent =
-    isFinished ? "emerald"
-    : activeStep.kind === "renovation" ? "amber"
-    : "blue"
+  const accent = isFinished
+    ? "emerald"
+    : activeStep.kind === "renovation"
+      ? "amber"
+      : "blue"
 
   return (
     <div ref={containerRef} className="flex flex-col">
-
       {/* ── Timeline ───────────────────────────────────────────────────────
           overflow-x:auto also clips overflow-y (browser spec).
           pt-5 gives 20 px headroom so the animate-ping ring (~14 px above
@@ -441,9 +530,11 @@ export function Harmonogram({
                 style={{
                   flex: "1 1 0",
                   minWidth:
-                    step.kind === "renovation" ? 112
-                    : step.kind === "finish" ? 64
-                    : 80,
+                    step.kind === "renovation"
+                      ? 112
+                      : step.kind === "finish"
+                        ? 64
+                        : 80,
                 }}
               >
                 {/* Dot + connecting line */}
@@ -453,12 +544,14 @@ export function Harmonogram({
                     index={i}
                     isCurrent={isCurrent}
                     isDone={isDone}
-                    dotRef={(el) => { dotRefs.current[i] = el }}
+                    dotRef={(el) => {
+                      dotRefs.current[i] = el
+                    }}
                   />
                   {i < steps.length - 1 && (
                     <span
                       className={cn(
-                        "h-px flex-1 min-w-3 transition-colors duration-500",
+                        "h-px min-w-3 flex-1 transition-colors duration-500",
                         isDone ? "bg-emerald-500" : "bg-border"
                       )}
                     />
@@ -469,11 +562,17 @@ export function Harmonogram({
                 <div className="mt-2 pr-2">
                   <p
                     className={cn(
-                      "text-[11px] font-medium leading-tight transition-colors",
+                      "text-[11px] leading-tight font-medium transition-colors",
                       isDone && "text-muted-foreground/50 line-through",
-                      isCurrent && step.kind === "renovation" && "text-amber-600 dark:text-amber-400",
-                      isCurrent && step.kind === "process" && "text-blue-600 dark:text-blue-400",
-                      isCurrent && step.kind === "finish" && "text-emerald-600 dark:text-emerald-400",
+                      isCurrent &&
+                        step.kind === "renovation" &&
+                        "text-amber-600 dark:text-amber-400",
+                      isCurrent &&
+                        step.kind === "process" &&
+                        "text-blue-600 dark:text-blue-400",
+                      isCurrent &&
+                        step.kind === "finish" &&
+                        "text-emerald-600 dark:text-emerald-400"
                     )}
                   >
                     {step.label}
@@ -483,13 +582,15 @@ export function Harmonogram({
                       {step.sublabel}
                     </p>
                   )}
-                  {step.kind === "renovation" && step.subItems && step.subItems.length > 0 && (
-                    <p className="mt-0.5 text-[9px] leading-tight text-muted-foreground/50 max-w-30 truncate">
-                      {step.subItems.join(" · ")}
-                    </p>
-                  )}
+                  {step.kind === "renovation" &&
+                    step.subItems &&
+                    step.subItems.length > 0 && (
+                      <p className="mt-0.5 max-w-30 truncate text-[9px] leading-tight text-muted-foreground/50">
+                        {step.subItems.join(" · ")}
+                      </p>
+                    )}
                   {step.kind === "renovation" && (
-                    <span className="mt-1 inline-block rounded-full bg-amber-100 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                    <span className="mt-1 inline-block rounded-full bg-amber-100 px-1.5 py-px text-[9px] font-semibold tracking-wide text-amber-700 uppercase dark:bg-amber-900/40 dark:text-amber-400">
                       stavba
                     </span>
                   )}
@@ -512,7 +613,7 @@ export function Harmonogram({
         <div
           aria-hidden
           className={cn(
-            "absolute z-10 size-6 rotate-45 rounded-sm border-l border-t",
+            "absolute z-10 size-6 rotate-45 rounded-sm border-t border-l",
             accent === "emerald"
               ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950"
               : "border-border bg-background"
@@ -537,7 +638,7 @@ export function Harmonogram({
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground uppercase">
                   {isFinished ? "Hotovo" : "Teď je na řadě"}
                 </p>
                 <span
@@ -546,8 +647,8 @@ export function Harmonogram({
                     accent === "emerald"
                       ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
                       : accent === "amber"
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400"
-                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400"
+                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400"
                   )}
                 >
                   {currentStep + 1}&thinsp;/&thinsp;{TOTAL_STEPS}
@@ -556,14 +657,19 @@ export function Harmonogram({
               <h3
                 className={cn(
                   "mt-0.5 text-base font-semibold",
-                  accent === "amber" && !isFinished && "text-amber-600 dark:text-amber-400",
-                  accent === "emerald" && "text-emerald-700 dark:text-emerald-400",
+                  accent === "amber" &&
+                    !isFinished &&
+                    "text-amber-600 dark:text-amber-400",
+                  accent === "emerald" &&
+                    "text-emerald-700 dark:text-emerald-400"
                 )}
               >
                 {activeStep.label}
               </h3>
               {activeStep.sublabel && !isFinished && (
-                <p className="mt-px text-xs text-muted-foreground">{activeStep.sublabel}</p>
+                <p className="mt-px text-xs text-muted-foreground">
+                  {activeStep.sublabel}
+                </p>
               )}
             </div>
 
@@ -598,7 +704,8 @@ export function Harmonogram({
                 size="sm"
                 className={cn(
                   "h-8 shrink-0 gap-1.5 rounded-full px-4 text-xs font-semibold",
-                  accent === "amber" && "bg-amber-500 text-white shadow-amber-500/20 hover:bg-amber-600"
+                  accent === "amber" &&
+                    "bg-amber-500 text-white shadow-amber-500/20 hover:bg-amber-600"
                 )}
               >
                 <Check className="size-3.5" />
@@ -619,4 +726,3 @@ export function Harmonogram({
     </div>
   )
 }
-

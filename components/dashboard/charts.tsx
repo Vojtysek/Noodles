@@ -282,3 +282,106 @@ export function DonutChart({ percent, label }: { percent: number; label: string 
     </div>
   )
 }
+
+/**
+ * Donut zdrojů financování — segmenty (kapitál, NZÚ, komerční úvěr…) s celkovou
+ * částkou uprostřed a legendou vpravo. Každý segment má vlastní barvu a v legendě
+ * se zobrazí jeho částka i podíl na celku.
+ */
+export function FinancingDonut({
+  segments,
+  total,
+  formatValue,
+  centerLabel,
+}: {
+  segments: { key: string; label: string; value: number; color: string }[]
+  total: number
+  formatValue: (value: number) => string
+  centerLabel: string // popisek pod částkou uprostřed, např. "celková investice"
+}) {
+  const config = segments.reduce<ChartConfig>((acc, s) => {
+    acc[s.key] = { label: s.label, color: s.color }
+    return acc
+  }, {})
+  const data = segments.map((s) => ({ ...s, fill: s.color }))
+
+  return (
+    <div className="flex items-center gap-5 sm:gap-6">
+      <ChartContainer config={config} className="aspect-square h-44">
+        <PieChart>
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                hideLabel
+                formatter={(value, name, item) => {
+                  const v = Number(value)
+                  const pct = total > 0 ? Math.round((v / total) * 100) : 0
+                  return tooltipRow(
+                    config[name as keyof typeof config]?.label ?? name,
+                    `${formatValue(v)} · ${pct} %`,
+                    item.payload?.fill
+                  )
+                }}
+              />
+            }
+          />
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="key"
+            innerRadius={60}
+            outerRadius={85}
+            startAngle={90}
+            endAngle={-270}
+            strokeWidth={0}
+            isAnimationActive={false}
+          >
+            <Label
+              content={({ viewBox }) => {
+                if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                  return (
+                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                      <tspan
+                        x={viewBox.cx}
+                        dy="-0.3em"
+                        className="fill-foreground text-base font-semibold tabular-nums"
+                      >
+                        {formatValue(total)}
+                      </tspan>
+                      <tspan
+                        x={viewBox.cx}
+                        dy="1.4em"
+                        className="fill-muted-foreground text-[10px]"
+                      >
+                        {centerLabel}
+                      </tspan>
+                    </text>
+                  )
+                }
+              }}
+            />
+          </Pie>
+        </PieChart>
+      </ChartContainer>
+      <div className="flex flex-1 flex-col gap-3">
+        {segments.map((s) => {
+          const pct = total > 0 ? Math.round((s.value / total) * 100) : 0
+          return (
+            <div key={s.key} className="flex items-center gap-2.5">
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: s.color }}
+              />
+              <span className="flex-1 text-sm">{s.label}</span>
+              <span className="text-right">
+                <span className="block font-medium tabular-nums">{formatValue(s.value)}</span>
+                <span className="block text-xs text-muted-foreground tabular-nums">{pct} %</span>
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
