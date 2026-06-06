@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useActionState, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import gsap from "gsap"
@@ -55,6 +55,7 @@ import {
   type NonFinancialBenefit,
 } from "@/lib/benefits"
 import { fetchNonFinancialBenefits } from "@/lib/benefits-db"
+import { addInvite } from "./actions"
 import {
   projectAnnualSavings,
   buildSavingsGeometry,
@@ -282,7 +283,6 @@ export default function PrehledPage() {
         const { data } = await supabase
           .from("buildings")
           .select("*")
-          .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle()
@@ -835,6 +835,18 @@ export default function PrehledPage() {
         </>
       )}
 
+      {/* Pozvat uživatele */}
+      <div
+        data-pr-reveal
+        className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+      >
+        <p className="text-sm font-medium">Pozvat do projektu</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Zadejte email — uživatel se může zaregistrovat a uvidí tato data.
+        </p>
+        <InviteForm />
+      </div>
+
       {/* Kam dál — slim řádek */}
       <div
         data-pr-reveal
@@ -858,5 +870,39 @@ export default function PrehledPage() {
         </Link>
       </div>
     </div>
+  )
+}
+
+function InviteForm() {
+  const [state, formAction, pending] = useActionState(
+    async (_prev: { error?: string; success?: boolean } | null, formData: FormData) => {
+      return addInvite(formData)
+    },
+    null
+  )
+
+  return (
+    <form action={formAction} className="mt-3 flex items-center gap-2">
+      <input
+        name="email"
+        type="email"
+        required
+        placeholder="email@example.cz"
+        className="h-8 flex-1 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+      />
+      <button
+        type="submit"
+        disabled={pending}
+        className="h-8 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
+      >
+        {pending ? "..." : "Pozvat"}
+      </button>
+      {state?.error && (
+        <p className="text-xs text-destructive">{state.error}</p>
+      )}
+      {state?.success && (
+        <p className="text-xs text-emerald-600 dark:text-emerald-400">Pozvánka přidána</p>
+      )}
+    </form>
   )
 }

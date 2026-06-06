@@ -151,6 +151,24 @@ function LoginCard() {
             {mode === "login" ? "Přihlásit se" : "Zaregistrovat se"}
           </Button>
         </form>
+
+        {mode === "login" && (
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Byli jste pozváni?{" "}
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Zaregistrujte se zde
+            </button>
+          </p>
+        )}
+        {mode === "signup" && !fromOnboarding && (
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Použijte email, na který jste byli pozváni.
+          </p>
+        )}
       </div>
     </div>
   )
