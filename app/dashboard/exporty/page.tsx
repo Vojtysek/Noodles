@@ -32,6 +32,21 @@ import type { PersonaType } from "@/lib/persona-types"
 import { PERSONA_TYPES } from "@/lib/persona-types"
 import { ARCHETYPES } from "@/lib/archetypes"
 
+type ExportRow = {
+  id: string
+  name: string
+  type: string
+  format: string
+  project: string
+  size_bytes: number
+  created_at: string
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 const TYPE_ICONS: Record<string, typeof FileText> = {
   "overall-brief": FileText,
   persona: UserRound,
@@ -49,6 +64,23 @@ export default function ExportyPage() {
     useState<Scenario[]>(scenarios)
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
+
+  const [exportHistory, setExportHistory] = useState<ExportRow[]>([])
+  const [historyTick, setHistoryTick] = useState(0)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase
+        .from('exports')
+        .select('id, name, type, format, project, size_bytes, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+        .then(({ data }) => setExportHistory(data ?? []))
+    })
+  }, [historyTick])
 
   // Fetch only the logged-in user's real personas from Supabase.
   useEffect(() => {
@@ -199,6 +231,7 @@ export default function ExportyPage() {
       // Show success state
       setGenerating(false)
       setDone(true)
+      setHistoryTick((t) => t + 1)
       setTimeout(() => setDone(false), 2500)
     } catch (error) {
       console.error('Export failed:', error)
@@ -206,6 +239,21 @@ export default function ExportyPage() {
       // Could add error toast here
       alert(`Chyba při generování: ${error instanceof Error ? error.message : 'Neznámá chyba'}`)
     }
+  }
+
+  async function downloadExport(id: string) {
+    const res = await fetch(`/api/exports/${id}/download`)
+    if (!res.ok) {
+      alert('Stažení selhalo. Zkuste to prosím znovu.')
+      return
+    }
+    const { url } = await res.json()
+    if (!url || !url.startsWith('https://')) return
+    const a = document.createElement('a')
+    a.href = url
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   return (
@@ -641,16 +689,47 @@ export default function ExportyPage() {
             Poslední exporty
           </p>
         </div>
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed bg-background/60 px-6 py-10 text-center">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-            <Download className="size-5" />
+        {exportHistory.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed bg-background/60 px-6 py-10 text-center">
+            <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <Download className="size-5" />
+            </div>
+            <p className="text-sm font-medium">Zatím jste nic nevyexportovali</p>
+            <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+              Až vygenerujete dokument výše, najdete ho tady připravený ke
+              stažení.
+            </p>
           </div>
-          <p className="text-sm font-medium">Zatím jste nic nevyexportovali</p>
-          <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-            Až vygenerujete dokument výše, najdete ho tady připravený ke
-            stažení.
-          </p>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {exportHistory.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-3 rounded-xl border bg-background/60 px-4 py-3"
+              >
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  <FileText className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.project} · {formatBytes(item.size_bytes)} ·{" "}
+                    {new Date(item.created_at).toLocaleDateString("cs-CZ")}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => downloadExport(item.id)}
+                  title="Stáhnout"
+                >
+                  <Download className="size-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

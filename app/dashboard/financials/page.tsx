@@ -184,7 +184,7 @@ export default function FinancialsPage() {
   const single = selected.length === 1 ? selected[0] : null
 
   // Prázdný stav: žádný uživatel, žádná budova nebo žádné namapované renovace.
-  const isEmpty = scaledProjects.length === 0
+  const isEmpty = loaded && scaledProjects.length === 0
 
   const agg = useMemo(() => {
     const budget = selected.reduce((sum, p) => sum + p.budget, 0)
@@ -309,6 +309,119 @@ export default function FinancialsPage() {
       accent: null,
     },
   ]
+
+  // Loading state: show skeleton while data is being fetched
+  if (!loaded || (loaded && buildingData === null && scaledProjects.length === 0)) {
+    return (
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
+        {/* Ambient blobs (hidden during loading) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-red-500/8 blur-[120px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-40 top-1/4 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
+        />
+
+        {/* Hero skeleton */}
+        <div className="relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950">
+          <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
+            {/* Left section skeleton */}
+            <div>
+              <div className="mb-2 h-3 w-24 bg-muted animate-pulse rounded" />
+              <div className="mb-4 h-8 w-32 bg-muted animate-pulse rounded" />
+              <div className="mb-6 h-3 w-48 bg-muted animate-pulse rounded" />
+              <div className="mt-7 space-y-2">
+                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                <div className="h-12 w-40 bg-muted animate-pulse rounded" />
+                <div className="h-2 w-56 bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+
+            {/* Right section skeleton */}
+            <div className="flex flex-col gap-4 rounded-2xl bg-muted/30 p-5">
+              <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+              <div className="space-y-3">
+                <div className="h-8 w-full bg-muted animate-pulse rounded" />
+                <div className="h-8 w-full bg-muted animate-pulse rounded" />
+              </div>
+              <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+            </div>
+          </div>
+        </div>
+
+        {/* Controls skeleton */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="h-8 w-56 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="h-3 w-96 bg-muted animate-pulse rounded" />
+        </div>
+
+        {/* KPI skeleton */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex flex-col gap-2 lg:px-6 lg:first:pl-0 lg:last:pr-0">
+              <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+              <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+              <div className="h-2.5 w-32 bg-muted animate-pulse rounded" />
+            </div>
+          ))}
+        </div>
+
+        {/* Charts skeleton */}
+        <div className="flex flex-col gap-3">
+          <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+          <div className="grid gap-3 lg:grid-cols-2">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+              >
+                <div className="h-4 w-32 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-2.5 w-48 bg-muted animate-pulse rounded mb-4" />
+                <div className="h-32 w-full bg-muted animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Budget skeleton */}
+        <div className="flex flex-col gap-3">
+          <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.4fr]">
+            <div className="flex flex-col rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
+              <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-2.5 w-40 bg-muted animate-pulse rounded mb-4" />
+              <div className="h-10 w-20 bg-muted animate-pulse rounded mb-3" />
+              <div className="h-2.5 w-full bg-muted animate-pulse rounded" />
+              <div className="mt-4 h-2 w-32 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
+              <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
+              <div className="h-2.5 w-40 bg-muted animate-pulse rounded mb-4" />
+              <div className="h-40 w-full bg-muted animate-pulse rounded" />
+            </div>
+          </div>
+
+          {/* Table skeleton */}
+          <div className="overflow-hidden rounded-2xl border bg-background/60 backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-5 py-3.5">
+              <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="space-y-1 p-5">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-10 w-full bg-muted animate-pulse rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (isEmpty) {
     return (
