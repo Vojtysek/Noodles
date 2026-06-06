@@ -309,6 +309,7 @@ export default function RezidentiPage() {
 
       {/* Galerie archetypů */}
       <div
+        data-joyride="rezidenti-archetypes"
         className="anim-in flex flex-col gap-3"
         style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.1s" } as React.CSSProperties}
       >

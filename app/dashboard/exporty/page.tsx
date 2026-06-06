@@ -465,7 +465,7 @@ export default function ExportyPage() {
         </span>
         <p className="text-sm font-medium">Pro koho dokument je</p>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div data-joyride="exporty-cards" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {exportTypes.map((exp, i) => {
           const Icon = TYPE_ICONS[exp.id] ?? FileText
           const selected = exp.id === selectedTypeId
