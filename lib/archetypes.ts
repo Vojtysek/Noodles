@@ -21,6 +21,7 @@ export type Archetype = {
   profile: ArchetypeProfile
 }
 
+/** DB row from the `user_archetypes` table — column names match Supabase response (snake_case). */
 export type UserArchetype = {
   id: string
   user_id: string
