@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<!--
+  LAYOUT REFERENCE: persona
+  ─────────────────────────────────────────────────────────────────────────────
+  This file is a LAYOUT REFERENCE ONLY — it is NOT rendered into the PDF.
+  PDF generation is done programmatically by /lib/pdf-generator.ts using PDFKit.
+  ─────────────────────────────────────────────────────────────────────────────
+
+  EXPORT TYPE: persona
+  TITLE:       "Personalizovaný přehled pro {personaName}"
+  PAGES:       3–4 strany
+  BEST FOR:    Jednání 1:1, personalizované přesvědčování
+
+  DATA REQUIREMENTS:
+  - personaId must be provided in the request
+  - Persona fetched server-side from Supabase OR archetype fallback
+  - OpenAI generates arguments + counterpoints via generateInsights()
+
+  SECTIONS (in order):
+  1. Header
+     - Title: "Personalizovaný přehled pro {personaName}"
+     - Subtitle: {scenarioName} — {scenarioTagline}
+     - Date: Vygenerováno: {generatedDate}
+
+  2. Profil rezidenta
+     - Role:   {personaRole}
+     - Postoj: {personaSentiment} (podporuje / váhá — rozhoduje se / proti rekonstrukci)
+     - Bio:    {personaBrief}
+     - Motivace (bullet list green):  {personaMotivations[]}
+     - Hlavní námitky (bullet list red): {personaObjections[]}
+
+  3. 3 argumenty proč souhlasit s rekonstrukcí  [OpenAI generated]
+     - Argument 1: {arguments[0]}
+     - Argument 2: {arguments[1]}
+     - Argument 3: {arguments[2]}
+
+  4. Odpovědi na hlavní námitky  [OpenAI generated]
+     - Odpověď 1: {counterpoints[0]}
+     - Odpověď 2: {counterpoints[1]}
+
+  5. Finanční přehled scénáře
+     - Celkový rozpočet      {totalBudget}
+     - Roční úspory          {totalSavingsPerYear}
+     - Návratnost            {paybackYears} let
+     - Úspora energie        {totalEnergySavingPct} %
+     - Zvýšení fondu na byt  +{totalFundIncreasePerFlat} Kč
+
+  6. Footer (all pages)
+-->
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Personalizovaný přehled — Layout Reference</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; color: #333; background: #f9f9f9; }
+    h1 { color: #1a56db; }
+    section { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .ai-badge { background: #ede9fe; color: #7c3aed; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+    ul { margin: 8px 0 0 20px; }
+    li { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Personalizovaný přehled pro {personaName}</h1>
+  <p><strong>Typ:</strong> persona &nbsp;|&nbsp; <strong>Stran:</strong> 3–4 &nbsp;|&nbsp; <strong>Pro:</strong> jednání 1:1</p>
+
+  <section>
+    <h2>1. Header</h2>
+    <ul>
+      <li>Titulek: "Personalizovaný přehled pro <code>{personaName}</code>"</li>
+      <li>Podtitulek: <code>{scenarioName} — {scenarioTagline}</code></li>
+      <li>Datum: <code>Vygenerováno: {generatedDate}</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. Profil rezidenta</h2>
+    <ul>
+      <li>Role: <code>{personaRole}</code></li>
+      <li>Postoj: <code>{personaSentiment}</code> → "Podporuje / Váhá / Proti rekonstrukci"</li>
+      <li>Bio: <code>{personaBrief}</code></li>
+      <li>Motivace (zelené odrážky): <code>{personaMotivations[]}</code></li>
+      <li>Hlavní námitky (červené odrážky): <code>{personaObjections[]}</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 3 argumenty proč souhlasit <span class="ai-badge">AI generated</span></h2>
+    <ul>
+      <li>Argument 1: <code>{arguments[0]}</code></li>
+      <li>Argument 2: <code>{arguments[1]}</code></li>
+      <li>Argument 3: <code>{arguments[2]}</code></li>
+    </ul>
+    <p><em>Generováno přes OpenAI gpt-4o-mini s response_format: json_object</em></p>
+  </section>
+
+  <section>
+    <h2>4. Odpovědi na hlavní námitky <span class="ai-badge">AI generated</span></h2>
+    <ul>
+      <li>Odpověď 1: <code>{counterpoints[0]}</code></li>
+      <li>Odpověď 2: <code>{counterpoints[1]}</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5. Finanční přehled scénáře</h2>
+    <ul>
+      <li>Celkový rozpočet: <code>{totalBudget}</code></li>
+      <li>Roční úspory: <code>{totalSavingsPerYear}</code></li>
+      <li>Návratnost: <code>{paybackYears} let</code></li>
+      <li>Úspora energie: <code>{totalEnergySavingPct} %</code></li>
+      <li>Zvýšení fondu na byt: <code>+{totalFundIncreasePerFlat} Kč</code></li>
+    </ul>
+  </section>
+</body>
+</html>
