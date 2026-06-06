@@ -197,6 +197,7 @@ function CustomTooltip({
 
 export function JoyrideTour() {
   const [run, setRun] = useState(false)
+  const [stepIndex, setStepIndex] = useState(0)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -205,6 +206,20 @@ export function JoyrideTour() {
       setRun(true)
     }
   }, [])
+
+  function stop() {
+    localStorage.setItem(STORAGE_KEY, "1")
+    setRun(false)
+    setStepIndex(0)
+  }
+
+  function navigate(nextIndex: number) {
+    const nextRoute = STEP_ROUTES[nextIndex]
+    if (nextRoute && nextRoute !== pathname) {
+      router.push(nextRoute)
+    }
+    setStepIndex(nextIndex)
+  }
 
   function handleEvent(data: EventData) {
     const { type, status, index, action } = data
@@ -218,17 +233,21 @@ export function JoyrideTour() {
 
     if (type === EVENTS.STEP_AFTER) {
       const isForward = action !== ACTIONS.PREV
-      const nextIndex = isForward ? index + 1 : index - 1
-      const nextRoute = STEP_ROUTES[nextIndex]
+      navigate(isForward ? index + 1 : index - 1)
+    }
 
-      if (nextRoute && nextRoute !== pathname) {
-        router.push(nextRoute)
+    if (type === EVENTS.TARGET_NOT_FOUND) {
+      // Target didn't appear within targetWaitTimeout — skip this step
+      const nextIndex = index + 1
+      if (nextIndex < STEPS.length) {
+        navigate(nextIndex)
+      } else {
+        stop()
       }
     }
 
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-      localStorage.setItem(STORAGE_KEY, "1")
-      setRun(false)
+      stop()
     }
   }
 
@@ -238,6 +257,7 @@ export function JoyrideTour() {
         <button
           onClick={() => {
             localStorage.removeItem(STORAGE_KEY)
+            setStepIndex(0)
             router.push("/dashboard/prehled")
             setRun(true)
           }}
@@ -250,6 +270,7 @@ export function JoyrideTour() {
         <Joyride
           steps={STEPS}
           run={run}
+          stepIndex={stepIndex}
           continuous
           tooltipComponent={CustomTooltip}
           onEvent={handleEvent}
