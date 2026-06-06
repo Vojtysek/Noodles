@@ -25,7 +25,6 @@ import {
   ComparisonLineChart,
   FinancingDonut,
   seriesCrossing,
-  crossingYearIndex,
 } from "@/components/dashboard/charts"
 import {
   computeFinance,
@@ -36,16 +35,16 @@ import {
 import {
   fmtCzk,
   fmtCzkShort,
-  type Project,
   type Scenario,
   type ScenarioTone,
 } from "@/lib/mock-data"
 import { userProjects, userScenarios } from "@/lib/scenarios"
 import {
-  projectAnnualSavings,
   buildSavingsGeometry,
+  scaleProjectsToBuilding,
+  computeFinancials,
   type SavingsGeometry,
-} from "./return"
+} from "./calc"
 
 const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
@@ -78,54 +77,6 @@ type BuildingData = {
   floors: number | null
   zakladni_kapital: number | null
   rent_years: number | null
-}
-
-function scaleProjectsToBuilding(
-  baseProjects: Project[],
-  costsByProject: Record<string, number> | null,
-  geometry: SavingsGeometry | null
-): Project[] {
-  return baseProjects.map((p) => {
-    // Roční úspora z fyzikálních formulí (return.ts). null = projekt bez vzorce.
-    const formulaSavings = geometry ? projectAnnualSavings(p.id, geometry) : null
-    const projectCost = costsByProject?.[p.id]
-
-    // Bez nákladů z kalkulace ponecháme základní rozpočet,
-    // jen případně přepíšeme úsporu spočtenou z formulí.
-    if (!projectCost || projectCost <= 0) {
-      return formulaSavings != null
-        ? { ...p, savingsPerYear: Math.round(formulaSavings) }
-        : p
-    }
-
-    const sf = projectCost / p.budget
-    return {
-      ...p,
-      budget: projectCost,
-      spent: 0,
-      savingsPerYear:
-        formulaSavings != null
-          ? Math.round(formulaSavings)
-          : Math.round(p.savingsPerYear * sf),
-      fundIncreasePerFlat: Math.round(p.fundIncreasePerFlat * sf),
-      baseline: {
-        ...p.baseline,
-        annualCost: Math.round(p.baseline.annualCost * sf),
-      },
-      costBreakdown: p.costBreakdown.map((cb) => ({
-        ...cb,
-        value: Math.round(cb.value * sf),
-      })),
-      costItems: p.costItems.map((ci) => ({
-        ...ci,
-        amount: Math.round(ci.amount * sf),
-      })),
-      cashflow: p.cashflow.map((cf) => ({
-        ...cf,
-        value: Math.round(cf.value * sf),
-      })),
-    }
-  })
 }
 
 /**
@@ -252,46 +203,17 @@ export default function FinancialsPage() {
   const isEmpty = loaded && scaledProjects.length === 0
 
   const agg = useMemo(() => {
-    const budget = selected.reduce((sum, p) => sum + p.budget, 0)
+    // Jediný zdroj pravdy pro finanční skaláry a křivky — sdílený s PDF exportem.
+    const f = computeFinancials({
+      projects: userProjects(selectedRenovations),
+      costsByProject: buildingData?.costs_by_project ?? null,
+      footprint: buildingData?.zastavena_plocha ?? null,
+      floors: buildingData?.floors ?? null,
+      units: buildingData?.units ?? null,
+      horizon,
+    })
+
     const spent = selected.reduce((sum, p) => sum + p.spent, 0)
-    const savingsPerYear = selected.reduce(
-      (sum, p) => sum + p.savingsPerYear,
-      0
-    )
-    const fundIncreasePerFlat = selected.reduce(
-      (sum, p) => sum + p.fundIncreasePerFlat,
-      0
-    )
-    const annualCost = selected.reduce(
-      (sum, p) => sum + p.baseline.annualCost,
-      0
-    )
-    // Růst nákladů vážený podle jejich výše.
-    const growth =
-      selected.reduce(
-        (sum, p) => sum + p.baseline.costGrowthPct * p.baseline.annualCost,
-        0
-      ) /
-      annualCost /
-      100
-
-    // Roční modelace obou scénářů: náklady bez rekonstrukce rostou z plné základny,
-    // po rekonstrukci ze snížené (úspora roste s cenami energií).
-    const annualWithout: number[] = []
-    const annualWith: number[] = []
-    const cumWithout: number[] = [0]
-    const cumWith: number[] = [budget]
-    for (let t = 0; t <= horizon; t++) {
-      const factor = Math.pow(1 + growth, t)
-      annualWithout.push(annualCost * factor)
-      annualWith.push((annualCost - savingsPerYear) * factor)
-      if (t > 0) {
-        cumWithout.push(cumWithout[t - 1] + annualWithout[t - 1])
-        cumWith.push(cumWith[t - 1] + annualWith[t - 1])
-      }
-    }
-
-    const lossAtHorizon = cumWithout[horizon] - cumWith[horizon]
 
     const sample = (values: number[]) =>
       Array.from({ length: SAMPLES }, (_, i) => {
@@ -300,16 +222,16 @@ export default function FinancialsPage() {
       })
 
     const annualSeries = {
-      without: sample(annualWithout),
-      with: sample(annualWith),
+      without: sample(f.annualWithout),
+      with: sample(f.annualWith),
     }
-    const cumSeries = { without: sample(cumWithout), with: sample(cumWith) }
+    const cumSeries = { without: sample(f.cumWithout), with: sample(f.cumWith) }
     // Bod zlomu počítaný z vykreslených (vzorkovaných) křivek — značka v grafu
     // tak sedí přesně na jejich průsečíku.
     const breakEvenPos = seriesCrossing(cumSeries.with, cumSeries.without)
     // Rok bodu zlomu z plných ročních křivek (rozlišení na rok) — nezávislý
     // na vzorkování, takže sedí s Přehledem. breakEvenPos zůstává pro značku v grafu.
-    const breakEvenYearIndex = crossingYearIndex(cumWith, cumWithout)
+    const breakEvenYearIndex = f.breakEvenYearIndex
 
     const costBreakdown = single
       ? single.costBreakdown
@@ -319,32 +241,39 @@ export default function FinancialsPage() {
       p.costItems.map((item) => ({
         ...item,
         project: p.shortName,
-        share: Math.round((item.amount / budget) * 1000) / 10,
+        share: Math.round((item.amount / f.budget) * 1000) / 10,
       }))
     )
 
     return {
-      budget,
+      budget: f.budget,
       spent,
-      savingsPerYear,
-      fundIncreasePerFlat,
-      annualCost,
-      growthPct: growth * 100,
-      annualWithoutNow: annualWithout[0],
-      annualWithNow: annualWith[0],
-      annualWithoutEnd: annualWithout[horizon],
-      annualWithEnd: annualWith[horizon],
-      cumWithoutEnd: cumWithout[horizon],
-      cumWithEnd: cumWith[horizon],
+      savingsPerYear: f.savingsPerYear,
+      fundIncreasePerFlat: f.fundIncreasePerFlat,
+      annualCost: f.annualCost,
+      growthPct: f.growthPct,
+      annualWithoutNow: f.annualWithout[0],
+      annualWithNow: f.annualWith[0],
+      annualWithoutEnd: f.annualWithout[horizon],
+      annualWithEnd: f.annualWith[horizon],
+      cumWithoutEnd: f.cumWithout[horizon],
+      cumWithEnd: f.cumWith[horizon],
       breakEvenPos,
       breakEvenYearIndex,
-      lossAtHorizon,
+      lossAtHorizon: f.lossAtHorizon,
+      savingsPct: f.savingsPct,
       annualSeries,
       cumSeries,
       costBreakdown,
       costItems,
     }
-  }, [selected, single, horizon])
+  }, [
+    selected,
+    single,
+    horizon,
+    selectedRenovations,
+    buildingData,
+  ])
 
   // Orientační finanční model — rozdělení zdrojů, splátky, úspora NZÚ a FOMO čísla.
   const hasUnits = (buildingData?.units ?? 0) > 0
@@ -375,7 +304,7 @@ export default function FinancialsPage() {
   // Popisek jednotky u měsíčních částek — na byt, jen když známe počet bytů.
   const perLabel = hasUnits ? "/ byt / měsíc" : "/ měsíc"
 
-  const savingsPct = Math.round((agg.savingsPerYear / agg.annualCost) * 100)
+  const savingsPct = agg.savingsPct
   const afterBarPct = Math.round(
     (agg.annualWithNow / agg.annualWithoutNow) * 100
   )

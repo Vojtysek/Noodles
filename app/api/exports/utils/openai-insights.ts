@@ -1,10 +1,20 @@
 import { OpenAI } from 'openai'
 import type { Persona, Scenario } from '@/lib/mock-data'
-import { aggregateScenario, isProjectId } from '@/lib/scenarios'
 
 export interface InsightsResult {
   personaArguments: string[]
   counterpoints: string[]
+}
+
+/** Already-correct aggregates from the real financial model (Finance page). */
+export interface InsightsAggregates {
+  budget: number
+  savingsPerYear: number
+  breakEvenYear: number | null
+  savingsPctOfCosts: number
+  fundMonthlyPerUnit: number
+  energySavingMonthlyPerUnit: number
+  units: number
 }
 
 /**
@@ -16,6 +26,7 @@ export interface InsightsResult {
 export async function generateInsights(
   persona: Persona,
   scenario: Scenario,
+  aggregates: InsightsAggregates,
   benefits: Array<{ title: string; description: string; meetingPitch?: string }> = []
 ): Promise<InsightsResult> {
   const apiKey = process.env.OPENAI_API_KEY
@@ -24,9 +35,6 @@ export async function generateInsights(
   }
 
   const client = new OpenAI({ apiKey })
-
-  const projectIds = scenario.projectIds.filter(isProjectId)
-  const aggregates = aggregateScenario(projectIds)
 
   const motivations = persona.structured?.motivations?.join(', ') || '—'
   const objections = persona.structured?.objections?.join(', ') || '—'
@@ -59,10 +67,12 @@ Motivace: ${motivations}
 Námitky: ${objections}
 
 Scénář rekonstrukce: ${scenario.name} — ${scenario.tagline}
-Celkový rozpočet: ${aggregates.budget.toLocaleString('cs-CZ')} Kč
-Roční úspory: ${aggregates.savingsPerYear.toLocaleString('cs-CZ')} Kč
-Návratnost: ${aggregates.paybackYears} let
-Úspora energie: ${aggregates.energySavingPct} %
+Celková investice (celý dům): ${aggregates.budget.toLocaleString('cs-CZ')} Kč
+Roční úspora na energiích (celý dům): ${aggregates.savingsPerYear.toLocaleString('cs-CZ')} Kč
+Úspora na energiích na byt: ~${aggregates.energySavingMonthlyPerUnit.toLocaleString('cs-CZ')} Kč/měsíc
+Příspěvek do fondu (splátka) na byt: ~${aggregates.fundMonthlyPerUnit.toLocaleString('cs-CZ')} Kč/měsíc po dobu splácení
+Roční náklady domu klesnou o ${aggregates.savingsPctOfCosts} %
+Investice se vrátí v roce ${aggregates.breakEvenYear ?? 'za horizontem 15 let'}
 
 Nefinanční přínosy (seřazené dle relevance pro tuto personu — využij ty nejrelevantnější):
 ${benefitsBlock}

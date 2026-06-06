@@ -72,13 +72,26 @@ export async function POST(request: NextRequest) {
     // Step 2: OpenAI insights for persona exports
     if (exportType === 'persona' && context.persona) {
       try {
-        const insights = await generateInsights(context.persona, {
-          id: context.scenarioId,
-          name: context.scenarioName,
-          tagline: context.scenarioTagline,
-          tone: 'emerald',
-          projectIds: context.projects.map((p) => p.id as any),
-        }, context.benefits.map((b) => ({ title: b.title, description: b.description, meetingPitch: b.meetingPitch })))
+        const insights = await generateInsights(
+          context.persona,
+          {
+            id: context.scenarioId,
+            name: context.scenarioName,
+            tagline: context.scenarioTagline,
+            tone: 'emerald',
+            projectIds: context.projects.map((p) => p.id as any),
+          },
+          {
+            budget: context.totalBudget,
+            savingsPerYear: context.totalSavingsPerYear,
+            breakEvenYear: context.breakEvenYear ?? null,
+            savingsPctOfCosts: context.savingsPctOfCosts ?? 0,
+            fundMonthlyPerUnit: context.fundMonthlyPerUnit ?? 0,
+            energySavingMonthlyPerUnit: context.energySavingMonthlyPerUnit ?? 0,
+            units: context.units ?? 0,
+          },
+          context.benefits.map((b) => ({ title: b.title, description: b.description, meetingPitch: b.meetingPitch }))
+        )
         context.personaArguments = insights.personaArguments
         context.counterpoints = insights.counterpoints
       } catch (err) {

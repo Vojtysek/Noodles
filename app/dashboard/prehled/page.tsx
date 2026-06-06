@@ -59,7 +59,7 @@ import {
   projectAnnualSavings,
   buildSavingsGeometry,
   type SavingsGeometry,
-} from "@/app/dashboard/financials/return"
+} from "@/app/dashboard/financials/calc"
 
 type BuildingCalc = {
   id: string
