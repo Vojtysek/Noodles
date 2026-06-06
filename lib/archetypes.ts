@@ -21,6 +21,18 @@ export type Archetype = {
   profile: ArchetypeProfile
 }
 
+export type UserArchetype = {
+  id: string
+  user_id: string
+  name: string
+  subtitle: string
+  description: string
+  profile: ArchetypeProfile
+  image_path: string | null
+  ai_hint: string | null
+  created_at: string
+}
+
 const PROFILES: Record<
   PersonaType,
   Pick<Archetype, "subtitle" | "description" | "profile">
