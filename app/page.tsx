@@ -59,6 +59,93 @@ const steps = [
   },
 ]
 
+const landingArchetypes = [
+  {
+    name: "Skrblík",
+    img: "/personas/skrblik.png",
+    subtitle: "Každá koruna se počítá",
+    objections: [
+      "Zvýšení fondu oprav",
+      "Příliš drahé řešení",
+      "„Nešlo by to levněji?“",
+    ],
+    strategy: [
+      "Ukažte návratnost s dotací NZÚ — ne celkovou cenu.",
+      "Rozložte náklady do fondu oprav, ať záloha nevyskočí nárazově.",
+    ],
+  },
+  {
+    name: "Investor",
+    img: "/personas/investor.png",
+    subtitle: "Byt je pro něj investice",
+    objections: [
+      "Dlouhá návratnost",
+      "Náklady bez vlivu na hodnotu bytu",
+      "Zdlouhavé schvalování",
+    ],
+    strategy: [
+      "Veďte řeč o zhodnocení bytu a růstu ceny, ne o pořizovací ceně.",
+      "Ukažte návratnost v letech a srovnejte ji s jinými investicemi.",
+    ],
+  },
+  {
+    name: "Technik",
+    img: "/personas/technik.png",
+    subtitle: "Chce vidět dokumentaci",
+    objections: [
+      "Kvalita navržených materiálů",
+      "Chybějící posudky a reference",
+      "Výběr dodavatele bez soutěže",
+    ],
+    strategy: [
+      "Přineste technickou dokumentaci, posudky a reference zhotovitelů.",
+      "Vysvětlete transparentní výběrové řízení a kvalitu materiálů.",
+    ],
+  },
+  {
+    name: "Ekolog",
+    img: "/personas/ekolog.png",
+    subtitle: "Zelená řešení na prvním místě",
+    objections: [
+      "Scénář bez ekologického přínosu",
+      "Promarněná šance na fotovoltaiku",
+      "Krátkozraká levná řešení",
+    ],
+    strategy: [
+      "Zdůrazněte úsporu energií, nižší emise a připravenost na fotovoltaiku.",
+      "Ukažte, že varianta není kosmetická, ale má reálný ekologický přínos.",
+    ],
+  },
+  {
+    name: "Lhostejný",
+    img: "/personas/lhostejny.png",
+    subtitle: "Hlavně ať ho nikdo neobtěžuje",
+    objections: [
+      "„Proč to vůbec řešit?“",
+      "Další schůze navíc",
+      "Papírování a formuláře",
+    ],
+    strategy: [
+      "Nabídněte hlasování per rollam nebo online — minimum úsilí.",
+      "Dejte jasné doporučení v jedné větě, ať se nemusí do ničeho nořit.",
+    ],
+  },
+  {
+    name: "Nováček",
+    img: "/personas/novacek.png",
+    subtitle: "Teprve poznává dům i sousedy",
+    objections: [
+      "Nerozumí souvislostem a historii",
+      "Neví, komu věřit",
+      "Obava ze špatného rozhodnutí",
+    ],
+    strategy: [
+      "Vysvětlete kontext a historii domu od začátku, bez žargonu.",
+      "Ukažte přehledná čísla a plán a ujistěte ho, že rozhoduje správně.",
+    ],
+  },
+]
+
 const landingScenarios = [
   {
     id: "dilci",
@@ -225,6 +312,7 @@ export default function Page() {
   const root = useRef<HTMLDivElement>(null)
 
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
+  const [selectedArchetype, setSelectedArchetype] = useState(0)
 
   useEffect(() => {
     createClient()
@@ -621,18 +709,14 @@ export default function Page() {
 
               {/* Galerie archetypů */}
               <div className="mt-6 grid grid-cols-3 gap-2 sm:grid-cols-6">
-                {[
-                  { name: "Skrblík", img: "/personas/skrblik.png", active: true },
-                  { name: "Investor", img: "/personas/investor.png" },
-                  { name: "Technik", img: "/personas/technik.png" },
-                  { name: "Ekolog", img: "/personas/ekolog.png" },
-                  { name: "Lhostejný", img: "/personas/lhostejny.png" },
-                  { name: "Nováček", img: "/personas/novacek.png" },
-                ].map((a) => (
-                  <div
+                {landingArchetypes.map((a, i) => (
+                  <button
+                    type="button"
                     key={a.name}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 text-center transition-colors ${
-                      a.active
+                    onClick={() => setSelectedArchetype(i)}
+                    aria-pressed={i === selectedArchetype}
+                    className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border p-2 text-center transition-colors ${
+                      i === selectedArchetype
                         ? "border-primary/60 bg-primary/5"
                         : "border-border/50 bg-background/40"
                     }`}
@@ -646,7 +730,7 @@ export default function Page() {
                     <span className="w-full truncate text-[11px] font-medium">
                       {a.name}
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
 
@@ -656,14 +740,16 @@ export default function Page() {
                   <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/personas/skrblik.png"
-                      alt="Skrblík"
+                      src={landingArchetypes[selectedArchetype].img}
+                      alt={landingArchetypes[selectedArchetype].name}
                       className="size-10 shrink-0 rounded-full object-cover"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">Skrblík</p>
+                      <p className="text-sm font-semibold">
+                        {landingArchetypes[selectedArchetype].name}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        Každá koruna se počítá
+                        {landingArchetypes[selectedArchetype].subtitle}
                       </p>
                     </div>
                   </div>
@@ -674,11 +760,7 @@ export default function Page() {
                       Námitky
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {[
-                        "Zvýšení fondu oprav",
-                        "Příliš drahé řešení",
-                        "„Nešlo by to levněji?“",
-                      ].map((o) => (
+                      {landingArchetypes[selectedArchetype].objections.map((o) => (
                         <span
                           key={o}
                           className="rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs text-muted-foreground"
@@ -697,10 +779,7 @@ export default function Page() {
                         Argumentační strategie
                       </p>
                     </div>
-                    {[
-                      "Ukažte návratnost s dotací NZÚ — ne celkovou cenu.",
-                      "Rozložte náklady do fondu oprav, ať záloha nevyskočí nárazově.",
-                    ].map((point, i) => (
+                    {landingArchetypes[selectedArchetype].strategy.map((point, i) => (
                       <div
                         key={i}
                         className="flex items-start gap-3 rounded-lg bg-background px-3.5 py-2.5"

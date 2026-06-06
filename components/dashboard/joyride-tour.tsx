@@ -185,11 +185,7 @@ export function JoyrideTour() {
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      setRun(true)
-    }
-  }, [])
+  
 
   function stop() {
     localStorage.setItem(STORAGE_KEY, "1")
@@ -237,19 +233,6 @@ export function JoyrideTour() {
 
   return (
     <>
-      {process.env.NODE_ENV === "development" && !run && (
-        <button
-          onClick={() => {
-            localStorage.removeItem(STORAGE_KEY)
-            setStepIndex(0)
-            router.push("/dashboard/prehled")
-            setRun(true)
-          }}
-          className="fixed right-4 bottom-4 z-50 rounded-full border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground shadow transition-colors hover:text-foreground"
-        >
-          Tour
-        </button>
-      )}
       {run && (
         <Joyride
           steps={STEPS}
