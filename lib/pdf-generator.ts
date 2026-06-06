@@ -158,67 +158,39 @@ function layoutOverallBrief(doc: DocType, ctx: CompiledData) {
 // ─── Layout: persona ──────────────────────────────────────────────────────────
 
 function layoutPersona(doc: DocType, ctx: CompiledData) {
-  const name = ctx.personaName || 'Rezident'
+  const name = ctx.personaName || 'Rezidente'
   drawPageHeader(
     doc,
-    `Personalizovaný přehled pro ${name}`,
-    `${ctx.scenarioName} — ${ctx.scenarioTagline}`,
+    `Vážená paní / Vážený pane ${name}`,
+    `Informace k plánované rekonstrukci — ${ctx.scenarioName}`,
     ctx.generatedDate
   )
-
-  heading2(doc, 'Profil rezidenta')
-  if (ctx.personaRole) metricRow(doc, 'Role', ctx.personaRole)
-
-  if (ctx.personaSentiment) {
-    const sentimentMap: Record<string, string> = {
-      podporuje: 'Podporuje rekonstrukci',
-      vaha: 'Váhá — rozhoduje se',
-      proti: 'Proti rekonstrukci',
-    }
-    metricRow(doc, 'Postoj', sentimentMap[ctx.personaSentiment] ?? ctx.personaSentiment)
-  }
-
-  if (ctx.personaBrief) {
-    doc.moveDown(0.3)
-    body(doc, ctx.personaBrief)
-  }
-
-  if (ctx.personaMotivations && ctx.personaMotivations.length > 0) {
-    heading3(doc, 'Motivace')
-    ctx.personaMotivations.forEach((m) => drawBullet(doc, m, MARGIN + 14, GREEN))
-  }
-
-  if (ctx.personaObjections && ctx.personaObjections.length > 0) {
-    heading3(doc, 'Hlavní námitky')
-    ctx.personaObjections.forEach((o) => drawBullet(doc, o, MARGIN + 14, '#dc2626'))
-  }
+  
 
   // OpenAI-generated arguments and counterpoints
   const args = (ctx as CompiledData & { personaArguments?: string[] }).personaArguments
   const counterpoints = (ctx as CompiledData & { counterpoints?: string[] }).counterpoints
 
   if (args && args.length > 0) {
-    heading2(doc, '3 argumenty proč souhlasit s rekonstrukcí')
-    args.forEach((arg, i) => {
-      heading3(doc, `Argument ${i + 1}`)
-      body(doc, arg)
-    })
+    heading2(doc, 'Proč je tato rekonstrukce pro vás výhodná')
+    args.forEach((arg) => drawBullet(doc, arg, MARGIN + 14, PRIMARY))
   }
 
   if (counterpoints && counterpoints.length > 0) {
-    heading2(doc, 'Odpovědi na hlavní námitky')
-    counterpoints.forEach((cp, i) => {
-      heading3(doc, `Odpověď na námitku ${i + 1}`)
+    heading2(doc, 'Vaše otázky — naše odpovědi')
+    counterpoints.forEach((cp) => {
       body(doc, cp)
+      doc.moveDown(0.2)
     })
   }
 
-  heading2(doc, 'Finanční přehled scénáře')
-  metricRow(doc, 'Celkový rozpočet', czk(ctx.totalBudget))
-  metricRow(doc, 'Roční úspory', czk(ctx.totalSavingsPerYear), true)
-  metricRow(doc, 'Návratnost', `${ctx.paybackYears} let`)
+  heading2(doc, 'Co to znamená pro váš byt')
+  metricRow(doc, 'Roční úspory na energiích', czk(ctx.totalSavingsPerYear), true)
+  metricRow(doc, 'Návratnost investice', `${ctx.paybackYears} let`)
   metricRow(doc, 'Úspora energie', `${ctx.totalEnergySavingPct} %`)
-  metricRow(doc, 'Zvýšení fondu na byt', `+${czkFull(ctx.totalFundIncreasePerFlat)}`)
+  metricRow(doc, 'Změna příspěvku do fondu', `+${czkFull(ctx.totalFundIncreasePerFlat)} / měsíc`)
+  doc.moveDown(0.5)
+  muted(doc, `Celkový rozpočet rekonstrukce: ${czk(ctx.totalBudget)} — sdíleno napříč všemi byty.`)
 }
 
 // ─── Layout: overall-detail ───────────────────────────────────────────────────
