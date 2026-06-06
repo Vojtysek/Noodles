@@ -67,9 +67,11 @@ Návratnost: ${aggregates.paybackYears} let
 Nefinanční přínosy (seřazené dle relevance pro tuto personu — využij ty nejrelevantnější):
 ${benefitsBlock}
 
+Piš přímo této osobě, jako bys jí psal osobní dopis. Oslovuj ji ve druhé osobě (vykání: Vy, vám, váš byt). Text bude tato osoba číst sama doma — nepiš o ní ve třetí osobě, nepiš pokyny pro někoho jiného. Buď vřelý, uctivý a osobní, ale zároveň konkrétní a opřený o data výše.
+
 Vygeneruj:
-1. 3 personalizované argumenty PROČ tato persona by měla souhlasit s rekonstrukcí (každý 1–2 věty, konkrétní, data-driven, šité na míru jejím motivacím). Tam, kde to dává smysl, přirozeně zapracuj relevantní nefinanční přínosy výše.
-2. 2 přímé odpovědi na její hlavní námitky (konkrétní řešení nebo alternativa, buduj důvěru)
+1. 3 osobní důvody, proč je tato rekonstrukce výhodná právě pro vás (každý 1–2 věty, konkrétní, data-driven, navázané na to, na čem této osobě záleží). Tam, kde to dává smysl, přirozeně zohledni relevantní nefinanční přínosy výše.
+2. 2 vstřícné odpovědi na obavy, které byste mohli mít (nejprve s pochopením uznej obavu, pak nabídni konkrétní řešení nebo ujištění a buduj důvěru). Píšeš přímo tomu, kdo tu obavu má.
 
 Odpověz jako JSON: { "arguments": ["...", "...", "..."], "counterpoints": ["...", "..."] }`,
       },

@@ -425,7 +425,7 @@ export default function FinancialsPage() {
     {
       icon: HandCoins,
       label: "Fond oprav",
-      value: `+${fmtCzk(agg.fundIncreasePerFlat)}`,
+      value: `+${fmtCzk(fin.repayment.monthlyPerUnit)}`,
       sub: "na byt měsíčně po dobu splácení",
       accent: null,
     },

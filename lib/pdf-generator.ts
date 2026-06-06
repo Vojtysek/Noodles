@@ -211,11 +211,16 @@ function layoutPersona(doc: DocType, ctx: CompiledData) {
     `Informace k plánované rekonstrukci — ${ctx.scenarioName}`,
     ctx.generatedDate
   )
-  
+
+  body(
+    doc,
+    'rádi bychom Vám srozumitelně shrnuli, co pro Vás plánovaná rekonstrukce našeho domu znamená — jaké přínosy přinese právě Vám, kolik ušetříte a co to znamená pro Váš byt. Vše si můžete v klidu projít.'
+  )
+  doc.moveDown(0.4)
 
   if (ctx.benefits && ctx.benefits.length > 0) {
-    heading2(doc, 'Co osloví právě jeho/ji')
-    ctx.benefits.slice(0, 5).forEach((b) => drawBenefit(doc, b, { withPitch: true }))
+    heading2(doc, 'Co vám rekonstrukce přinese')
+    ctx.benefits.slice(0, 5).forEach((b) => drawBenefit(doc, b, { withPitch: false }))
   }
 
   // OpenAI-generated arguments and counterpoints
@@ -242,6 +247,8 @@ function layoutPersona(doc: DocType, ctx: CompiledData) {
   metricRow(doc, 'Změna příspěvku do fondu', `+${czkFull(ctx.totalFundIncreasePerFlat)} / měsíc`)
   doc.moveDown(0.5)
   muted(doc, `Celkový rozpočet rekonstrukce: ${czk(ctx.totalBudget)} — sdíleno napříč všemi byty.`)
+  doc.moveDown(0.3)
+  muted(doc, 'Máte-li jakékoli otázky, rádi Vám je zodpovíme. Děkujeme, že čtete a podílíte se na rozhodování o našem domě.')
 }
 
 // ─── Layout: overall-detail ───────────────────────────────────────────────────
