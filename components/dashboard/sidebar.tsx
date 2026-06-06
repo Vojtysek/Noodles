@@ -10,7 +10,10 @@ import {
   Building2,
   House,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react"
+import { useTheme } from "next-themes"
 
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -25,6 +28,7 @@ const NAV_ITEMS = [
 
 export function DashboardSidebar() {
   const pathname = usePathname()
+  const { resolvedTheme, setTheme } = useTheme()
   const [address, setAddress] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
 
@@ -126,9 +130,22 @@ export function DashboardSidebar() {
 
       <div className="relative flex flex-col gap-1 px-2 py-3">
         {email && (
-          <p className="truncate px-2.5 text-xs text-muted-foreground">
-            {email}
-          </p>
+          <div className="flex items-center justify-between px-2.5 py-1">
+            <p className="truncate text-xs text-muted-foreground">
+              {email}
+            </p>
+            <button
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              className="text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/40 rounded-lg px-2 py-1.5"
+              aria-label="Toggle theme"
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="size-4" />
+              ) : (
+                <Moon className="size-4" />
+              )}
+            </button>
+          </div>
         )}
         <form action={signout}>
           <button
