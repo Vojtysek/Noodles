@@ -151,11 +151,11 @@ function drawFooters(doc: DocType) {
   for (let i = 0; i < total; i++) {
     doc.switchToPage(i)
     const footerY = doc.page.height - 32
-    doc.moveTo(MARGIN, footerY).lineTo(PAGE_WIDTH - MARGIN, footerY).strokeColor(BORDER).lineWidth(0.5).stroke()
-    doc.fontSize(8).fillColor(MUTED).font('Geist')
-      .text('Noodles · Přehled renovací bytového domu', MARGIN, footerY + 8, { width: CONTENT_WIDTH / 2 })
-    doc.fontSize(8).fillColor(MUTED).font('Geist')
-      .text(`${i + 1} / ${total}`, MARGIN + CONTENT_WIDTH / 2, footerY + 8, { width: CONTENT_WIDTH / 2, align: 'right' })
+    // doc.moveTo(MARGIN, footerY).lineTo(PAGE_WIDTH - MARGIN, footerY).strokeColor(BORDER).lineWidth(0.5).stroke()
+    // doc.fontSize(8).fillColor(MUTED).font('Geist')
+    //   .text('Noodles · Přehled renovací bytového domu', MARGIN, footerY + 8, { width: CONTENT_WIDTH / 2 })
+    // doc.fontSize(8).fillColor(MUTED).font('Geist')
+    //   .text(`${i + 1} / ${total}`, MARGIN + CONTENT_WIDTH / 2, footerY + 8, { width: CONTENT_WIDTH / 2, align: 'right' })
   }
 }
 
