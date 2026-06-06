@@ -379,7 +379,7 @@ export default function FinancialsPage() {
 
         {/* Hero skeleton */}
         <div className="relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950">
-          <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
+          <div className="grid gap-6 p-6 sm:gap-8 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
             {/* Left section skeleton */}
             <div>
               <div className="mb-2 h-3 w-24 animate-pulse rounded bg-muted" />
@@ -414,7 +414,7 @@ export default function FinancialsPage() {
         </div>
 
         {/* KPI skeleton */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 md:grid-cols-4 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -430,7 +430,7 @@ export default function FinancialsPage() {
         {/* Charts skeleton */}
         <div className="flex flex-col gap-3">
           <div className="h-3 w-48 animate-pulse rounded bg-muted" />
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2">
             {[1, 2].map((i) => (
               <div
                 key={i}
@@ -447,7 +447,7 @@ export default function FinancialsPage() {
         {/* Budget skeleton */}
         <div className="flex flex-col gap-3">
           <div className="h-3 w-48 animate-pulse rounded bg-muted" />
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.4fr]">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1.4fr] lg:grid-cols-[1fr_1.4fr]">
             <div className="flex flex-col rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
               <div className="mb-2 h-4 w-24 animate-pulse rounded bg-muted" />
               <div className="mb-4 h-2.5 w-40 animate-pulse rounded bg-muted" />
@@ -532,7 +532,7 @@ export default function FinancialsPage() {
           className="pointer-events-none absolute -right-16 -bottom-28 -z-10 size-96 rounded-full bg-blue-500/20 blur-[110px]"
         />
 
-        <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
+        <div className="grid gap-6 p-6 sm:gap-8 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
           {/* Levá část — titulek + hlavní číslo */}
           <div>
             <div className="flex items-center gap-2.5">
@@ -633,12 +633,12 @@ export default function FinancialsPage() {
           } as React.CSSProperties
         }
       >
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6 sm:gap-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
               Scénář
             </span>
-            <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
               {userScenarioList.map((s) => (
                 <span
                   key={s.id}
@@ -662,7 +662,7 @@ export default function FinancialsPage() {
               <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                 Horizont
               </span>
-              <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+              <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
                 {HORIZONS.map((h) => (
                   <button
                     key={h}
@@ -685,7 +685,7 @@ export default function FinancialsPage() {
               <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                 Splácení
               </span>
-              <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+              <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
                 {terms.map((t) => (
                   <button
                     key={t}
@@ -823,7 +823,7 @@ export default function FinancialsPage() {
           </p>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
+        <div className="grid gap-3 md:grid-cols-[1fr_1.4fr] lg:grid-cols-[1fr_1.4fr]">
           {/* Z čeho pokryjeme investici — koláčový graf tří zdrojů */}
           <div
             data-fin-block
@@ -958,7 +958,7 @@ export default function FinancialsPage() {
         </div>
 
         {/* Tři malé statistiky — splátka, úspora, čistý dopad */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
           <div
             data-fin-block
             className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
@@ -1015,7 +1015,7 @@ export default function FinancialsPage() {
           )}
         </p>
 
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2">
           {/* Vyplatí se to? — kumulativní náklady s bodem zlomu */}
           <div
             data-fin-block
@@ -1024,7 +1024,7 @@ export default function FinancialsPage() {
             {/* Ručně kreslené sluníčko v rohu — stejný motiv jako na Přehledu */}
             <svg
               aria-hidden
-              className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
+              className="pointer-events-none absolute top-3 right-4 size-12 text-blue-500/30 sm:size-16"
               viewBox="0 0 64 64"
               fill="none"
               stroke="currentColor"
@@ -1157,7 +1157,7 @@ export default function FinancialsPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-4">
           {/* Inflace */}
           <div
             data-fin-block

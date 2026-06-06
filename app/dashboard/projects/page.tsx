@@ -139,7 +139,7 @@ export default function ProjectsPage() {
           <div className="mb-2 h-8 w-32 animate-pulse rounded bg-muted" />
           <div className="h-3 w-48 animate-pulse rounded bg-muted" />
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-36 animate-pulse rounded-2xl bg-muted" />
           ))}
@@ -180,7 +180,7 @@ export default function ProjectsPage() {
           aria-hidden
           className="pointer-events-none absolute -top-24 -left-24 -z-10 size-80 rounded-full bg-blue-500/15 blur-[100px]"
         />
-        <div className="p-6 sm:p-8">
+        <div className="p-6 sm:p-8 md:p-10">
           <div className="flex items-center gap-2.5">
             <span aria-hidden className="h-px w-7 bg-blue-300/70" />
             <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-300 uppercase">

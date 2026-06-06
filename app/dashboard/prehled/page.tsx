@@ -551,7 +551,7 @@ export default function PrehledPage() {
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
 
-        <div className="relative flex h-full min-h-[15rem] flex-col justify-between gap-6 p-6 sm:min-h-[17rem] sm:p-8">
+        <div className="relative flex h-full min-h-[15rem] flex-col justify-between gap-6 p-6 sm:min-h-[17rem] sm:p-8 md:p-10">
           <div>
             <div className="flex items-center gap-2.5">
               <span aria-hidden className="h-px w-7 bg-blue-300/70" />
@@ -669,7 +669,7 @@ export default function PrehledPage() {
               <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                 Scénář
               </span>
-              <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+              <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
                 {dynamicScenarios.map((s) => {
                   const active = s.id === scenarioId
                   return (
@@ -705,7 +705,7 @@ export default function PrehledPage() {
           >
             <TrendingUp
               aria-hidden
-              className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500"
+              className="pointer-events-none absolute top-4 right-4 xl:size-9 text-blue-500 sm:size-12"
             />
             <p className="text-sm font-medium">Vyplatí se to?</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -758,7 +758,7 @@ export default function PrehledPage() {
           >
             <CalendarDays
               aria-hidden
-              className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500"
+              className="pointer-events-none absolute top-4 right-4 xl:size-9 text-blue-500 sm:size-12"
             />
             <p className="text-sm font-medium">Harmonogram — {scenario.name}</p>
             <div className="mt-6">
@@ -779,14 +779,14 @@ export default function PrehledPage() {
             >
               <Sparkles
                 aria-hidden
-                className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500"
+                className="pointer-events-none absolute top-4 right-4 xl:size-9 text-blue-500 sm:size-12"
               />
               <p className="text-sm font-medium">Zlepšení kvality života</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a
                 hodnota domu.
               </p>
-              <div className="mt-4 flex flex-col gap-3">
+              <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {benefitGroups.map(({ category, benefits }) => {
                   const meta = BENEFIT_CATEGORIES[category]
                   const Icon = BENEFIT_ICONS[category]
@@ -882,13 +882,13 @@ function InviteForm() {
   )
 
   return (
-    <form action={formAction} className="mt-3 flex items-center gap-2">
+    <form action={formAction} className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
       <input
         name="email"
         type="email"
         required
         placeholder="email@example.cz"
-        className="h-8 flex-1 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="h-8 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-auto sm:flex-1"
       />
       <button
         type="submit"

@@ -370,15 +370,15 @@ export default function ExportyPage() {
                 onClick={() => setScenarioId("all")}
                 aria-pressed={scenarioId === "all"}
                 className={cn(
-                  "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+                  "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
                   scenarioId === "all"
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 )}
               >
-                <span className="flex items-center gap-1.5">
+                <span className="flex max-w-full items-center gap-1.5">
                   <Building2 className="size-3.5 shrink-0" />
-                  Porovnání scénářů
+                  <span className="truncate">Porovnání scénářů</span>
                 </span>
                 <span
                   className={cn(
@@ -400,13 +400,13 @@ export default function ExportyPage() {
                 onClick={() => setScenarioId(s.id)}
                 aria-pressed={scenarioId === s.id}
                 className={cn(
-                  "flex h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
+                  "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-sm font-medium transition-all duration-150",
                   scenarioId === s.id
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 )}
               >
-                <span>{s.name}</span>
+                <span className="max-w-full truncate">{s.name}</span>
                 <span
                   className={cn(
                     "text-[10px] leading-tight font-normal",
@@ -465,7 +465,7 @@ export default function ExportyPage() {
         </span>
         <p className="text-sm font-medium">Pro koho dokument je</p>
       </div>
-      <div data-joyride="exporty-cards" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div data-joyride="exporty-cards" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {exportTypes.map((exp, i) => {
           const Icon = TYPE_ICONS[exp.id] ?? FileText
           const selected = exp.id === selectedTypeId
@@ -650,7 +650,7 @@ export default function ExportyPage() {
           <p className="text-xs font-medium text-muted-foreground">
             Dokument bude obsahovat:
           </p>
-          <div className="mt-2.5 grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          <div className="mt-2.5 grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2 sm:gap-x-6">
             {selectedType.includes.map((item) => (
               <div key={item} className="flex items-center gap-2 text-sm">
                 <CircleCheck className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -698,7 +698,7 @@ export default function ExportyPage() {
           <Lightbulb className="size-4 text-primary" />
           <p className="text-sm font-medium text-primary">Tipy k distribuci</p>
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2 sm:gap-x-8">
           {distributionTips.map((tip) => (
             <div key={tip.title}>
               <p className="text-sm font-medium">{tip.title}</p>

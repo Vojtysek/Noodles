@@ -292,7 +292,7 @@ export default function FakturyPage() {
             if (!uploading) uploadFiles(e.dataTransfer.files)
           }}
           className={cn(
-            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-6 py-10 text-center transition-colors",
+            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-8 text-center transition-colors sm:px-6 sm:py-10",
             dragOver
               ? "border-primary bg-primary/5 ring-2 ring-primary/20"
               : "border-border hover:bg-muted/40",
@@ -376,7 +376,7 @@ export default function FakturyPage() {
                       <p className="truncate text-sm font-medium">
                         {inv.file_name}
                       </p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <p className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
                         {formatBytes(inv.size_bytes)} ·{" "}
                         {new Date(inv.created_at).toLocaleDateString("cs-CZ")}
                         {inv.summary_generated_at && (
@@ -448,7 +448,7 @@ export default function FakturyPage() {
                   {expanded && hasDetail && (
                     <div className="mt-1 rounded-xl bg-muted/50 p-4">
                       {inv.extracted && (
-                        <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2 sm:gap-x-6">
                           {(
                             [
                               ["Dodavatel", inv.extracted.dodavatel],

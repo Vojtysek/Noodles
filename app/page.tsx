@@ -457,13 +457,16 @@ export default function Page() {
                   <Button
                     variant="ghost"
                     asChild
-                    className="hidden rounded-full sm:inline-flex"
+                    className="rounded-full px-3 sm:px-4"
                   >
                     <Link href="/login">Přihlásit se</Link>
                   </Button>
                 )}
-                <Button asChild className="h-10 rounded-full px-5">
-                  <Link href={appHref}>Spustit aplikaci</Link>
+                <Button asChild className="h-10 rounded-full px-4 sm:px-5">
+                  <Link href={appHref}>
+                    <span className="sm:hidden">Spustit</span>
+                    <span className="hidden sm:inline">Spustit aplikaci</span>
+                  </Link>
                 </Button>
               </div>
             </div>

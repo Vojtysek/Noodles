@@ -316,7 +316,7 @@ export default function RezidentiPage() {
         <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
           S kým budete mluvit?
         </span>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
           {ARCHETYPES.map((a) => {
             const active = selectedId === a.id
             return (
@@ -403,7 +403,7 @@ export default function RezidentiPage() {
 
       {/* Formulář vlastního archetypu */}
       {showForm && (
-        <div className="animate-in fade-in rounded-2xl border bg-background/60 p-6 backdrop-blur-sm duration-200">
+        <div className="animate-in fade-in rounded-2xl border bg-background/60 p-4 backdrop-blur-sm duration-200 sm:p-6">
           <p className="text-sm font-medium">Popište typ souseda vlastními slovy</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Jak se projevuje, čeho se bojí, co ho přesvědčí — AI z popisu vytvoří profil.
@@ -594,7 +594,7 @@ export default function RezidentiPage() {
             {loadingBuilding ? (
               <div className="mt-4 h-9 w-56 animate-pulse rounded-full bg-muted" />
             ) : scenario && (
-            <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-muted p-1">
+            <div className="mt-4 inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
               {scenarioList.map((s) => {
                 const active = s.id === scenario.id
                 return (

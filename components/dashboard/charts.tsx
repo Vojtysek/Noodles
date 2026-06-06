@@ -163,7 +163,7 @@ export function ComparisonLineChart({
   } satisfies ChartConfig
 
   return (
-    <ChartContainer config={config} className="aspect-auto h-56 w-full">
+    <ChartContainer config={config} className="aspect-auto h-44 w-full sm:h-52 md:h-56">
       <LineChart data={rows} margin={{ left: 8, right: 8, top: 8 }} accessibilityLayer>
         <CartesianGrid vertical={false} />
         <XAxis
@@ -248,7 +248,7 @@ export function DonutChart({ percent, label }: { percent: number; label: string 
   ]
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
       <ChartContainer config={config} className="aspect-square h-28">
         <PieChart>
           <ChartTooltip
@@ -328,7 +328,7 @@ export function FinancingDonut({
   const data = segments.map((s) => ({ ...s, fill: s.color }))
 
   return (
-    <div className="flex items-center gap-5 sm:gap-6">
+    <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
       <ChartContainer config={config} className="aspect-square h-44">
         <PieChart>
           <ChartTooltip

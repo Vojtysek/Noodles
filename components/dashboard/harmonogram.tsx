@@ -373,7 +373,7 @@ function ChatBubble({ hint, delay }: { hint: HintItem; delay: number }) {
               aria-hidden
               className="absolute top-2.5 -left-px size-3 rotate-45 border-t border-l border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40"
             />
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
                 Doporučená akce
               </p>
@@ -515,7 +515,7 @@ export function Harmonogram({
       ─────────────────────────────────────────────────────────────────── */}
       <div
         ref={timelineRef}
-        className="overflow-x-auto px-3 pt-5 pb-3"
+        className="overflow-x-auto px-2 pt-5 pb-3 sm:px-3"
         style={{ scrollbarWidth: "none" }}
       >
         <style>{`.harmonogram-tl::-webkit-scrollbar{display:none}`}</style>
