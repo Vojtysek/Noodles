@@ -186,7 +186,8 @@ export function JoyrideTour() {
   const pathname = usePathname()
 
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
+    const isMobile = window.matchMedia("(max-width: 768px)").matches
+    if (!isMobile && !localStorage.getItem(STORAGE_KEY)) {
       setRun(true)
     }
   }, [])
