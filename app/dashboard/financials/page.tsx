@@ -40,6 +40,7 @@ import {
   type ScenarioTone,
 } from "@/lib/mock-data"
 import { userProjects, userScenarios } from "@/lib/scenarios"
+import { calcReturn } from "./return"
 
 const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
