@@ -22,9 +22,10 @@ const STEP_ROUTES: Record<number, string> = {
   2: "/dashboard/prehled",
   3: "/dashboard/prehled",
   4: "/dashboard/rezidenti",
-  5: "/dashboard/financials",
-  6: "/dashboard/projects",
-  7: "/dashboard/exporty",
+  5: "/dashboard/rezidenti",
+  6: "/dashboard/financials",
+  7: "/dashboard/projects",
+  8: "/dashboard/exporty",
 }
 
 const STEPS: Step[] = [
@@ -62,21 +63,28 @@ const STEPS: Step[] = [
     skipBeacon: true,
     title: "Rezidenti — typy sousedů",
     content:
-      "Vyberte typ souseda ze vestavěných archetypů nebo přidejte vlastní personu. AI pak vygeneruje argumentační strategii šitou na míru vašemu scénáři rekonstrukce.",
+      "Vyberte typ souseda ze vestavěných archetypů nebo přidejte vlastní personu popisem vlastními slovy — AI z toho vytvoří profil.",
+  },
+  {
+    target: '[data-joyride="rezidenti-strategie"]',
+    skipBeacon: true,
+    title: "Argumentační strategie",
+    content:
+      "Zde vidíte profil vybraného souseda — jeho motivace, námitky a co odmítá. Tlačítkem Vygenerovat strategie necháte AI připravit konkrétní argumenty pro přesvědčení tohoto typu souseda ve vašem scénáři rekonstrukce.",
   },
   {
     target: '[data-joyride="finance-main"]',
     skipBeacon: true,
     title: "Finance",
     content:
-      "Detailní finanční model — porovnání nákladů s rekonstrukcí a bez ní, návratnost investice, simulace úvěru a predikce úspor na 20 let dopředu.",
+      "Detailní finanční model celé rekonstrukce — klíčové ukazatele jako celkové náklady, roční úspora, návratnost investice a měsíční splátka na byt. Níže najdete graf vývoje nákladů, rozpad financování a scénáře na různé časové horizonty.",
   },
   {
     target: '[data-joyride="projekty-list"]',
     skipBeacon: true,
-    title: "Projekty",
+    title: "Výběr projektů",
     content:
-      "Katalog rekonstrukcí seřazený podle dopadu na dům. U každého projektu najdete celkový rozpočet, aktuální stav realizace a detailní rozpad nákladů.",
+      "Vyberte konkrétní rekonstrukce pro váš dům — fasáda, okna, střecha a další. U každé vidíte celkové náklady, dobu realizace a úsporu energie. Kliknutím projekt přidáte nebo odeberete z plánu.",
   },
   {
     target: '[data-joyride="exporty-cards"]',
@@ -110,7 +118,6 @@ const STEPS: Step[] = [
 
 function CustomTooltip({
   backProps,
-  closeProps,
   index,
   isLastStep,
   primaryProps,
@@ -124,11 +131,11 @@ function CustomTooltip({
       {...tooltipProps}
       className="relative w-[340px] max-w-[calc(100vw-2rem)] rounded-2xl border bg-card/95 p-5 shadow-2xl backdrop-blur-xl ring-1 ring-border"
     >
-      {/* Close */}
+      {/* X skips the entire tour */}
       <button
-        {...closeProps}
+        {...skipProps}
         className="absolute top-3 right-3 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
-        aria-label="Zavřít"
+        aria-label="Zavřít průvodce"
       >
         <X className="size-4" />
       </button>
@@ -202,6 +209,13 @@ export function JoyrideTour() {
   function handleEvent(data: EventData) {
     const { type, status, index, action } = data
 
+    if (type === EVENTS.STEP_BEFORE) {
+      const target = STEPS[index]?.target
+      if (typeof target === "string" && target !== "body") {
+        document.querySelector(target)?.scrollIntoView({ behavior: "smooth", block: "center" })
+      }
+    }
+
     if (type === EVENTS.STEP_AFTER) {
       const isForward = action !== ACTIONS.PREV
       const nextIndex = isForward ? index + 1 : index - 1
@@ -218,20 +232,34 @@ export function JoyrideTour() {
     }
   }
 
-  if (!run) return null
-
   return (
-    <Joyride
-      steps={STEPS}
-      run={run}
-      continuous
-      tooltipComponent={CustomTooltip}
-      onEvent={handleEvent}
-      options={{
-        overlayColor: "rgba(0,0,0,0.5)",
-        zIndex: 10000,
-        targetWaitTimeout: 8000,
-      }}
-    />
+    <>
+      {process.env.NODE_ENV === "development" && !run && (
+        <button
+          onClick={() => {
+            localStorage.removeItem(STORAGE_KEY)
+            router.push("/dashboard/prehled")
+            setRun(true)
+          }}
+          className="fixed right-4 bottom-4 z-50 rounded-full border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground shadow transition-colors hover:text-foreground"
+        >
+          Tour
+        </button>
+      )}
+      {run && (
+        <Joyride
+          steps={STEPS}
+          run={run}
+          continuous
+          tooltipComponent={CustomTooltip}
+          onEvent={handleEvent}
+          options={{
+            overlayColor: "rgba(0,0,0,0.5)",
+            zIndex: 10000,
+            targetWaitTimeout: 8000,
+          }}
+        />
+      )}
+    </>
   )
 }

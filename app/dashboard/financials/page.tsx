@@ -519,7 +519,6 @@ export default function FinancialsPage() {
       {/* Hero — verdikt na první pohled (tmavý pruh jako na Přehledu)        */}
       {/* ------------------------------------------------------------------ */}
       <div
-        data-joyride="finance-main"
         className="anim-in relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950 text-white"
         style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
       >
@@ -772,6 +771,7 @@ export default function FinancialsPage() {
       {/* KPI pruh — ploché sloupce s předěly (vzor z landingu)               */}
       {/* ------------------------------------------------------------------ */}
       <dl
+        data-joyride="finance-main"
         className="anim-in grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60"
         style={
           {

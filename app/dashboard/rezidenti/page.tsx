@@ -439,6 +439,7 @@ export default function RezidentiPage() {
 
       {/* Detail archetypu */}
       <div
+        data-joyride="rezidenti-strategie"
         className="anim-in relative overflow-hidden rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:rounded-br-[3rem]"
         style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.2s" } as React.CSSProperties}
       >
