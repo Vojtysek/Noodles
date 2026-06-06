@@ -519,6 +519,7 @@ export default function FinancialsPage() {
       {/* Hero — verdikt na první pohled (tmavý pruh jako na Přehledu)        */}
       {/* ------------------------------------------------------------------ */}
       <div
+        data-joyride="finance-main"
         className="anim-in relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950 text-white"
         style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
       >
