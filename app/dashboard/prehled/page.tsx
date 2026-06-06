@@ -323,7 +323,10 @@ export default function PrehledPage() {
   )
 
   return (
-    <div ref={rootRef} className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
+    <div
+      ref={rootRef}
+      className="relative mx-auto flex w-full max-w-6xl flex-col gap-8"
+    >
       {/* Ambient blobs */}
       <div
         aria-hidden
@@ -331,14 +334,17 @@ export default function PrehledPage() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-40 top-1/3 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]"
+        className="pointer-events-none absolute top-1/3 -right-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]"
       />
 
       {splashOpen && (
         <ScenarioSplash
           onClose={() => {
             setSplashOpen(false)
-            if (new URLSearchParams(window.location.search).get("from") === "onboarding") {
+            if (
+              new URLSearchParams(window.location.search).get("from") ===
+              "onboarding"
+            ) {
               router.replace("/dashboard/prehled")
             }
           }}
@@ -359,7 +365,7 @@ export default function PrehledPage() {
       {/* Foto hero pruh */}
       <div
         data-pr-header
-        className="relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] min-h-[15rem] sm:min-h-[17rem]"
+        className="relative isolate min-h-[15rem] overflow-hidden rounded-[2rem] rounded-br-[5rem] sm:min-h-[17rem]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -379,7 +385,9 @@ export default function PrehledPage() {
               </p>
             </div>
             <div className="mt-2 flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Přehled</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Přehled
+              </h1>
               {buildingCalc?.energy_grade && (
                 <span
                   className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold ring-1 ring-white/20 ${gradeBadgeClass(buildingCalc.energy_grade)}`}
@@ -399,7 +407,10 @@ export default function PrehledPage() {
               >
                 <Users className="size-4 shrink-0 text-blue-300" />
                 <p className="text-sm text-white/90">
-                  <span data-count-chip={buildingCalc.units} className="font-semibold tabular-nums">
+                  <span
+                    data-count-chip={buildingCalc.units}
+                    className="font-semibold tabular-nums"
+                  >
                     {buildingCalc.units}
                   </span>{" "}
                   <span className="text-white/60">bytových jednotek</span>
@@ -411,7 +422,10 @@ export default function PrehledPage() {
               >
                 <Wallet className="size-4 shrink-0 text-blue-300" />
                 <p className="text-sm text-white/90">
-                  <span data-count-chip={buildingCalc.monthly_per_unit} className="font-semibold tabular-nums">
+                  <span
+                    data-count-chip={buildingCalc.monthly_per_unit}
+                    className="font-semibold tabular-nums"
+                  >
                     {buildingCalc.monthly_per_unit.toLocaleString("cs-CZ")}
                   </span>{" "}
                   <span className="text-white/60">Kč / byt měsíčně</span>
@@ -425,7 +439,10 @@ export default function PrehledPage() {
                   <Sparkles className="size-4 shrink-0 text-blue-300" />
                   <p className="text-sm text-white/90">
                     <span className="text-white/60">Vyplatí se od roku</span>{" "}
-                    <span data-count-chip={breakEvenYear} className="font-semibold">
+                    <span
+                      data-count-chip={breakEvenYear}
+                      className="font-semibold"
+                    >
                       {breakEvenYear}
                     </span>
                   </p>
@@ -435,7 +452,10 @@ export default function PrehledPage() {
           ) : (
             /* Bez kalkulace — výzva ke spočítání úspor */
             <div data-hero-chip>
-              <Button asChild className="h-11 rounded-full px-6 text-sm font-semibold shadow-xl">
+              <Button
+                asChild
+                className="h-11 rounded-full px-6 text-sm font-semibold shadow-xl"
+              >
                 <Link href="/dashboard/financials">Detailní přehled</Link>
               </Button>
             </div>
@@ -450,11 +470,14 @@ export default function PrehledPage() {
         >
           <h2 className="text-lg font-semibold">Zatím nemáte uložený plán</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Spusťte kalkulačku a vyberte rekonstrukce pro váš dům. Hned poté tu uvidíte
-            harmonogram, náklady i to, kdy se investice vyplatí.
+            Spusťte kalkulačku a vyberte rekonstrukce pro váš dům. Hned poté tu
+            uvidíte harmonogram, náklady i to, kdy se investice vyplatí.
           </p>
           <div className="mt-5 flex justify-center">
-            <Button asChild className="h-11 rounded-full px-6 text-sm font-semibold shadow-xl">
+            <Button
+              asChild
+              className="h-11 rounded-full px-6 text-sm font-semibold shadow-xl"
+            >
               <Link href="/onboarding">
                 {buildingCalc ? "Dokončit kalkulaci" : "Spustit kalkulačku"}
               </Link>
@@ -465,201 +488,212 @@ export default function PrehledPage() {
 
       {hasPlan && result && scenario && (
         <>
-      {/* Slim přepínač variant */}
-      <div data-pr-reveal className="flex flex-col gap-2.5">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Scénář
-          </span>
-          <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
-            {dynamicScenarios.map((s) => {
-              const active = s.id === scenarioId
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setScenarioId(s.id)}
-                  aria-pressed={active}
-                  className={cn(
-                    "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
-                    active
-                      ? "bg-background text-foreground shadow"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
-                  {s.name}
-                </button>
-              )
-            })}
+          {/* Slim přepínač variant */}
+          <div data-pr-reveal className="flex flex-col gap-2.5">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                Scénář
+              </span>
+              <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+                {dynamicScenarios.map((s) => {
+                  const active = s.id === scenarioId
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setScenarioId(s.id)}
+                      aria-pressed={active}
+                      className={cn(
+                        "flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all",
+                        active
+                          ? "bg-background text-foreground shadow"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          TONE_DOT[s.tone]
+                        )}
+                      />
+                      {s.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Harmonogram vybraného scénáře */}
-      <div
-        data-pr-reveal
-        className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
-      >
-        {/* Ručně kreslený domeček v rohu */}
-        <svg
-          aria-hidden
-          className="pointer-events-none absolute -top-2 right-3 size-20 text-blue-500/30"
-          viewBox="0 0 64 64"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M10 30 L32 12 L54 30" />
-          <path d="M16 28 V52 H48 V28" />
-          <path d="M28 52 V40 H36 V52" />
-          <path d="M44 18 V12 H49 V22" />
-        </svg>
-        <p className="text-sm font-medium">Harmonogram — {scenario.name}</p>
-        <div className="mt-6">
-          <Harmonogram
-            items={result.roadmap}
-            finishLabel={finishLabel}
-            storageKey={`harmonogram-step-${buildingCalc?.id ?? "default"}`}
-          />
-        </div>
-      </div>
-
-      {/* Co tím získáte navíc — nefinanční přínosy */}
-      {benefitGroups.length > 0 && (
-        <div
-          data-pr-reveal
-          className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
-        >
-          {/* Ručně kreslené srdíčko v rohu */}
-          <svg
-            aria-hidden
-            className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
-            viewBox="0 0 64 64"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          {/* Vyplatí se to? */}
+          <div
+            data-pr-reveal
+            className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-br-[3rem]"
           >
-            <path d="M32 52 C32 52 12 40 12 26 C12 18 18 14 24 14 C28 14 31 16 32 20 C33 16 36 14 40 14 C46 14 52 18 52 26 C52 40 32 52 32 52 Z" />
-          </svg>
-          <p className="text-sm font-medium">Co tím získáte navíc</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a hodnota domu.
-          </p>
-          <div className="mt-4 flex flex-col gap-3">
-            {benefitGroups.map(({ category, benefits }) => {
-              const meta = BENEFIT_CATEGORIES[category]
-              const Icon = BENEFIT_ICONS[category]
-              return (
-                <div
-                  key={category}
-                  className="rounded-xl border bg-background/40 p-4"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-                      <Icon className="size-4" />
-                    </span>
-                    <p className="text-sm font-semibold">{meta.label}</p>
-                  </div>
-                  <ul className="mt-3 flex flex-col gap-3">
-                    {benefits.map((benefit) => {
-                      const shortName =
-                        benefit.projectId === null
-                          ? "Celý dům"
-                          : projectShortName(benefit.projectId)
-                      return (
-                        <li key={benefit.id}>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-medium">{benefit.title}</p>
-                            {shortName && (
-                              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                                {shortName}
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {benefit.description}
-                          </p>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              )
-            })}
+            {/* Ručně kreslené sluníčko v rohu */}
+            <svg
+              aria-hidden
+              className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
+              viewBox="0 0 64 64"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="32" cy="32" r="11" />
+              <path d="M32 6 V14 M32 50 V58 M6 32 H14 M50 32 H58 M13 13 L19 19 M45 45 L51 51 M51 13 L45 19 M19 45 L13 51" />
+            </svg>
+            <p className="text-sm font-medium">Vyplatí se to?</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {result.breakEvenYear !== null ? (
+                <>
+                  <span className="font-medium text-foreground">
+                    Od roku {result.breakEvenYear} je rekonstrukce levnější
+                  </span>{" "}
+                  — a každý další rok šetří víc.
+                </>
+              ) : (
+                <>
+                  Na horizontu {HORIZON} let se tento scénář čistě finančně
+                  nevrátí — její přínos je hlavně ve stavu a hodnotě domu.
+                </>
+              )}
+            </p>
+            <div className="mt-4">
+              <ComparisonLineChart
+                series={[
+                  {
+                    label: "Bez rekonstrukce",
+                    color: WITHOUT_COLOR,
+                    points: result.cumSeries.without,
+                  },
+                  {
+                    label: "S rekonstrukcí",
+                    color: WITH_COLOR,
+                    points: result.cumSeries.with,
+                  },
+                ]}
+                formatValue={fmtCzkShort}
+                marker={
+                  result.breakEvenPos !== null && result.breakEvenYear !== null
+                    ? {
+                        position: result.breakEvenPos,
+                        label: `Od ${result.breakEvenYear} šetříte`,
+                      }
+                    : null
+                }
+              />
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Vyplatí se to? */}
-      <div
-        data-pr-reveal
-        className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-br-[3rem]"
-      >
-        {/* Ručně kreslené sluníčko v rohu */}
-        <svg
-          aria-hidden
-          className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
-          viewBox="0 0 64 64"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="32" cy="32" r="11" />
-          <path d="M32 6 V14 M32 50 V58 M6 32 H14 M50 32 H58 M13 13 L19 19 M45 45 L51 51 M51 13 L45 19 M19 45 L13 51" />
-        </svg>
-        <p className="text-sm font-medium">Vyplatí se to?</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {result.breakEvenYear !== null ? (
-            <>
-              <span className="font-medium text-foreground">
-                Od roku {result.breakEvenYear} je rekonstrukce levnější
-              </span>{" "}
-              — a každý další rok šetří víc.
-            </>
-          ) : (
-            <>
-              Na horizontu {HORIZON} let se tento scénář čistě finančně nevrátí — její přínos je
-              hlavně ve stavu a hodnotě domu.
-            </>
+          {/* Harmonogram vybraného scénáře */}
+          <div
+            data-pr-reveal
+            className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+          >
+            {/* Ručně kreslený domeček v rohu */}
+            <svg
+              aria-hidden
+              className="pointer-events-none absolute -top-2 right-3 size-20 text-blue-500/30"
+              viewBox="0 0 64 64"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M10 30 L32 12 L54 30" />
+              <path d="M16 28 V52 H48 V28" />
+              <path d="M28 52 V40 H36 V52" />
+              <path d="M44 18 V12 H49 V22" />
+            </svg>
+            <p className="text-sm font-medium">Harmonogram — {scenario.name}</p>
+            <div className="mt-6">
+              <Harmonogram
+                items={result.roadmap}
+                finishLabel={finishLabel}
+                storageKey={`harmonogram-step-${buildingCalc?.id ?? "default"}`}
+              />
+            </div>
+          </div>
+
+          {/* Co tím získáte navíc — nefinanční přínosy */}
+          {benefitGroups.length > 0 && (
+            <div
+              data-pr-reveal
+              className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+            >
+              {/* Ručně kreslené srdíčko v rohu */}
+              <svg
+                aria-hidden
+                className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
+                viewBox="0 0 64 64"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M32 52 C32 52 12 40 12 26 C12 18 18 14 24 14 C28 14 31 16 32 20 C33 16 36 14 40 14 C46 14 52 18 52 26 C52 40 32 52 32 52 Z" />
+              </svg>
+              <p className="text-sm font-medium">Co tím získáte navíc</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a
+                hodnota domu.
+              </p>
+              <div className="mt-4 flex flex-col gap-3">
+                {benefitGroups.map(({ category, benefits }) => {
+                  const meta = BENEFIT_CATEGORIES[category]
+                  const Icon = BENEFIT_ICONS[category]
+                  return (
+                    <div
+                      key={category}
+                      className="rounded-xl border bg-background/40 p-4"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                          <Icon className="size-4" />
+                        </span>
+                        <p className="text-sm font-semibold">{meta.label}</p>
+                      </div>
+                      <ul className="mt-3 flex flex-col gap-3">
+                        {benefits.map((benefit) => {
+                          const shortName =
+                            benefit.projectId === null
+                              ? "Celý dům"
+                              : projectShortName(benefit.projectId)
+                          return (
+                            <li key={benefit.id}>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-medium">
+                                  {benefit.title}
+                                </p>
+                                {shortName && (
+                                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                    {shortName}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {benefit.description}
+                              </p>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           )}
-        </p>
-        <div className="mt-4">
-          <ComparisonLineChart
-            series={[
-              {
-                label: "Bez rekonstrukce",
-                color: WITHOUT_COLOR,
-                points: result.cumSeries.without,
-              },
-              {
-                label: "S rekonstrukcí",
-                color: WITH_COLOR,
-                points: result.cumSeries.with,
-              },
-            ]}
-            formatValue={fmtCzkShort}
-            marker={
-              result.breakEvenPos !== null && result.breakEvenYear !== null
-                ? {
-                    position: result.breakEvenPos,
-                    label: `Od ${result.breakEvenYear} šetříte`,
-                  }
-                : null
-            }
-          />
-        </div>
-      </div>
         </>
       )}
 
       {/* Kam dál — slim řádek */}
-      <div data-pr-reveal className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1 text-sm">
+      <div
+        data-pr-reveal
+        className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1 text-sm"
+      >
         <Link
           href="/dashboard/financials"
           className="group inline-flex items-center gap-2 font-medium text-muted-foreground transition-colors hover:text-foreground"
