@@ -472,7 +472,15 @@ export default function PrehledPage() {
               router.replace("/dashboard/prehled")
             }
           }}
-          onSelect={(id) => setScenarioId(id)}
+          onContinue={() => {
+            setSplashOpen(false)
+            if (
+              new URLSearchParams(window.location.search).get("from") ===
+              "onboarding"
+            ) {
+              router.replace("/dashboard/prehled")
+            }
+          }}
           buildingData={
             buildingCalc
               ? {
@@ -482,7 +490,6 @@ export default function PrehledPage() {
                 }
               : undefined
           }
-          buildingId={buildingCalc?.id}
         />
       )}
 

@@ -1288,15 +1288,13 @@ export default function CalculatorPage() {
           buildingData={{
             selected_renovations: splashPayload.selected_renovations,
             total_cost: splashPayload.total_cost,
+            address: splashPayload.address,
           }}
-          onSelect={(scenarioId) => {
+          onContinue={() => {
             try {
               localStorage.setItem(
                 PENDING_BUILDING_KEY,
-                JSON.stringify({
-                  ...splashPayload,
-                  selected_scenario: scenarioId,
-                })
+                JSON.stringify(splashPayload)
               )
             } catch {
               // ignore storage failures
