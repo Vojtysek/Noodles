@@ -66,17 +66,9 @@ export function DashboardSidebar() {
         className="sb-item-in relative flex flex-col items-start gap-2.5 px-4 py-5"
         style={{ "--sb-i": 0 } as React.CSSProperties}
       >
-        <div className={"flex flex-row gap-2 items-center"}>
-          <div className="relative flex size-8 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-1 ring-white/15">
-            <Building2 className="size-4" />
-          </div>
+        <div className={"flex flex-row items-center gap-2"}>
           <p className="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
-            Noodles
-          </p>
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-xs text-wrap text-muted-foreground">
-            {address ?? "—"}
+            Reno
           </p>
         </div>
       </div>
@@ -133,12 +125,12 @@ export function DashboardSidebar() {
       <div className="relative flex flex-col gap-1 px-2 py-3">
         {email && (
           <div className="flex items-center justify-between px-2.5 py-1">
-            <p className="truncate text-xs text-muted-foreground">
-              {email}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{email}</p>
             <button
-              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-              className="text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/40 rounded-lg px-2 py-1.5"
+              onClick={() =>
+                setTheme(resolvedTheme === "dark" ? "light" : "dark")
+              }
+              className="rounded-lg px-2 py-1.5 text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/40"
               aria-label="Toggle theme"
             >
               {resolvedTheme === "dark" ? (

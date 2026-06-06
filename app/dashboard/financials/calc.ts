@@ -146,6 +146,66 @@ export function projectAnnualSavings(
   }
 }
 
+// --- Energetická úspora v % --------------------------------------------------
+// Spotřeba elektřiny domu (společné prostory + byty) — měrná intenzita kWh/m²/rok.
+// Reálné rozmezí staršího bytového domu v ČR je ~20–30 kWh/m²/rok.
+const ELECTRICITY_INTENSITY = 28
+// Maloobchodní cena elektřiny vč. distribuce (Kč/kWh).
+const ELECTRICITY_PRICE = 5
+
+/**
+ * Referenční dům pro výpočet energetických %, když nemáme konkrétní geometrii
+ * z RÚIAN (typické starší SVJ: 300 m² zastavěné plochy, 5 NP, 24 b.j.).
+ * Slouží jako default pro statické zobrazení (badge u projektu, splash bez domu).
+ */
+export const REFERENCE_GEOMETRY: SavingsGeometry = buildSavingsGeometry(300, 5, 24)!
+
+/**
+ * Dnešní roční náklady domu na energie (Kč/rok) — JEDINÝ společný jmenovatel
+ * pro všechna energetická %. Teplo na vytápění + elektřina.
+ */
+export function buildingEnergyCost(g: SavingsGeometry): number {
+  const heatCost = annualHeatDemand(g) * OLD_ENERGY_PRICE
+  const elecCost = heatedFloorArea(g) * ELECTRICITY_INTENSITY * ELECTRICITY_PRICE
+  return heatCost + elecCost
+}
+
+/**
+ * Energetická úspora jednoho opatření jako % dnešních nákladů domu na energie.
+ * Čitatel je reálná Kč úspora z fyzikálních formulí (projectAnnualSavings),
+ * jmenovatel je sdílený (buildingEnergyCost) — proto se výsledná % dají sčítat.
+ * Vrací null pro projekty bez vzorce (např. výtah).
+ */
+export function projectEnergySavingPct(
+  projectId: string,
+  g: SavingsGeometry
+): number | null {
+  const saving = projectAnnualSavings(projectId, g)
+  if (saving == null) return null
+  const base = buildingEnergyCost(g)
+  if (base <= 0) return 0
+  return Math.round((saving / base) * 100)
+}
+
+/**
+ * Energetická úspora scénáře v % — součet úspor přes vybrané projekty dělený
+ * stejným jmenovatelem. Díky sdílené základně je součet metodicky správný
+ * (na rozdíl od sčítání předpočítaných procent). Cap 90 % zohledňuje překryv
+ * opatření (obálka + zdroj tepla působí na stejnou potřebu — first-order model).
+ */
+export function scenarioEnergySavingPct(
+  projectIds: readonly string[],
+  g: SavingsGeometry
+): number {
+  const base = buildingEnergyCost(g)
+  if (base <= 0) return 0
+  const totalSaving = projectIds.reduce((sum, id) => {
+    const s = projectAnnualSavings(id, g)
+    return sum + (s ?? 0)
+  }, 0)
+  return Math.min(90, Math.round((totalSaving / base) * 100))
+}
+
 // --- Sdílený agregát financí (shodný se stránkou Finance) --------------------
 // Výchozí rok modelace — stejný jako START_YEAR na stránce Finance.
 export const FIN_START_YEAR = 2026

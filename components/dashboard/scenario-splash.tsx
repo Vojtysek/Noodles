@@ -5,6 +5,7 @@ import { ArrowRight, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { fmtCzk, fmtCzkShort, projects } from "@/lib/mock-data"
+import { scenarioEnergySavingPct, REFERENCE_GEOMETRY } from "@/app/dashboard/financials/calc"
 
 type BuildingData = {
   selected_renovations: string[]
@@ -70,10 +71,7 @@ function buildStats(data: BuildingData) {
   const fundIncreasePerFlat = Math.round(
     selected.reduce((sum, p) => sum + p.fundIncreasePerFlat * scale, 0)
   )
-  const energySavingPct = Math.min(
-    95,
-    Math.round(selected.reduce((sum, p) => sum + p.energySavingPct, 0))
-  )
+  const energySavingPct = scenarioEnergySavingPct(selectedIds, REFERENCE_GEOMETRY)
 
   const docsCost = Math.round((data.total_cost * 0.03) / 10_000) * 10_000
   const totalCost = CONSULTATION_COST + docsCost + data.total_cost

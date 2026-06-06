@@ -8,7 +8,12 @@ import {
   type ProjectId,
 } from '@/lib/mock-data'
 import { aggregateScenario, isProjectId, userScenarios } from '@/lib/scenarios'
-import { computeFinancials } from '@/app/dashboard/financials/calc'
+import {
+  computeFinancials,
+  projectEnergySavingPct,
+  buildSavingsGeometry,
+  REFERENCE_GEOMETRY,
+} from '@/app/dashboard/financials/calc'
 import { computeFinance } from '@/lib/finance-model'
 import { createClient } from '@/lib/supabase/server'
 import { ARCHETYPES, isArchetypeId } from '@/lib/archetypes'
@@ -184,6 +189,14 @@ export async function compileData(
     horizon: 15,
   })
 
+  // Geometrie pro per-projekt energetická % — reálný dům, jinak referenční.
+  const energyGeometry =
+    buildSavingsGeometry(
+      building?.zastavena_plocha ?? null,
+      building?.floors ?? null,
+      building?.units ?? null
+    ) ?? REFERENCE_GEOMETRY
+
   // Doba splácení dle ceny renovace — stejné pravidlo jako v onboardingu/Finance:
   // do 1,5 mil. Kč max 10 let, nad 1,5 mil. Kč max 15 let.
   let termYears = building?.rent_years && building.rent_years > 0 ? building.rent_years : 10
@@ -251,7 +264,7 @@ export async function compileData(
       savingsPerYear: p.savingsPerYear,
       paybackYears: p.paybackYears,
       fundIncreasePerFlat: p.fundIncreasePerFlat,
-      energySavingPct: p.energySavingPct,
+      energySavingPct: projectEnergySavingPct(p.id, energyGeometry) ?? 0,
       durationMonths: p.durationMonths,
       costItems: p.costItems,
     })),
