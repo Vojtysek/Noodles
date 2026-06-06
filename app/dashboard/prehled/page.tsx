@@ -539,6 +539,7 @@ export default function PrehledPage() {
       {/* Foto hero pruh */}
       <div
         data-pr-header
+        data-joyride="prehled-hero"
         className="relative isolate min-h-[15rem] overflow-hidden rounded-[2rem] rounded-br-[5rem] sm:min-h-[17rem]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -752,6 +753,7 @@ export default function PrehledPage() {
           {/* Harmonogram vybraného scénáře */}
           <div
             data-pr-reveal
+            data-joyride="prehled-harmonogram"
             className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
           >
             <CalendarDays
@@ -772,6 +774,7 @@ export default function PrehledPage() {
           {benefitGroups.length > 0 && (
             <div
               data-pr-reveal
+              data-joyride="prehled-benefits"
               className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
             >
               <Sparkles
