@@ -7,7 +7,9 @@ import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import {
   ArrowRight,
+  CalendarDays,
   FileDown,
+  HandCoins,
   HeartPulse,
   Leaf,
   PlugZap,
@@ -32,6 +34,7 @@ import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
 
 import { userScenarios } from "@/lib/scenarios"
 import {
+  fmtCzk,
   fmtCzkShort,
   fmtDuration,
   projects,
@@ -448,6 +451,20 @@ export default function PrehledPage() {
                   </p>
                 </div>
               )}
+              {result && result.fundIncreasePerFlat > 0 && (
+                <div
+                  data-hero-chip
+                  className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
+                >
+                  <HandCoins className="size-4 shrink-0 text-blue-300" />
+                  <p className="text-sm text-white/90">
+                    <span className="font-semibold tabular-nums">
+                      +{fmtCzk(Math.round(result.fundIncreasePerFlat))}
+                    </span>{" "}
+                    <span className="text-white/60">fond oprav / byt / měsíc</span>
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             /* Bez kalkulace — výzva ke spočítání úspor */
@@ -528,20 +545,7 @@ export default function PrehledPage() {
             data-pr-reveal
             className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-br-[3rem]"
           >
-            {/* Ručně kreslené sluníčko v rohu */}
-            <svg
-              aria-hidden
-              className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
-              viewBox="0 0 64 64"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="32" cy="32" r="11" />
-              <path d="M32 6 V14 M32 50 V58 M6 32 H14 M50 32 H58 M13 13 L19 19 M45 45 L51 51 M51 13 L45 19 M19 45 L13 51" />
-            </svg>
+            <TrendingUp aria-hidden className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500" />
             <p className="text-sm font-medium">Vyplatí se to?</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {result.breakEvenYear !== null ? (
@@ -590,22 +594,7 @@ export default function PrehledPage() {
             data-pr-reveal
             className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
           >
-            {/* Ručně kreslený domeček v rohu */}
-            <svg
-              aria-hidden
-              className="pointer-events-none absolute -top-2 right-3 size-20 text-blue-500/30"
-              viewBox="0 0 64 64"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M10 30 L32 12 L54 30" />
-              <path d="M16 28 V52 H48 V28" />
-              <path d="M28 52 V40 H36 V52" />
-              <path d="M44 18 V12 H49 V22" />
-            </svg>
+            <CalendarDays aria-hidden className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500" />
             <p className="text-sm font-medium">Harmonogram — {scenario.name}</p>
             <div className="mt-6">
               <Harmonogram
@@ -622,19 +611,7 @@ export default function PrehledPage() {
               data-pr-reveal
               className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
             >
-              {/* Ručně kreslené srdíčko v rohu */}
-              <svg
-                aria-hidden
-                className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
-                viewBox="0 0 64 64"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M32 52 C32 52 12 40 12 26 C12 18 18 14 24 14 C28 14 31 16 32 20 C33 16 36 14 40 14 C46 14 52 18 52 26 C52 40 32 52 32 52 Z" />
-              </svg>
+              <Sparkles aria-hidden className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500" />
               <p className="text-sm font-medium">Co tím získáte navíc</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a

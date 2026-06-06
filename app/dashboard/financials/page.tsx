@@ -573,9 +573,6 @@ export default function FinancialsPage() {
           <div>
             <div className="flex items-center gap-2.5">
               <span aria-hidden className="h-px w-7 bg-blue-300/70" />
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-300 uppercase">
-                Dva scénáře, jedno rozhodnutí
-              </p>
             </div>
             <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
               Finance
