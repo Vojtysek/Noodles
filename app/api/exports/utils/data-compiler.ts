@@ -65,7 +65,6 @@ export interface CompiledData {
   personaName?: string
   personaRole?: string
   personaSentiment?: string
-  personaBrief?: string
   personaTraits?: string[]
   personaMotivations?: string[]
   personaObjections?: string[]
@@ -177,7 +176,6 @@ export async function compileData(
       compiled.personaName = persona.name
       compiled.personaRole = persona.role
       compiled.personaSentiment = persona.sentiment
-      compiled.personaBrief = persona.brief
       compiled.personaTraits = persona.structured?.traits ?? []
       compiled.personaMotivations = persona.structured?.motivations ?? []
       compiled.personaObjections = persona.structured?.objections ?? []
