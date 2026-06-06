@@ -67,3 +67,61 @@ export const calcPhotovoltaics = (
   const sold = annualProduction * (1 - selfConsumption) * feedInPrice
   return (saved + sold) / 12
 }
+
+// --- Napojení formulí na projekty -------------------------------------------
+// Geometrie odvozená z RÚIAN dat — stejný model jako onboarding:
+// facade = zastavěná plocha × patra; 15 % fasády jsou okna, 85 % plná stěna.
+export type SavingsGeometry = {
+  footprint: number // zastavěná plocha (m²)
+  floors: number
+  facade: number // footprint × floors
+  windowArea: number // facade × 0.15
+  wallArea: number // facade × 0.85
+  units: number
+}
+
+// Měrná potřeba tepla staršího SVJ před rekonstrukcí (kWh/m²/rok).
+const SPECIFIC_HEAT_DEMAND = 120
+// Cena „staré" energie (plyn / CZT) Kč/kWh — vstup pro tepelné formule.
+const OLD_ENERGY_PRICE = 2.5
+// Účinnost / COP původního zdroje (přímotop ≈ 1, plyn ≈ 0,95).
+const OLD_HEAT_COP = 1
+
+// Vytápěná podlahová plocha ≈ zastavěná plocha × patra.
+const heatedFloorArea = (g: SavingsGeometry) => g.footprint * g.floors
+// Roční potřeba tepla domu (kWh/rok).
+const annualHeatDemand = (g: SavingsGeometry) =>
+  heatedFloorArea(g) * SPECIFIC_HEAT_DEMAND
+// Instalovaný výkon FVE z využitelné části střechy (~5,5 m²/kWp).
+const installedKwp = (g: SavingsGeometry) => (g.footprint * 0.4) / 5.5
+
+/**
+ * Roční úspora (Kč/rok) jednoho projektu spočtená z fyzikálních formulí výše.
+ * Formule vrací měsíční úsporu, proto ×12. Vrací null pro projekty bez vzorce
+ * (např. výtah) — pro ně se použije fallback ze škálovaných mock dat.
+ */
+export function projectAnnualSavings(
+  projectId: string,
+  g: SavingsGeometry
+): number | null {
+  switch (projectId) {
+    case "fasada":
+      return calcReturn(g.wallArea, "facades") * 12
+    case "strecha":
+      return calcReturn(g.footprint, "roof") * 12
+    case "okna":
+      return calcReturn(g.windowArea, "windows") * 12
+    case "zaluzie":
+      return calcBlinds(g.windowArea) * 12
+    case "tepelne-cerpadlo":
+      return calcHeatPump(annualHeatDemand(g), OLD_HEAT_COP, OLD_ENERGY_PRICE) * 12
+    case "vytapeni":
+      return calcHeatingSystem(annualHeatDemand(g) * OLD_ENERGY_PRICE) * 12
+    case "rekuperace":
+      return calcRecuperation(annualHeatDemand(g)) * 12
+    case "fotovoltaika":
+      return calcPhotovoltaics(installedKwp(g)) * 12
+    default:
+      return null
+  }
+}
