@@ -111,6 +111,28 @@ export function seriesCrossing(a: { value: number }[], b: { value: number }[]): 
 }
 
 /**
+ * Index roku bodu zlomu z plných ročních kumulativních polí (0 = výchozí rok),
+ * interpolovaný mezi roky. Na rozdíl od seriesCrossing pracuje s plným
+ * rozlišením, takže výsledný rok nezávisí na vzorkování grafu. `withArr` je
+ * scénář s rekonstrukcí (kvůli investici startuje výš), `withoutArr` bez ní.
+ */
+export function crossingYearIndex(
+  withArr: number[],
+  withoutArr: number[]
+): number | null {
+  const n = Math.min(withArr.length, withoutArr.length)
+  for (let i = 0; i < n - 1; i++) {
+    const d0 = withArr[i] - withoutArr[i]
+    const d1 = withArr[i + 1] - withoutArr[i + 1]
+    if (d0 > 0 && d1 <= 0) {
+      const frac = d0 / (d0 - d1)
+      return i + frac
+    }
+  }
+  return null
+}
+
+/**
  * Dvouvrstvý spojnicový graf — porovnání vývoje dvou scénářů v čase
  * (např. s rekonstrukcí vs. bez ní). Obě řady sdílí stejnou osu let.
  * Najetím myší se zobrazí detail obou hodnot v daném roce.

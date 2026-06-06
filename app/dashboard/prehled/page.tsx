@@ -27,7 +27,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
+import {
+  ComparisonLineChart,
+  seriesCrossing,
+  crossingYearIndex,
+} from "@/components/dashboard/charts"
 import { Roadmap, type RoadmapItem } from "@/components/dashboard/roadmap"
 import { Harmonogram } from "@/components/dashboard/harmonogram"
 import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
@@ -50,6 +54,11 @@ import {
   type NonFinancialBenefit,
 } from "@/lib/benefits"
 import { fetchNonFinancialBenefits } from "@/lib/benefits-db"
+import {
+  projectAnnualSavings,
+  buildSavingsGeometry,
+  type SavingsGeometry,
+} from "@/app/dashboard/financials/return"
 
 type BuildingCalc = {
   id: string
@@ -63,6 +72,8 @@ type BuildingCalc = {
   rent_years: number
   capped_by_max: boolean
   costs_by_project: Record<string, number> | null
+  zastavena_plocha: number | null
+  floors: number | null
 }
 
 const HERO_PHOTO =
@@ -133,25 +144,43 @@ function monthLabel(offsetMonths: number): string {
 }
 
 /** Stejná modelace jako ve Financích — náklady obou scénářů v čase. */
-function computeScenario(scenario: Scenario, projectCostOverrides?: Record<string, number>) {
+function computeScenario(
+  scenario: Scenario,
+  projectCostOverrides?: Record<string, number>,
+  geometry?: SavingsGeometry | null
+) {
   const selected = scenario.projectIds
     .map((id) => projects.find((p) => p.id === id)!)
     .filter(Boolean)
 
   const mockBudget = selected.reduce((sum, p) => sum + p.budget, 0)
   const overrideBudget = projectCostOverrides
-    ? selected.reduce((sum, p) => sum + (projectCostOverrides[p.id] ?? p.budget), 0)
+    ? selected.reduce(
+        (sum, p) => sum + (projectCostOverrides[p.id] ?? p.budget),
+        0
+      )
     : mockBudget
-  const scale = projectCostOverrides && overrideBudget > 0 ? overrideBudget / mockBudget : 1
+  const scale =
+    projectCostOverrides && overrideBudget > 0 ? overrideBudget / mockBudget : 1
 
   const budget = overrideBudget
-  const savingsPerYear = selected.reduce((sum, p) => sum + p.savingsPerYear, 0) * scale
-  const fundIncreasePerFlat = selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0) * scale
+  // Roční úspora z fyzikálních formulí (return.ts) — stejný výpočet jako Finance.
+  // Fallback: škálovaný mock pro projekty bez vzorce (např. výtah).
+  const savingsPerYear = selected.reduce((sum, p) => {
+    const formula = geometry ? projectAnnualSavings(p.id, geometry) : null
+    return sum + (formula != null ? formula : p.savingsPerYear * scale)
+  }, 0)
+  const fundIncreasePerFlat =
+    selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0) * scale
   const totalMonths = selected.reduce((sum, p) => sum + p.durationMonths, 0)
-  const annualCost = selected.reduce((sum, p) => sum + p.baseline.annualCost, 0) * scale
+  const annualCost =
+    selected.reduce((sum, p) => sum + p.baseline.annualCost, 0) * scale
   const growth =
-    selected.reduce((sum, p) => sum + p.baseline.costGrowthPct * p.baseline.annualCost, 0) /
-    (selected.reduce((sum, p) => sum + p.baseline.annualCost, 0)) /
+    selected.reduce(
+      (sum, p) => sum + p.baseline.costGrowthPct * p.baseline.annualCost,
+      0
+    ) /
+    selected.reduce((sum, p) => sum + p.baseline.annualCost, 0) /
     100
 
   const cumWithout: number[] = [0]
@@ -169,9 +198,12 @@ function computeScenario(scenario: Scenario, projectCostOverrides?: Record<strin
     })
 
   const cumSeries = { without: sample(cumWithout), with: sample(cumWith) }
+  // breakEvenPos (vzorkovaný) slouží jen pro značku v grafu; rok počítáme
+  // z plných ročních křivek, aby seděl s tabem Finance (rozlišení na rok).
   const breakEvenPos = seriesCrossing(cumSeries.with, cumSeries.without)
+  const breakEvenIdx = crossingYearIndex(cumWith, cumWithout)
   const breakEvenYear =
-    breakEvenPos !== null ? Math.round(START_YEAR + breakEvenPos * HORIZON) : null
+    breakEvenIdx !== null ? Math.round(START_YEAR + breakEvenIdx) : null
 
   let offset = 0
   const roadmap: RoadmapItem[] = selected.map((p) => {
@@ -207,7 +239,9 @@ export default function PrehledPage() {
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
   const [loading, setLoading] = useState(true)
   // Katalog nefinančních přínosů — z DB, s fallbackem na statický katalog.
-  const [benefitCatalog, setBenefitCatalog] = useState<NonFinancialBenefit[]>(NON_FINANCIAL_BENEFITS)
+  const [benefitCatalog, setBenefitCatalog] = useState<NonFinancialBenefit[]>(
+    NON_FINANCIAL_BENEFITS
+  )
   const rootRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -236,10 +270,15 @@ export default function PrehledPage() {
           .maybeSingle()
         if (data) {
           setBuildingCalc(data as BuildingCalc)
-          const built = userScenarios((data as BuildingCalc).selected_renovations ?? [])
+          const built = userScenarios(
+            (data as BuildingCalc).selected_renovations ?? []
+          )
           setDynamicScenarios(built)
           setScenarioId(built[0]?.id ?? null)
-          if (new URLSearchParams(window.location.search).get("from") === "onboarding") {
+          if (
+            new URLSearchParams(window.location.search).get("from") ===
+            "onboarding"
+          ) {
             setSplashOpen(true)
           }
         }
@@ -249,12 +288,26 @@ export default function PrehledPage() {
     })()
   }, [])
 
-  const scenario = dynamicScenarios.find((s) => s.id === scenarioId) ?? dynamicScenarios[0] ?? null
+  const scenario =
+    dynamicScenarios.find((s) => s.id === scenarioId) ??
+    dynamicScenarios[0] ??
+    null
+  // Geometrie domu z RÚIAN dat — vstup pro fyzikální formule úspor (return.ts).
+  const geometry = useMemo<SavingsGeometry | null>(
+    () =>
+      buildSavingsGeometry(
+        buildingCalc?.zastavena_plocha,
+        buildingCalc?.floors,
+        buildingCalc?.units
+      ),
+    [buildingCalc]
+  )
+
   const result = useMemo(() => {
     if (!scenario) return null
     if (scenario.id === "vase-vybrane") {
       if (buildingCalc?.costs_by_project) {
-        return computeScenario(scenario, buildingCalc.costs_by_project)
+        return computeScenario(scenario, buildingCalc.costs_by_project, geometry)
       }
       if (buildingCalc?.total_cost) {
         const mockTotal = scenario.projectIds.reduce((sum, id) => {
@@ -263,25 +316,32 @@ export default function PrehledPage() {
         }, 0)
         const scale = mockTotal > 0 ? buildingCalc.total_cost / mockTotal : 1
         const overrides = Object.fromEntries(
-          scenario.projectIds.map((id) => [id, (projects.find((p) => p.id === id)?.budget ?? 0) * scale])
+          scenario.projectIds.map((id) => [
+            id,
+            (projects.find((p) => p.id === id)?.budget ?? 0) * scale,
+          ])
         )
-        return computeScenario(scenario, overrides)
+        return computeScenario(scenario, overrides, geometry)
       }
     }
-    return computeScenario(scenario)
-  }, [scenario, buildingCalc])
+    return computeScenario(scenario, undefined, geometry)
+  }, [scenario, buildingCalc, geometry])
 
   // Nefinanční přínosy aktivního scénáře — seskupené dle kategorie.
   const benefitGroups = useMemo(() => {
     if (!scenario) return []
-    const grouped = groupBenefitsByCategory(selectBenefits(benefitCatalog, scenario.projectIds))
+    const grouped = groupBenefitsByCategory(
+      selectBenefits(benefitCatalog, scenario.projectIds)
+    )
     return (Object.keys(grouped) as BenefitCategory[]).map((category) => ({
       category,
       benefits: grouped[category]!,
     }))
   }, [scenario, benefitCatalog])
 
-  const finishLabel = result ? monthLabel(result.totalMonths).replace("od ", "") : ""
+  const finishLabel = result
+    ? monthLabel(result.totalMonths).replace("od ", "")
+    : ""
 
   // Hodnoty do plovoucích chipů v hero pruhu.
   const breakEvenYear = result?.breakEvenYear ?? null
@@ -294,9 +354,21 @@ export default function PrehledPage() {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
       tl.from("[data-pr-header]", { y: -20, autoAlpha: 0, duration: 0.6 }, 0)
-        .from("[data-hero-photo]", { scale: 1.12, duration: 1.4, ease: "power2.out" }, 0)
-        .from("[data-hero-chip]", { y: 16, autoAlpha: 0, duration: 0.5, stagger: 0.08 }, 0.4)
-        .from("[data-pr-reveal]", { y: 32, autoAlpha: 0, duration: 0.7, stagger: 0.1 }, 0.3)
+        .from(
+          "[data-hero-photo]",
+          { scale: 1.12, duration: 1.4, ease: "power2.out" },
+          0
+        )
+        .from(
+          "[data-hero-chip]",
+          { y: 16, autoAlpha: 0, duration: 0.5, stagger: 0.08 },
+          0.4
+        )
+        .from(
+          "[data-pr-reveal]",
+          { y: 32, autoAlpha: 0, duration: 0.7, stagger: 0.1 },
+          0.3
+        )
     },
     { scope: rootRef }
   )
@@ -319,7 +391,10 @@ export default function PrehledPage() {
             ease: "power2.out",
             onUpdate() {
               const rounded = Math.round(counter.value)
-              el.textContent = rounded >= 10000 ? rounded.toLocaleString("cs-CZ") : String(rounded)
+              el.textContent =
+                rounded >= 10000
+                  ? rounded.toLocaleString("cs-CZ")
+                  : String(rounded)
             },
           }
         )

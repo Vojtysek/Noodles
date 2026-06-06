@@ -25,6 +25,7 @@ import {
   ComparisonLineChart,
   FinancingDonut,
   seriesCrossing,
+  crossingYearIndex,
 } from "@/components/dashboard/charts"
 import {
   computeFinance,
@@ -40,7 +41,11 @@ import {
   type ScenarioTone,
 } from "@/lib/mock-data"
 import { userProjects, userScenarios } from "@/lib/scenarios"
-import { projectAnnualSavings, type SavingsGeometry } from "./return"
+import {
+  projectAnnualSavings,
+  buildSavingsGeometry,
+  type SavingsGeometry,
+} from "./return"
 
 const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
@@ -211,20 +216,15 @@ export default function FinancialsPage() {
   )
 
   // Geometrie domu z RÚIAN dat — vstup pro fyzikální formule úspor (return.ts).
-  const geometry = useMemo<SavingsGeometry | null>(() => {
-    const footprint = buildingData?.zastavena_plocha
-    const floors = buildingData?.floors
-    if (!footprint || !floors || footprint <= 0 || floors <= 0) return null
-    const facade = footprint * floors
-    return {
-      footprint,
-      floors,
-      facade,
-      windowArea: facade * 0.15,
-      wallArea: facade * 0.85,
-      units: buildingData?.units ?? 0,
-    }
-  }, [buildingData])
+  const geometry = useMemo<SavingsGeometry | null>(
+    () =>
+      buildSavingsGeometry(
+        buildingData?.zastavena_plocha,
+        buildingData?.floors,
+        buildingData?.units
+      ),
+    [buildingData]
+  )
 
   // Pouze projekty, které uživatel vybral, naškálované jeho náklady.
   // Roční úspora se počítá z formulí v return.ts (fallback: škálovaný mock).
@@ -307,6 +307,9 @@ export default function FinancialsPage() {
     // Bod zlomu počítaný z vykreslených (vzorkovaných) křivek — značka v grafu
     // tak sedí přesně na jejich průsečíku.
     const breakEvenPos = seriesCrossing(cumSeries.with, cumSeries.without)
+    // Rok bodu zlomu z plných ročních křivek (rozlišení na rok) — nezávislý
+    // na vzorkování, takže sedí s Přehledem. breakEvenPos zůstává pro značku v grafu.
+    const breakEvenYearIndex = crossingYearIndex(cumWith, cumWithout)
 
     const costBreakdown = single
       ? single.costBreakdown
@@ -334,6 +337,7 @@ export default function FinancialsPage() {
       cumWithoutEnd: cumWithout[horizon],
       cumWithEnd: cumWith[horizon],
       breakEvenPos,
+      breakEvenYearIndex,
       lossAtHorizon,
       annualSeries,
       cumSeries,
@@ -382,8 +386,8 @@ export default function FinancialsPage() {
       ? single.name
       : "Vlastní výběr"
   const breakEvenYearNum =
-    agg.breakEvenPos !== null
-      ? Math.round(START_YEAR + agg.breakEvenPos * horizon)
+    agg.breakEvenYearIndex !== null
+      ? Math.round(START_YEAR + agg.breakEvenYearIndex)
       : null
   const breakEvenLabel =
     breakEvenYearNum !== null

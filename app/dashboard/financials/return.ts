@@ -80,6 +80,24 @@ export type SavingsGeometry = {
   units: number
 }
 
+/** Sestaví geometrii pro formule úspor z hrubých dat budovy (RÚIAN). */
+export function buildSavingsGeometry(
+  footprint: number | null | undefined,
+  floors: number | null | undefined,
+  units: number | null | undefined
+): SavingsGeometry | null {
+  if (!footprint || !floors || footprint <= 0 || floors <= 0) return null
+  const facade = footprint * floors
+  return {
+    footprint,
+    floors,
+    facade,
+    windowArea: facade * 0.15,
+    wallArea: facade * 0.85,
+    units: units ?? 0,
+  }
+}
+
 // Měrná potřeba tepla staršího SVJ před rekonstrukcí (kWh/m²/rok).
 const SPECIFIC_HEAT_DEMAND = 120
 // Cena „staré" energie (plyn / CZT) Kč/kWh — vstup pro tepelné formule.
