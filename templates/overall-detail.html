@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!--
+  LAYOUT REFERENCE: overall-detail
+  ─────────────────────────────────────────────────────────────────────────────
+  This file is a LAYOUT REFERENCE ONLY — it is NOT rendered into the PDF.
+  PDF generation is done programmatically by /lib/pdf-generator.ts using PDFKit.
+  ─────────────────────────────────────────────────────────────────────────────
+
+  EXPORT TYPE: overall-detail
+  TITLE:       "Detailní report"
+  PAGES:       10–15 stran
+  BEST FOR:    Analytické osobnosti, detailní přezkoumání před hlasováním
+
+  SECTIONS (in order):
+  1. Header
+     - Title: "Detailní report"
+     - Subtitle: {scenarioName} — {scenarioTagline}
+     - Date: Vygenerováno: {generatedDate}
+
+  2. Shrnutí (executive summary)
+     - Celkový rozpočet         {totalBudget}
+     - Roční úspory energií     {totalSavingsPerYear}
+     - Průměrná návratnost      {paybackYears} let
+     - Celková úspora energie   {totalEnergySavingPct} %
+     - Zvýšení fondu na byt     +{totalFundIncreasePerFlat} Kč
+     - Projektů celkem          {totalProjects}
+
+  3. Per project (new page for each project after the first):
+     a) Project header: {project.name}
+     b) Metrics:
+        - Celkový rozpočet      {project.budget}
+        - Roční úspory          {project.savingsPerYear}
+        - Návratnost            {project.paybackYears} let
+        - Úspora energie        {project.energySavingPct} %
+        - Trvání realizace      {project.durationMonths} měsíců
+        - Zvýšení fondu na byt  +{project.fundIncreasePerFlat} Kč
+     c) Rozpis nákladů (table):
+        Columns: Položka | Dodavatel | Částka | Podíl
+        Rows: {project.costItems[]}
+
+  4. Footer (all pages)
+-->
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Detailní report — Layout Reference</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; color: #333; background: #f9f9f9; }
+    h1 { color: #1a56db; }
+    section { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { background: #f3f4f6; text-align: left; padding: 6px 10px; font-size: 12px; color: #6b7280; }
+    td { padding: 6px 10px; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+    ul { margin: 8px 0 0 20px; }
+    li { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Detailní report</h1>
+  <p><strong>Typ:</strong> overall-detail &nbsp;|&nbsp; <strong>Stran:</strong> 10–15 &nbsp;|&nbsp; <strong>Pro:</strong> analytické povahy</p>
+
+  <section>
+    <h2>1. Header</h2>
+    <ul>
+      <li>Titulek: "Detailní report"</li>
+      <li>Podtitulek: <code>{scenarioName} — {scenarioTagline}</code></li>
+      <li>Datum: <code>Vygenerováno: {generatedDate}</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. Shrnutí</h2>
+    <ul>
+      <li>Celkový rozpočet: <code>{totalBudget}</code></li>
+      <li>Roční úspory energií: <code>{totalSavingsPerYear}</code></li>
+      <li>Průměrná návratnost: <code>{paybackYears} let</code></li>
+      <li>Celková úspora energie: <code>{totalEnergySavingPct} %</code></li>
+      <li>Zvýšení fondu na byt: <code>+{totalFundIncreasePerFlat} Kč</code></li>
+      <li>Projektů celkem: <code>{totalProjects}</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. Projekt (nová stránka pro každý projekt, kromě prvního)</h2>
+    <p>Opakuje se pro každý projekt z <code>context.projects[]</code>:</p>
+    <h3>Metriky projektu</h3>
+    <ul>
+      <li>Celkový rozpočet: <code>{project.budget}</code></li>
+      <li>Roční úspory: <code>{project.savingsPerYear}</code></li>
+      <li>Návratnost: <code>{project.paybackYears} let</code></li>
+      <li>Úspora energie: <code>{project.energySavingPct} %</code></li>
+      <li>Trvání realizace: <code>{project.durationMonths} měsíců</code></li>
+      <li>Zvýšení fondu na byt: <code>+{project.fundIncreasePerFlat} Kč</code></li>
+    </ul>
+
+    <h3>Rozpis nákladů (tabulka)</h3>
+    <table>
+      <thead>
+        <tr><th>Položka</th><th>Dodavatel</th><th>Částka</th><th>Podíl</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>{costItem.item}</td><td>{costItem.supplier}</td><td>{costItem.amount}</td><td>{costItem.share} %</td></tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

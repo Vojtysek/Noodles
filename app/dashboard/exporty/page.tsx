@@ -30,6 +30,7 @@ import { createClient } from "@/lib/supabase/client"
 import { userScenarios } from "@/lib/scenarios"
 import type { PersonaType } from "@/lib/persona-types"
 import { PERSONA_TYPES } from "@/lib/persona-types"
+import { ARCHETYPES } from "@/lib/archetypes"
 
 const TYPE_ICONS: Record<string, typeof FileText> = {
   "overall-brief": FileText,
@@ -67,8 +68,7 @@ export default function ExportyPage() {
             persona_type: string | null
           }>
         ) => {
-          if (!Array.isArray(rows) || rows.length === 0) return
-          const fromDb: Persona[] = rows.map((r) => ({
+          const fromDb: Persona[] = Array.isArray(rows) ? rows.map((r) => ({
             id: r.id,
             name: r.name,
             role: r.role,
@@ -81,13 +81,43 @@ export default function ExportyPage() {
               r.persona_type && r.persona_type in PERSONA_TYPES
                 ? (r.persona_type as PersonaType)
                 : undefined,
+          })) : []
+          // Merge custom personas with archetypes
+          const archetypesAsPersonas: Persona[] = ARCHETYPES.map((archetype) => ({
+            id: archetype.id,
+            name: archetype.name,
+            role: archetype.subtitle,
+            unit: "",
+            status: "zpracovano" as const,
+            sentiment: "vaha" as const,
+            brief: archetype.description,
+            structured: archetype.profile,
+            personaType: archetype.id,
           }))
-          setPersonaList(fromDb)
-          setPersonaId(fromDb[0].id)
+          const merged = [...fromDb, ...archetypesAsPersonas]
+          setPersonaList(merged)
+          if (merged.length > 0) {
+            setPersonaId(merged[0].id)
+          }
         }
       )
       .catch(() => {
-        /* no personas available */
+        // No custom personas available, use only archetypes
+        const archetypesAsPersonas: Persona[] = ARCHETYPES.map((archetype) => ({
+          id: archetype.id,
+          name: archetype.name,
+          role: archetype.subtitle,
+          unit: "",
+          status: "zpracovano" as const,
+          sentiment: "vaha" as const,
+          brief: archetype.description,
+          structured: archetype.profile,
+          personaType: archetype.id,
+        }))
+        setPersonaList(archetypesAsPersonas)
+        if (archetypesAsPersonas.length > 0) {
+          setPersonaId(archetypesAsPersonas[0].id)
+        }
       })
   }, [])
 
@@ -124,15 +154,58 @@ export default function ExportyPage() {
   const selectedPersona = personaList.find((p) => p.id === personaId)
   const selectedScenario = dynamicScenarios.find((s) => s.id === scenarioId)
 
-  // Mock generování — pouze vizuální stav, žádný skutečný export.
-  function generate() {
+  // Generate PDF by calling API endpoint
+  async function generate() {
+    if (!selectedType) return
+
     setGenerating(true)
     setDone(false)
-    setTimeout(() => {
+
+    try {
+      // Prepare request payload
+      const payload = {
+        exportType: selectedTypeId,
+        personaId: selectedType.needsPersona ? personaId : undefined,
+        scenarioId: scenarioId !== 'all' ? scenarioId : undefined,
+      }
+
+      // Call API
+      const response = await fetch('/api/exports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || `API error: ${response.status}`)
+      }
+
+      // Get PDF blob
+      const blob = await response.blob()
+
+      // Trigger download
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `export-${selectedTypeId}-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      // Show success state
       setGenerating(false)
       setDone(true)
       setTimeout(() => setDone(false), 2500)
-    }, 1200)
+    } catch (error) {
+      console.error('Export failed:', error)
+      setGenerating(false)
+      // Could add error toast here
+      alert(`Chyba při generování: ${error instanceof Error ? error.message : 'Neznámá chyba'}`)
+    }
   }
 
   return (
@@ -351,16 +424,6 @@ export default function ExportyPage() {
                 </p>
               </div>
               <div className="mt-auto flex flex-wrap items-center gap-2 text-xs">
-                <span
-                  className={cn(
-                    "rounded-md px-1.5 py-0.5 font-medium",
-                    selected
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {exp.pages}
-                </span>
                 <span className="text-muted-foreground">{exp.bestFor}</span>
               </div>
             </button>

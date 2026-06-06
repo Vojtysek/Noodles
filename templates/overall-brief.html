@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--
+  LAYOUT REFERENCE: overall-brief
+  ─────────────────────────────────────────────────────────────────────────────
+  This file is a LAYOUT REFERENCE ONLY — it is NOT rendered into the PDF.
+  PDF generation is done programmatically by /lib/pdf-generator.ts using PDFKit.
+
+  Use this file as a visual guide when updating the PDF layout in pdf-generator.ts.
+  ─────────────────────────────────────────────────────────────────────────────
+
+  EXPORT TYPE: overall-brief
+  TITLE:       "Stručný přehled renovací"
+  PAGES:       2–3 strany
+  BEST FOR:    Zaneprázdněné rezidenty, nástěnka, hromadný e-mail
+
+  SECTIONS (in order):
+  1. Header
+     - Title: "Stručný přehled renovací"
+     - Subtitle: {scenarioName} — {scenarioTagline}
+     - Date: Vygenerováno: {generatedDate}
+
+  2. Klíčová čísla (metric grid 2×3)
+     - Celkový rozpočet     {totalBudget}
+     - Roční úspory         {totalSavingsPerYear}
+     - Projektů v plánu     {totalProjects}
+     - Návratnost           {paybackYears} let
+     - Úspora energie       {totalEnergySavingPct} %
+     - Fond na byt +        {totalFundIncreasePerFlat} Kč
+
+  3. Projekty v plánu (list)
+     - Per project: {name}, {budget}, {savingsPerYear}/rok, {paybackYears} let, {durationMonths} měsíců
+
+  4. Klíčové přínosy (bullet list)
+     - Nižší energetické náklady a vyšší komfort bydlení
+     - Zvýšení hodnoty nemovitosti a fondu oprav
+     - Ekologičtější domácnost, nižší uhlíková stopa
+     - Dlouhodobá investice s garantovanou návratností
+
+  5. Footer (all pages)
+     - Left:  "Noodles · Přehled renovací bytového domu"
+     - Right: "{page} / {total}"
+-->
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Stručný přehled renovací — Layout Reference</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; color: #333; background: #f9f9f9; }
+    h1 { color: #1a56db; }
+    section { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    ul { margin: 8px 0 0 20px; }
+    li { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Stručný přehled renovací</h1>
+  <p><strong>Typ:</strong> overall-brief &nbsp;|&nbsp; <strong>Stran:</strong> 2–3 &nbsp;|&nbsp; <strong>Pro:</strong> zaneprázdněné rezidenty</p>
+
+  <section>
+    <h2>1. Header</h2>
+    <ul>
+      <li>Titulek: "Stručný přehled renovací"</li>
+      <li>Podtitulek: <code>{scenarioName} — {scenarioTagline}</code></li>
+      <li>Datum: <code>Vygenerováno: {generatedDate}</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. Klíčová čísla (mřížka 2 × 3)</h2>
+    <ul>
+      <li>Celkový rozpočet: <code>{totalBudget}</code></li>
+      <li>Roční úspory: <code>{totalSavingsPerYear}</code></li>
+      <li>Projektů v plánu: <code>{totalProjects}</code></li>
+      <li>Návratnost: <code>{paybackYears} let</code></li>
+      <li>Úspora energie: <code>{totalEnergySavingPct} %</code></li>
+      <li>Fond na byt +: <code>{totalFundIncreasePerFlat} Kč</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. Projekty v plánu</h2>
+    <p>Pro každý projekt ze <code>context.projects[]</code>:</p>
+    <ul>
+      <li>Název: <code>{project.name}</code></li>
+      <li>Rozpočet: <code>{project.budget}</code></li>
+      <li>Roční úspory: <code>{project.savingsPerYear}</code></li>
+      <li>Návratnost: <code>{project.paybackYears} let</code></li>
+      <li>Trvání: <code>{project.durationMonths} měsíců</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4. Klíčové přínosy</h2>
+    <ul>
+      <li>Nižší energetické náklady a vyšší komfort bydlení</li>
+      <li>Zvýšení hodnoty nemovitosti a fondu oprav</li>
+      <li>Ekologičtější domácnost, nižší uhlíková stopa</li>
+      <li>Dlouhodobá investice s garantovanou návratností</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5. Footer (všechny stránky)</h2>
+    <ul>
+      <li>Vlevo: "Noodles · Přehled renovací bytového domu"</li>
+      <li>Vpravo: "{stránka} / {celkem}"</li>
+    </ul>
+  </section>
+</body>
+</html>
