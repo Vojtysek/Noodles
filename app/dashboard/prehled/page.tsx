@@ -205,6 +205,7 @@ export default function PrehledPage() {
   // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
   const [splashOpen, setSplashOpen] = useState(false)
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
+  const [loading, setLoading] = useState(true)
   // Katalog nefinančních přínosů — z DB, s fallbackem na statický katalog.
   const [benefitCatalog, setBenefitCatalog] = useState<NonFinancialBenefit[]>(NON_FINANCIAL_BENEFITS)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -242,7 +243,9 @@ export default function PrehledPage() {
             setSplashOpen(true)
           }
         }
-      } catch {}
+      } catch {} finally {
+        setLoading(false)
+      }
     })()
   }, [])
 
@@ -321,9 +324,52 @@ export default function PrehledPage() {
           }
         )
       })
+      gsap.utils.toArray<HTMLElement>("[data-count-chip-czk]").forEach((el) => {
+        const target = parseFloat(el.dataset.countChipCzk ?? "0")
+        if (!Number.isFinite(target)) return
+        const counter = { value: 0 }
+        gsap.fromTo(
+          counter,
+          { value: 0 },
+          {
+            value: target,
+            duration: 1.2,
+            ease: "power2.out",
+            onUpdate() {
+              const rounded = Math.round(counter.value)
+              el.textContent = `+${rounded.toLocaleString("cs-CZ")} Kč`
+            },
+          }
+        )
+      })
     },
     { scope: rootRef, dependencies: [buildingCalc, breakEvenYear] }
   )
+
+  if (loading) {
+    return (
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
+        <div aria-hidden className="pointer-events-none absolute -top-32 -left-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]" />
+        <div aria-hidden className="pointer-events-none absolute top-1/3 -right-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]" />
+        <div className="relative isolate min-h-[15rem] overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-900 sm:min-h-[17rem]">
+          <div className="relative flex h-full min-h-[15rem] flex-col justify-between gap-6 p-6 sm:min-h-[17rem] sm:p-8">
+            <div>
+              <div className="h-2.5 w-28 animate-pulse rounded bg-white/20" />
+              <div className="mt-2 h-8 w-36 animate-pulse rounded bg-white/20" />
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              <div className="h-10 w-40 animate-pulse rounded-xl bg-white/20" />
+              <div className="h-10 w-44 animate-pulse rounded-xl bg-white/20" />
+              <div className="h-10 w-40 animate-pulse rounded-xl bg-white/20" />
+            </div>
+          </div>
+        </div>
+        <div className="h-48 w-full animate-pulse rounded-2xl border bg-muted/40" />
+        <div className="h-56 w-full animate-pulse rounded-2xl border bg-muted/40" />
+        <div className="h-40 w-full animate-pulse rounded-2xl border bg-muted/40" />
+      </div>
+    )
+  }
 
   return (
     <div
@@ -458,7 +504,10 @@ export default function PrehledPage() {
                 >
                   <HandCoins className="size-4 shrink-0 text-blue-300" />
                   <p className="text-sm text-white/90">
-                    <span className="font-semibold tabular-nums">
+                    <span
+                      data-count-chip-czk={Math.round(result.fundIncreasePerFlat)}
+                      className="font-semibold tabular-nums"
+                    >
                       +{fmtCzk(Math.round(result.fundIncreasePerFlat))}
                     </span>{" "}
                     <span className="text-white/60">fond oprav / byt / měsíc</span>
@@ -612,7 +661,7 @@ export default function PrehledPage() {
               className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
             >
               <Sparkles aria-hidden className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500" />
-              <p className="text-sm font-medium">Co tím získáte navíc</p>
+              <p className="text-sm font-medium">Zlepšení kvality života</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a
                 hodnota domu.

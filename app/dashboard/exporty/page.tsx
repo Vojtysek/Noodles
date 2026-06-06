@@ -67,6 +67,8 @@ export default function ExportyPage() {
 
   const [exportHistory, setExportHistory] = useState<ExportRow[]>([])
   const [historyTick, setHistoryTick] = useState(0)
+  const [loadingPersonas, setLoadingPersonas] = useState(true)
+  const [loadingBuilding, setLoadingBuilding] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
@@ -151,6 +153,7 @@ export default function ExportyPage() {
           setPersonaId(archetypesAsPersonas[0].id)
         }
       })
+      .finally(() => setLoadingPersonas(false))
   }, [])
 
   // Fetch the user's building plan and build their own scenario ("Váš plán").
@@ -177,6 +180,8 @@ export default function ExportyPage() {
         if (built.length === 1) setScenarioId(built[0].id)
       } catch {
         /* leave scenarios empty */
+      } finally {
+        setLoadingBuilding(false)
       }
     })()
   }, [])
@@ -254,6 +259,39 @@ export default function ExportyPage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+  }
+
+  if (loadingPersonas || loadingBuilding) {
+    return (
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <div aria-hidden className="pointer-events-none absolute -top-32 -left-40 -z-10 size-96 rounded-full bg-primary/8 blur-[120px]" />
+        <div aria-hidden className="pointer-events-none absolute top-1/2 -right-40 -z-10 size-96 rounded-full bg-emerald-500/8 blur-[120px]" />
+        {/* Header */}
+        <div>
+          <div className="h-2.5 w-36 animate-pulse rounded bg-muted" />
+          <div className="mt-2 h-8 w-28 animate-pulse rounded bg-muted" />
+          <div className="mt-1.5 h-3 w-96 animate-pulse rounded bg-muted" />
+        </div>
+        {/* Step 1 skeleton */}
+        <div className="flex items-center gap-3">
+          <div className="size-6 animate-pulse rounded-full bg-muted" />
+          <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="h-20 w-full animate-pulse rounded-2xl border bg-muted/40" />
+        {/* Step 2 skeleton */}
+        <div className="flex items-center gap-3">
+          <div className="size-6 animate-pulse rounded-full bg-muted" />
+          <div className="h-4 w-36 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-36 animate-pulse rounded-2xl border bg-muted/40" />
+          ))}
+        </div>
+        {/* Step 3 skeleton */}
+        <div className="h-48 w-full animate-pulse rounded-2xl border bg-muted/40" />
+      </div>
+    )
   }
 
   return (

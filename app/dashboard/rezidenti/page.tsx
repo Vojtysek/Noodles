@@ -52,6 +52,7 @@ type Subject =
 export default function RezidentiPage() {
   const [customs, setCustoms] = useState<Persona[]>([])
   const [loadingCustoms, setLoadingCustoms] = useState(true)
+  const [loadingBuilding, setLoadingBuilding] = useState(true)
   const [selectedId, setSelectedId] = useState<string>(ARCHETYPES[0].id)
 
   // Vlastní archetyp — formulář + úpravy
@@ -125,7 +126,9 @@ export default function RezidentiPage() {
           setScenarioList(built)
           setScenarioId(built[0].id)
         }
-      } catch {}
+      } catch {} finally {
+        setLoadingBuilding(false)
+      }
     })()
   }, [])
 
@@ -586,7 +589,9 @@ export default function RezidentiPage() {
             </div>
 
             {/* Přepínač velkých scénářů */}
-            {scenario && (
+            {loadingBuilding ? (
+              <div className="mt-4 h-9 w-56 animate-pulse rounded-full bg-muted" />
+            ) : scenario && (
             <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-muted p-1">
               {scenarioList.map((s) => {
                 const active = s.id === scenario.id
