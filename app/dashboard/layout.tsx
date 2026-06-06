@@ -10,7 +10,6 @@ export default function DashboardLayout({
   return (
     <div className="relative flex min-h-svh">
       <PendingBuildingBridge />
-      <JoyrideTour />
       {/* Shared ambient atmosphere behind all dashboard pages */}
       <div
         aria-hidden
