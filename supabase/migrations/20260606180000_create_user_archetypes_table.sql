@@ -1,6 +1,6 @@
 -- User-created archetype types, isolated per authenticated user.
 -- Mirrors the built-in Archetype shape from lib/archetypes.ts plus user_id.
-create table user_archetypes (
+create table if not exists user_archetypes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
@@ -12,27 +12,27 @@ create table user_archetypes (
   created_at timestamptz not null default now()
 );
 
-create index user_archetypes_user_id_idx on user_archetypes(user_id);
+create index if not exists user_archetypes_user_id_idx on user_archetypes(user_id);
 
 alter table user_archetypes enable row level security;
 
 drop policy if exists "user_archetypes_select_own" on user_archetypes;
 create policy "user_archetypes_select_own"
-  on user_archetypes for select
+  on user_archetypes for select to authenticated
   using (auth.uid() = user_id);
 
 drop policy if exists "user_archetypes_insert_own" on user_archetypes;
 create policy "user_archetypes_insert_own"
-  on user_archetypes for insert
+  on user_archetypes for insert to authenticated
   with check (auth.uid() = user_id);
 
 drop policy if exists "user_archetypes_update_own" on user_archetypes;
 create policy "user_archetypes_update_own"
-  on user_archetypes for update
+  on user_archetypes for update to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 drop policy if exists "user_archetypes_delete_own" on user_archetypes;
 create policy "user_archetypes_delete_own"
-  on user_archetypes for delete
+  on user_archetypes for delete to authenticated
   using (auth.uid() = user_id);
