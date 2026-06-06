@@ -1,7 +1,9 @@
 -- Tie personas to authenticated users.
 -- user_id is nullable to avoid breaking existing dev rows.
 alter table personas
-  add column if not exists user_id uuid references auth.users(id) on delete cascade;
+  add column if not exists user_id uuid references auth.users(id) on delete cascade default auth.uid();
+
+create index if not exists personas_user_id_idx on personas(user_id);
 
 alter table personas enable row level security;
 
