@@ -141,21 +141,22 @@ function renovationBreakdown(
   }))
 }
 
-function calcRepair(c: RepairCalc, totalCost: number) {
+function calcRepair(c: RepairCalc, totalCost: number, equity: number = 0) {
   const alpha = totalCost
   const maxRentTime = alpha < 1_500_000 ? 10 : 15
   const maxLoanPerUnit = 750_000
   const loanCap = maxLoanPerUnit * c.numberOfUnits
-  const loan = Math.min(alpha, loanCap)
+  // Vlastní kapitál se vloží do investice jako první; financuje se jen zbytek.
+  const zbyva = Math.max(0, alpha - Math.max(0, equity))
+  const loan = Math.min(zbyva, loanCap)
   const n = 12 * c.rentYears
   const r = 0.0499 / 12
   const comLoan = ((loan * (r * (1 + r) ** n)) / ((1 + r) ** n - 1)) * n
-  const overCap = Math.max(0, alpha - loan)
+  const overCap = Math.max(0, zbyva - loan)
   const monthlyPerUnit =
     c.numberOfUnits > 0 && c.rentYears > 0
       ? loan / c.numberOfUnits / c.rentYears / 12
       : 0
-      console.log(monthlyPerUnit);
   return {
     alpha,
     maxRentTime,
@@ -166,7 +167,7 @@ function calcRepair(c: RepairCalc, totalCost: number) {
     finalRent: loan, // alias pro stávající konzumenty (uložení do Supabase)
     overCap,
     monthlyPerUnit,
-    cappedByMax: alpha > loanCap,
+    cappedByMax: zbyva > loanCap,
   }
 }
 
@@ -344,6 +345,10 @@ const STEP_META = [
     desc: "Odhadnuto z roku výstavby — upravte podle skutečného stavu.",
   },
   {
+    title: "Základní kapitál",
+    desc: "Zadejte výši vlastních prostředků, které chcete vložit do investice.",
+  },
+  {
     title: "Co chcete renovovat?",
     desc: "Vyberte oblast pro výpočet příspěvku do fondu oprav.",
   },
@@ -518,6 +523,7 @@ export default function CalculatorPage() {
   const [heater, setHeater] = useState(true)
   const [showPenb, setShowPenb] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
+  const [zakladniKapital, setZakladniKapital] = useState<number | null>(null)
 
   const [repair, setRepair] = useState<RepairCalc>({
     numberOfUnits: 20,
@@ -529,7 +535,7 @@ export default function CalculatorPage() {
   const derivedWindowCount = geom.windowCount
   const breakdown = renovationBreakdown(selected, geom, repair.numberOfUnits)
   const totalCost = breakdown.reduce((sum, item) => sum + item.cost, 0)
-  const calc = calcRepair(repair, totalCost)
+  const calc = calcRepair(repair, totalCost, zakladniKapital ?? 0)
   const animatedAlpha = useCountUp(calc.alpha)
   const animatedLoan = useCountUp(calc.loan)
   const animatedComLoan = useCountUp(calc.comLoan)
@@ -658,6 +664,8 @@ export default function CalculatorPage() {
     } else if (step === 1) {
       goToStep(2)
     } else if (step === 2) {
+      goToStep(3)
+    } else if (step === 3) {
       if (selected.length === 0) return
       const year = building?.yearBuilt ?? null
       const pts = year
@@ -678,6 +686,7 @@ export default function CalculatorPage() {
       )
       const payload: BuildingPayload = {
         address: building?.address ?? null,
+        zakladni_kapital: zakladniKapital,
         units: repair.numberOfUnits,
         floors: building?.floors ?? null,
         year_built: building?.yearBuilt ?? null,
@@ -720,15 +729,15 @@ export default function CalculatorPage() {
         : query.trim()
           ? "Vyhledat"
           : "Přeskočit"
-      : step === 2
+      : step === 3
         ? "Zobrazit výsledky"
         : "Pokračovat"
 
-  const ctaDisabled = loading || (step === 2 && selected.length === 0)
+  const ctaDisabled = loading || (step === 3 && selected.length === 0)
 
   const progressDots = (
     <div className="flex justify-center gap-1.5">
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-primary" : "w-1.5 bg-border"}`}
@@ -780,9 +789,7 @@ export default function CalculatorPage() {
             className={`flex flex-1 flex-col gap-5 ${step === 0 ? "justify-center" : ""}`}
           >
             <div>
-              <h2 className="text-xl font-semibold">
-                {STEP_META[step].title}
-              </h2>
+              <h2 className="text-xl font-semibold">{STEP_META[step].title}</h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {STEP_META[step].desc}
               </p>
@@ -790,116 +797,116 @@ export default function CalculatorPage() {
 
             {/* Step 0 — Address */}
             {step === 0 && (
-            <div ref={wrapperRef} className="flex flex-col gap-3">
-              <div className="relative">
-                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => handleInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") doSearch()
-                  }}
-                  placeholder="Václavské náměstí 1, Praha"
-                  autoFocus
-                  autoComplete="off"
-                  className="h-9 w-full rounded-lg border border-border bg-background pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                />
-                {loading && (
-                  <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-                )}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute top-full right-0 left-0 z-20 mt-1 animate-in overflow-hidden rounded-lg border border-border bg-background shadow-lg duration-200 fade-in slide-in-from-top-1">
-                    {suggestions.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => selectSuggestion(s)}
-                        className="flex w-full items-center gap-2 border-b border-border px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-muted"
+              <div ref={wrapperRef} className="flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => handleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") doSearch()
+                    }}
+                    placeholder="Václavské náměstí 1, Praha"
+                    autoFocus
+                    autoComplete="off"
+                    className="h-9 w-full rounded-lg border border-border bg-background pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  />
+                  {loading && (
+                    <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full right-0 left-0 z-20 mt-1 animate-in overflow-hidden rounded-lg border border-border bg-background shadow-lg duration-200 fade-in slide-in-from-top-1">
+                      {suggestions.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => selectSuggestion(s)}
+                          className="flex w-full items-center gap-2 border-b border-border px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-muted"
+                        >
+                          <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {searchError && (
+                    <p className="mt-1.5 text-xs text-destructive">
+                      {searchError}
+                    </p>
+                  )}
+                </div>
+
+                {building && (
+                  <div className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border">
+                    {BUILDING_FIELDS.map(({ label, key, min, max, unit }) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between px-4 py-2.5"
                       >
-                        <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
-                        {s}
-                      </button>
+                        <span className="text-sm text-muted-foreground">
+                          {label}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() =>
+                              setBuilding((b) =>
+                                b
+                                  ? {
+                                      ...b,
+                                      [key]: Math.max(min, (b[key] ?? min) - 1),
+                                    }
+                                  : b
+                              )
+                            }
+                            className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            value={building[key] ?? ""}
+                            min={min}
+                            max={max}
+                            onChange={(e) => {
+                              const val =
+                                e.target.value === ""
+                                  ? null
+                                  : Number(e.target.value)
+                              setBuilding((b) => (b ? { ...b, [key]: val } : b))
+                              if (key === "units" && val)
+                                setR(
+                                  "numberOfUnits",
+                                  Math.min(500, Math.max(1, val))
+                                )
+                            }}
+                            className="w-16 [appearance:textfield] bg-transparent text-center text-sm font-semibold tabular-nums outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          {unit && (
+                            <span className="text-xs text-muted-foreground">
+                              {unit}
+                            </span>
+                          )}
+                          <button
+                            onClick={() =>
+                              setBuilding((b) =>
+                                b
+                                  ? {
+                                      ...b,
+                                      [key]: Math.min(max, (b[key] ?? min) + 1),
+                                    }
+                                  : b
+                              )
+                            }
+                            className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
-                {searchError && (
-                  <p className="mt-1.5 text-xs text-destructive">
-                    {searchError}
-                  </p>
-                )}
               </div>
-
-              {building && (
-                <div className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border">
-                  {BUILDING_FIELDS.map(({ label, key, min, max, unit }) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between px-4 py-2.5"
-                    >
-                      <span className="text-sm text-muted-foreground">
-                        {label}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() =>
-                            setBuilding((b) =>
-                              b
-                                ? {
-                                    ...b,
-                                    [key]: Math.max(min, (b[key] ?? min) - 1),
-                                  }
-                                : b
-                            )
-                          }
-                          className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                          −
-                        </button>
-                        <input
-                          type="number"
-                          value={building[key] ?? ""}
-                          min={min}
-                          max={max}
-                          onChange={(e) => {
-                            const val =
-                              e.target.value === ""
-                                ? null
-                                : Number(e.target.value)
-                            setBuilding((b) => (b ? { ...b, [key]: val } : b))
-                            if (key === "units" && val)
-                              setR(
-                                "numberOfUnits",
-                                Math.min(500, Math.max(1, val))
-                              )
-                          }}
-                          className="w-16 [appearance:textfield] bg-transparent text-center text-sm font-semibold tabular-nums outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        />
-                        {unit && (
-                          <span className="text-xs text-muted-foreground">
-                            {unit}
-                          </span>
-                        )}
-                        <button
-                          onClick={() =>
-                            setBuilding((b) =>
-                              b
-                                ? {
-                                    ...b,
-                                    [key]: Math.min(max, (b[key] ?? min) + 1),
-                                  }
-                                : b
-                            )
-                          }
-                          className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
             )}
 
             {/* Step 1 — Energy tag */}
@@ -1015,8 +1022,67 @@ export default function CalculatorPage() {
                 )
               })()}
 
-            {/* Step 2 — Renovation grid with recommendation */}
-            {step === 2 &&
+            {/* Step 2 — Základní kapitál */}
+            {step === 2 && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col items-center gap-2 rounded-xl border bg-gradient-to-b from-primary/5 to-transparent px-4 py-8">
+                  <div className="flex items-baseline gap-2">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={zakladniKapital ?? ""}
+                      min={0}
+                      step={10000}
+                      onChange={(e) =>
+                        setZakladniKapital(
+                          e.target.value === ""
+                            ? null
+                            : Math.max(0, Number(e.target.value))
+                        )
+                      }
+                      placeholder="0"
+                      autoFocus
+                      className="w-44 [appearance:textfield] bg-transparent text-center text-4xl font-bold tabular-nums outline-none placeholder:text-muted-foreground/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <span className="text-2xl font-semibold text-muted-foreground">
+                      Kč
+                    </span>
+                  </div>
+                  {zakladniKapital ? (
+                    <p className="text-sm text-muted-foreground tabular-nums">
+                      {zakladniKapital.toLocaleString("cs-CZ")} Kč
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Krok je volitelný — částku můžete nechat prázdnou.
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[100000, 500000, 1000000, 2000000].map((amount) => (
+                    <button
+                      key={amount}
+                      type="button"
+                      onClick={() =>
+                        setZakladniKapital((prev) =>
+                          prev === amount ? null : amount
+                        )
+                      }
+                      className={`rounded-xl border px-2 py-2.5 text-xs font-medium tabular-nums transition-all active:scale-[0.97] ${
+                        zakladniKapital === amount
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/40 hover:bg-muted/50"
+                      }`}
+                    >
+                      {amount.toLocaleString("cs-CZ")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3 — Renovation grid with recommendation */}
+            {step === 3 &&
               (() => {
                 const year = building?.yearBuilt ?? null
                 const pts = year

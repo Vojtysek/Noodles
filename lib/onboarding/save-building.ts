@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type BuildingPayload = {
   address: string | null;
+  zakladni_kapital?: number | null;
   units: number;
   floors: number | null;
   year_built: number | null;

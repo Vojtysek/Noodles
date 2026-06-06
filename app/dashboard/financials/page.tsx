@@ -5,12 +5,16 @@ import gsap from "gsap"
 import {
   Wallet,
   TrendingDown,
+  TrendingUp,
   CalendarClock,
   HandCoins,
   CircleCheck,
   Star,
   ChevronDown,
   ChevronUp,
+  Flame,
+  Percent,
+  Hourglass,
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
@@ -19,8 +23,15 @@ import { cn } from "@/lib/utils"
 import {
   BreakdownBars,
   ComparisonLineChart,
+  FinancingDonut,
   seriesCrossing,
 } from "@/components/dashboard/charts"
+import {
+  computeFinance,
+  COMMERCIAL_RATE,
+  BUILD_INFLATION_PCT,
+  RATE_RISK_PCT,
+} from "@/lib/finance-model"
 import {
   fmtCzk,
   fmtCzkShort,
@@ -32,11 +43,17 @@ import { userProjects, userScenarios } from "@/lib/scenarios"
 
 const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
+const TERM_OPTIONS = [5, 7, 10, 13, 15]
 const SAMPLES = 6
 
 // Barvy scénářů — bez rekonstrukce: červená, s rekonstrukcí: modrá (primary).
 const WITHOUT_COLOR = "var(--color-red-500, #ef4444)"
 const WITH_COLOR = "var(--color-blue-500, #3b82f6)"
+
+// Barvy zdrojů financování — kapitál (neutrální), NZÚ (emerald), komerční (amber).
+const KAPITAL_COLOR = "var(--color-zinc-400, #a1a1aa)"
+const NZU_COLOR = "var(--color-emerald-500, #10b981)"
+const KOMERCNI_COLOR = "var(--color-amber-500, #f59e0b)"
 
 // Tečka scénáře — stejné mapování jako na stránce Přehled.
 const TONE_DOT: Record<ScenarioTone, string> = {
@@ -50,6 +67,9 @@ type BuildingData = {
   total_cost: number
   selected_scenario: "custom" | "sustainability" | null
   costs_by_project: Record<string, number> | null
+  units: number | null
+  zakladni_kapital: number | null
+  rent_years: number | null
 }
 
 function scaleProjectsToBuilding(
@@ -93,7 +113,13 @@ function scaleProjectsToBuilding(
  * Animovaná částka — při změně hodnoty (scénář, horizont) plynule přepočítá
  * číslo na obrazovce. Stejný count-up vzor jako chipy na Přehledu / landingu.
  */
-function AnimatedCzk({ value, className }: { value: number; className?: string }) {
+function AnimatedCzk({
+  value,
+  className,
+}: {
+  value: number
+  className?: string
+}) {
   const ref = useRef<HTMLSpanElement>(null)
   const prev = useRef(0)
 
@@ -129,6 +155,7 @@ function AnimatedCzk({ value, className }: { value: number; className?: string }
 
 export default function FinancialsPage() {
   const [horizon, setHorizon] = useState(15)
+  const [termYears, setTermYears] = useState(10)
   const [mixOpen, setMixOpen] = useState(false)
   const [buildingData, setBuildingData] = useState<BuildingData | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -142,13 +169,19 @@ export default function FinancialsPage() {
       }
       supabase
         .from("buildings")
-        .select("selected_renovations, total_cost, selected_scenario, costs_by_project")
+        .select(
+          "selected_renovations, total_cost, selected_scenario, costs_by_project, units, zakladni_kapital, rent_years"
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle()
         .then(({ data }) => {
-          if (data) setBuildingData(data)
+          if (data) {
+            setBuildingData(data)
+            if (data.rent_years && data.rent_years > 0)
+              setTermYears(data.rent_years)
+          }
           setLoaded(true)
         })
     })
@@ -189,12 +222,24 @@ export default function FinancialsPage() {
   const agg = useMemo(() => {
     const budget = selected.reduce((sum, p) => sum + p.budget, 0)
     const spent = selected.reduce((sum, p) => sum + p.spent, 0)
-    const savingsPerYear = selected.reduce((sum, p) => sum + p.savingsPerYear, 0)
-    const fundIncreasePerFlat = selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0)
-    const annualCost = selected.reduce((sum, p) => sum + p.baseline.annualCost, 0)
+    const savingsPerYear = selected.reduce(
+      (sum, p) => sum + p.savingsPerYear,
+      0
+    )
+    const fundIncreasePerFlat = selected.reduce(
+      (sum, p) => sum + p.fundIncreasePerFlat,
+      0
+    )
+    const annualCost = selected.reduce(
+      (sum, p) => sum + p.baseline.annualCost,
+      0
+    )
     // Růst nákladů vážený podle jejich výše.
     const growth =
-      selected.reduce((sum, p) => sum + p.baseline.costGrowthPct * p.baseline.annualCost, 0) /
+      selected.reduce(
+        (sum, p) => sum + p.baseline.costGrowthPct * p.baseline.annualCost,
+        0
+      ) /
       annualCost /
       100
 
@@ -222,7 +267,10 @@ export default function FinancialsPage() {
         return { year: String(START_YEAR + t), value: values[t] }
       })
 
-    const annualSeries = { without: sample(annualWithout), with: sample(annualWith) }
+    const annualSeries = {
+      without: sample(annualWithout),
+      with: sample(annualWith),
+    }
     const cumSeries = { without: sample(cumWithout), with: sample(cumWith) }
     // Bod zlomu počítaný z vykreslených (vzorkovaných) křivek — značka v grafu
     // tak sedí přesně na jejich průsečíku.
@@ -262,9 +310,39 @@ export default function FinancialsPage() {
     }
   }, [selected, single, horizon])
 
-  const spentPct = Math.round((agg.spent / agg.budget) * 100)
+  // Orientační finanční model — rozdělení zdrojů, splátky, úspora NZÚ a FOMO čísla.
+  const hasUnits = (buildingData?.units ?? 0) > 0
+  const fin = useMemo(
+    () =>
+      computeFinance({
+        budget: agg.budget,
+        units: buildingData?.units ?? 0,
+        savingsPerYear: agg.savingsPerYear,
+        termYears,
+        zakladniKapital: buildingData?.zakladni_kapital ?? 0,
+      }),
+    [
+      agg.budget,
+      agg.savingsPerYear,
+      buildingData?.units,
+      buildingData?.zakladni_kapital,
+      termYears,
+    ]
+  )
+  // Doba splácení dle ceny renovace — stejné pravidlo jako v onboardingu:
+  // do 1,5 mil. Kč max 10 let, nad 1,5 mil. Kč max 15 let.
+  const maxTerm = agg.budget >= 1_500_000 ? 15 : 10
+  const terms = TERM_OPTIONS.filter((y) => y <= maxTerm)
+  useEffect(() => {
+    if (termYears > maxTerm) setTermYears(maxTerm)
+  }, [maxTerm, termYears])
+  // Popisek jednotky u měsíčních částek — na byt, jen když známe počet bytů.
+  const perLabel = hasUnits ? "/ byt / měsíc" : "/ měsíc"
+
   const savingsPct = Math.round((agg.savingsPerYear / agg.annualCost) * 100)
-  const afterBarPct = Math.round((agg.annualWithNow / agg.annualWithoutNow) * 100)
+  const afterBarPct = Math.round(
+    (agg.annualWithNow / agg.annualWithoutNow) * 100
+  )
   const profitable = agg.lossAtHorizon > 0
   const scopeLabel = activeScenario
     ? activeScenario.name
@@ -272,9 +350,13 @@ export default function FinancialsPage() {
       ? single.name
       : "Vlastní výběr"
   const breakEvenYearNum =
-    agg.breakEvenPos !== null ? Math.round(START_YEAR + agg.breakEvenPos * horizon) : null
+    agg.breakEvenPos !== null
+      ? Math.round(START_YEAR + agg.breakEvenPos * horizon)
+      : null
   const breakEvenLabel =
-    breakEvenYearNum !== null ? String(breakEvenYearNum) : `za horizontem ${horizon} let`
+    breakEvenYearNum !== null
+      ? String(breakEvenYearNum)
+      : `za horizontem ${horizon} let`
 
   const kpis = [
     {
@@ -294,7 +376,10 @@ export default function FinancialsPage() {
     {
       icon: CalendarClock,
       label: "Bod zlomu",
-      value: breakEvenYearNum !== null ? String(breakEvenYearNum) : `> ${horizon} let`,
+      value:
+        breakEvenYearNum !== null
+          ? String(breakEvenYearNum)
+          : `> ${horizon} let`,
       sub:
         breakEvenYearNum !== null
           ? `rok, kdy se investice vrátí`
@@ -311,7 +396,10 @@ export default function FinancialsPage() {
   ]
 
   // Loading state: show skeleton while data is being fetched
-  if (!loaded || (loaded && buildingData === null && scaledProjects.length === 0)) {
+  if (
+    !loaded ||
+    (loaded && buildingData === null && scaledProjects.length === 0)
+  ) {
     return (
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
         {/* Ambient blobs (hidden during loading) */}
@@ -321,7 +409,7 @@ export default function FinancialsPage() {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-40 top-1/4 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
+          className="pointer-events-none absolute top-1/4 -right-40 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
         />
 
         {/* Hero skeleton */}
@@ -329,24 +417,24 @@ export default function FinancialsPage() {
           <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
             {/* Left section skeleton */}
             <div>
-              <div className="mb-2 h-3 w-24 bg-muted animate-pulse rounded" />
-              <div className="mb-4 h-8 w-32 bg-muted animate-pulse rounded" />
-              <div className="mb-6 h-3 w-48 bg-muted animate-pulse rounded" />
+              <div className="mb-2 h-3 w-24 animate-pulse rounded bg-muted" />
+              <div className="mb-4 h-8 w-32 animate-pulse rounded bg-muted" />
+              <div className="mb-6 h-3 w-48 animate-pulse rounded bg-muted" />
               <div className="mt-7 space-y-2">
-                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-                <div className="h-12 w-40 bg-muted animate-pulse rounded" />
-                <div className="h-2 w-56 bg-muted animate-pulse rounded" />
+                <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+                <div className="h-12 w-40 animate-pulse rounded bg-muted" />
+                <div className="h-2 w-56 animate-pulse rounded bg-muted" />
               </div>
             </div>
 
             {/* Right section skeleton */}
             <div className="flex flex-col gap-4 rounded-2xl bg-muted/30 p-5">
-              <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+              <div className="h-3 w-32 animate-pulse rounded bg-muted" />
               <div className="space-y-3">
-                <div className="h-8 w-full bg-muted animate-pulse rounded" />
-                <div className="h-8 w-full bg-muted animate-pulse rounded" />
+                <div className="h-8 w-full animate-pulse rounded bg-muted" />
+                <div className="h-8 w-full animate-pulse rounded bg-muted" />
               </div>
-              <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+              <div className="h-3 w-48 animate-pulse rounded bg-muted" />
             </div>
           </div>
         </div>
@@ -354,35 +442,38 @@ export default function FinancialsPage() {
         {/* Controls skeleton */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="h-8 w-56 bg-muted animate-pulse rounded" />
-            <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-56 animate-pulse rounded bg-muted" />
+            <div className="h-8 w-48 animate-pulse rounded bg-muted" />
           </div>
-          <div className="h-3 w-96 bg-muted animate-pulse rounded" />
+          <div className="h-3 w-96 animate-pulse rounded bg-muted" />
         </div>
 
         {/* KPI skeleton */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex flex-col gap-2 lg:px-6 lg:first:pl-0 lg:last:pr-0">
-              <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-              <div className="h-8 w-24 bg-muted animate-pulse rounded" />
-              <div className="h-2.5 w-32 bg-muted animate-pulse rounded" />
+            <div
+              key={i}
+              className="flex flex-col gap-2 lg:px-6 lg:first:pl-0 lg:last:pr-0"
+            >
+              <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+              <div className="h-2.5 w-32 animate-pulse rounded bg-muted" />
             </div>
           ))}
         </div>
 
         {/* Charts skeleton */}
         <div className="flex flex-col gap-3">
-          <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+          <div className="h-3 w-48 animate-pulse rounded bg-muted" />
           <div className="grid gap-3 lg:grid-cols-2">
             {[1, 2].map((i) => (
               <div
                 key={i}
                 className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
               >
-                <div className="h-4 w-32 bg-muted animate-pulse rounded mb-2" />
-                <div className="h-2.5 w-48 bg-muted animate-pulse rounded mb-4" />
-                <div className="h-32 w-full bg-muted animate-pulse rounded" />
+                <div className="mb-2 h-4 w-32 animate-pulse rounded bg-muted" />
+                <div className="mb-4 h-2.5 w-48 animate-pulse rounded bg-muted" />
+                <div className="h-32 w-full animate-pulse rounded bg-muted" />
               </div>
             ))}
           </div>
@@ -390,31 +481,34 @@ export default function FinancialsPage() {
 
         {/* Budget skeleton */}
         <div className="flex flex-col gap-3">
-          <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+          <div className="h-3 w-48 animate-pulse rounded bg-muted" />
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.4fr]">
             <div className="flex flex-col rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-              <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-2.5 w-40 bg-muted animate-pulse rounded mb-4" />
-              <div className="h-10 w-20 bg-muted animate-pulse rounded mb-3" />
-              <div className="h-2.5 w-full bg-muted animate-pulse rounded" />
-              <div className="mt-4 h-2 w-32 bg-muted animate-pulse rounded" />
+              <div className="mb-2 h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="mb-4 h-2.5 w-40 animate-pulse rounded bg-muted" />
+              <div className="mb-3 h-10 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-2.5 w-full animate-pulse rounded bg-muted" />
+              <div className="mt-4 h-2 w-32 animate-pulse rounded bg-muted" />
             </div>
             <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-              <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-2.5 w-40 bg-muted animate-pulse rounded mb-4" />
-              <div className="h-40 w-full bg-muted animate-pulse rounded" />
+              <div className="mb-2 h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="mb-4 h-2.5 w-40 animate-pulse rounded bg-muted" />
+              <div className="h-40 w-full animate-pulse rounded bg-muted" />
             </div>
           </div>
 
           {/* Table skeleton */}
           <div className="overflow-hidden rounded-2xl border bg-background/60 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-5 py-3.5">
-              <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-              <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-48 animate-pulse rounded bg-muted" />
             </div>
             <div className="space-y-1 p-5">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-10 w-full bg-muted animate-pulse rounded" />
+                <div
+                  key={i}
+                  className="h-10 w-full animate-pulse rounded bg-muted"
+                />
               ))}
             </div>
           </div>
@@ -453,7 +547,7 @@ export default function FinancialsPage() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-40 top-1/4 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
+        className="pointer-events-none absolute top-1/4 -right-40 -z-10 size-96 rounded-full bg-blue-500/8 blur-[120px]"
       />
 
       {/* ------------------------------------------------------------------ */}
@@ -482,7 +576,9 @@ export default function FinancialsPage() {
                 Dva scénáře, jedno rozhodnutí
               </p>
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Finance</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+              Finance
+            </h1>
             <p className="mt-1.5 text-sm text-white/60">
               Rekonstrukce vs. nečinnost — kolik vás stojí každá cesta.
             </p>
@@ -517,37 +613,43 @@ export default function FinancialsPage() {
           {/* Pravá část — skleněná karta Dnes / Potom (vzor z landingu) */}
           <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/15 backdrop-blur-md">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-white/70">Roční náklady domu</span>
-              <span className="rounded-md bg-blue-400/15 px-1.5 py-0.5 text-xs font-medium tabular-nums text-blue-300">
+              <span className="text-xs font-medium text-white/70">
+                Roční náklady domu
+              </span>
+              <span className="rounded-md bg-blue-400/15 px-1.5 py-0.5 text-xs font-medium text-blue-300 tabular-nums">
                 −{savingsPct.toLocaleString("cs-CZ")} %
               </span>
             </div>
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center gap-3">
-                <span className="w-10 shrink-0 text-[11px] text-white/50">Dnes</span>
+                <span className="w-10 shrink-0 text-[11px] text-white/50">
+                  Dnes
+                </span>
                 <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
                   <div className="h-full w-full rounded-full bg-white/35" />
                 </div>
-                <span className="w-20 shrink-0 text-right text-xs tabular-nums text-white/70">
+                <span className="w-20 shrink-0 text-right text-xs text-white/70 tabular-nums">
                   {fmtCzkShort(agg.annualWithoutNow)}
                 </span>
               </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-10 shrink-0 text-[11px] text-white/50">Potom</span>
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-blue-400 transition-[width] duration-700 ease-out"
-                      style={{ width: `${afterBarPct}%` }}
-                    />
-                  </div>
-                  <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-blue-300">
+              <div className="flex items-center gap-3">
+                <span className="w-10 shrink-0 text-[11px] text-white/50">
+                  Potom
+                </span>
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-blue-400 transition-[width] duration-700 ease-out"
+                    style={{ width: `${afterBarPct}%` }}
+                  />
+                </div>
+                <span className="w-20 shrink-0 text-right text-xs font-medium text-blue-300 tabular-nums">
                   {fmtCzkShort(agg.annualWithNow)}
                 </span>
               </div>
             </div>
             <p className="text-xs text-pretty text-white/60">
               Úspora{" "}
-              <span className="font-semibold tabular-nums text-blue-300">
+              <span className="font-semibold text-blue-300 tabular-nums">
                 {fmtCzk(agg.savingsPerYear)} ročně
               </span>{" "}
               po dokončení vybraných projektů
@@ -561,7 +663,13 @@ export default function FinancialsPage() {
       {/* ------------------------------------------------------------------ */}
       <div
         className="anim-in flex flex-col gap-3"
-        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.1s" } as React.CSSProperties}
+        style={
+          {
+            "--ai-y": "32px",
+            "--ai-dur": "0.7s",
+            "--ai-delay": "0.1s",
+          } as React.CSSProperties
+        }
       >
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -575,33 +683,63 @@ export default function FinancialsPage() {
                   aria-pressed
                   className="flex items-center gap-2 rounded-full bg-background px-3.5 py-1.5 text-sm font-medium text-foreground shadow"
                 >
-                  <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[s.tone])} />
+                  <span
+                    className={cn(
+                      "size-2 shrink-0 rounded-full",
+                      TONE_DOT[s.tone]
+                    )}
+                  />
                   {s.name}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-              Horizont
-            </span>
-            <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
-              {HORIZONS.map((h) => (
-                <button
-                  key={h}
-                  onClick={() => setHorizon(h)}
-                  aria-pressed={h === horizon}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-sm font-medium transition-all tabular-nums",
-                    h === horizon
-                      ? "bg-background text-foreground shadow"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {h} let
-                </button>
-              ))}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                Horizont
+              </span>
+              <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+                {HORIZONS.map((h) => (
+                  <button
+                    key={h}
+                    onClick={() => setHorizon(h)}
+                    aria-pressed={h === horizon}
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-sm font-medium tabular-nums transition-all",
+                      h === horizon
+                        ? "bg-background text-foreground shadow"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {h} let
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                Splácení
+              </span>
+              <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
+                {terms.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTermYears(t)}
+                    aria-pressed={t === termYears}
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-sm font-medium tabular-nums transition-all",
+                      t === termYears
+                        ? "bg-background text-foreground shadow"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t} let
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -634,7 +772,9 @@ export default function FinancialsPage() {
             <div className="flex flex-col gap-2.5 rounded-2xl border bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {selected.length} {selected.length === 1 ? "projekt" : "projektů"} ve vašem plánu
+                  {selected.length}{" "}
+                  {selected.length === 1 ? "projekt" : "projektů"} ve vašem
+                  plánu
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -670,15 +810,29 @@ export default function FinancialsPage() {
       {/* ------------------------------------------------------------------ */}
       <dl
         className="anim-in grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60"
-        style={{ "--ai-y": "32px", "--ai-dur": "0.7s", "--ai-delay": "0.2s" } as React.CSSProperties}
+        style={
+          {
+            "--ai-y": "32px",
+            "--ai-dur": "0.7s",
+            "--ai-delay": "0.2s",
+          } as React.CSSProperties
+        }
       >
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="flex flex-col gap-1 lg:px-6 lg:first:pl-0 lg:last:pr-0">
+          <div
+            key={kpi.label}
+            className="flex flex-col gap-1 lg:px-6 lg:first:pl-0 lg:last:pr-0"
+          >
             <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <kpi.icon className="size-3.5 shrink-0 text-primary" />
               {kpi.label}
             </dt>
-            <dd className={cn("text-xl font-semibold tabular-nums sm:text-2xl", kpi.accent)}>
+            <dd
+              className={cn(
+                "text-xl font-semibold tabular-nums sm:text-2xl",
+                kpi.accent
+              )}
+            >
               {kpi.value}
             </dd>
             <p className="text-xs text-muted-foreground">{kpi.sub}</p>
@@ -686,19 +840,217 @@ export default function FinancialsPage() {
         ))}
       </dl>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Porovnání scénářů — grafy s kontextem                               */}
-      {/* ------------------------------------------------------------------ */}
+      {/* ================================================================== */}
+      {/* SEKCE 1 — Financování: koláč zdrojů + rozpad + položky rozpočtu      */}
+      {/* ================================================================== */}
       <div
         className="anim-in flex flex-col gap-3"
-        style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.3s" } as React.CSSProperties}
+        style={
+          {
+            "--ai-y": "40px",
+            "--ai-dur": "0.7s",
+            "--ai-delay": "0.3s",
+          } as React.CSSProperties
+        }
       >
         <div className="flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
           <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Porovnání scénářů — {scopeLabel}
+            Financování — {scopeLabel}
           </p>
         </div>
+
+        <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
+          {/* Z čeho pokryjeme investici — koláčový graf tří zdrojů */}
+          <div
+            data-fin-block
+            className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+          >
+            <p className="text-sm font-medium">Jak to zaplatíme</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Z čeho pokryjeme investici {fmtCzkShort(agg.budget)}
+            </p>
+            <div className="mt-4">
+              <FinancingDonut
+                segments={[
+                  {
+                    key: "kapital",
+                    label: "Základní kapitál",
+                    value: fin.split.kapital,
+                    color: KAPITAL_COLOR,
+                  },
+                  {
+                    key: "nzu",
+                    label: "NZÚ — 0% úvěr",
+                    value: fin.split.nzu,
+                    color: NZU_COLOR,
+                  },
+                  {
+                    key: "komercni",
+                    label: "Komerční úvěr 5 %",
+                    value: fin.split.komercni,
+                    color: KOMERCNI_COLOR,
+                  },
+                ].filter((s) => s.value > 0)}
+                total={fin.split.budget}
+                formatValue={fmtCzkShort}
+                centerLabel="celková investice"
+              />
+            </div>
+          </div>
+
+          {/* Rozpad nákladů */}
+
+          <div
+            className="anim-in flex flex-col gap-3"
+            style={
+              {
+                "--ai-y": "40px",
+                "--ai-dur": "0.7s",
+                "--ai-delay": "0.4s",
+              } as React.CSSProperties
+            }
+          >
+            <div
+              data-fin-block
+              className="h-full rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 backdrop-blur-sm sm:p-5"
+            >
+              <p className="text-sm text-muted-foreground">NZÚ vám ušetří</p>
+              <p className="mt-1 text-3xl font-bold text-emerald-600 tabular-nums sm:text-4xl dark:text-emerald-400">
+                <AnimatedCzk value={fin.nzuSavings.totalSaved} />
+              </p>
+              <p className="mt-2 text-xs text-pretty text-muted-foreground">
+                na úrocích — bezúročný úvěr na dotovanou část{" "}
+                {fmtCzkShort(fin.split.nzu)} místo{" "}
+                {(COMMERCIAL_RATE * 100).toLocaleString("cs-CZ", {
+                  maximumFractionDigits: 1,
+                })}{" "}
+                % p.a. po dobu {termYears} let.
+              </p>
+
+              {fin.nzuSavings.totalSaved <= 0 ? (
+                <p className="mt-5 text-sm text-muted-foreground">
+                  V tomto rozsahu se NZÚ úvěr neuplatní.
+                </p>
+              ) : (
+                <div className="mt-5 flex flex-col gap-2.5">
+                  <div className="flex items-center gap-3">
+                    <span className="w-28 shrink-0 text-xs text-muted-foreground">
+                      Komerční úvěr 5 %
+                    </span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full w-full rounded-full bg-amber-500" />
+                    </div>
+                    <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums">
+                      {fmtCzkShort(fin.nzuSavings.commercialTotalIfNoNzu)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-28 shrink-0 text-xs text-muted-foreground">
+                      NZÚ 0 %
+                    </span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-[width] duration-700 ease-out"
+                        style={{
+                          width: `${
+                            fin.nzuSavings.commercialTotalIfNoNzu > 0
+                              ? (fin.nzuSavings.nzuTotalPaid /
+                                  fin.nzuSavings.commercialTotalIfNoNzu) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    <span className="w-20 shrink-0 text-right text-xs font-medium text-emerald-600 tabular-nums dark:text-emerald-400">
+                      {fmtCzkShort(fin.nzuSavings.nzuTotalPaid)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================== */}
+      {/* SEKCE 3 — Měsíční dopad + grafy návratnosti                          */}
+      {/* ================================================================== */}
+      <div
+        className="anim-in flex flex-col gap-3"
+        style={
+          {
+            "--ai-y": "40px",
+            "--ai-dur": "0.7s",
+            "--ai-delay": "0.5s",
+          } as React.CSSProperties
+        }
+      >
+        <div className="flex items-center gap-2.5">
+          <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            Měsíčně víc teď, brzy ale vyděláváte
+          </p>
+        </div>
+
+        {/* Tři malé statistiky — splátka, úspora, čistý dopad */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <div
+            data-fin-block
+            className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+          >
+            <p className="text-xs text-muted-foreground">Splátka úvěru</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums sm:text-2xl">
+              {fmtCzk(fin.repayment.monthlyPerUnit)}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{perLabel}</p>
+          </div>
+          <div
+            data-fin-block
+            className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+          >
+            <p className="text-xs text-muted-foreground">Úspora na energiích</p>
+            <p className="mt-1 text-xl font-semibold text-emerald-600 tabular-nums sm:text-2xl dark:text-emerald-400">
+              {fmtCzk(fin.repayment.energySavingMonthlyPerUnit)}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{perLabel}</p>
+          </div>
+          <div
+            data-fin-block
+            className="col-span-2 rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:col-span-1"
+          >
+            <p className="text-xs text-muted-foreground">Čistý dopad</p>
+            {fin.repayment.netMonthlyPerUnit > 0 ? (
+              <>
+                <p className="mt-1 text-xl font-semibold text-amber-600 tabular-nums sm:text-2xl dark:text-amber-400">
+                  +{fmtCzk(fin.repayment.netMonthlyPerUnit)}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  víc {perLabel} během splácení
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-1 text-xl font-semibold text-emerald-600 tabular-nums sm:text-2xl dark:text-emerald-400">
+                  −{fmtCzk(Math.abs(fin.repayment.netMonthlyPerUnit))}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  už teď v plusu {perLabel}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Krátké shrnutí pod statistikami */}
+        <p className="text-sm text-muted-foreground">
+          Po splacení (za {termYears} let) zůstává domu celá úspora{" "}
+          {fmtCzkShort(agg.savingsPerYear)} ročně.
+          {breakEvenYearNum !== null && (
+            <> Investice se vrací od roku {breakEvenYearNum}.</>
+          )}
+        </p>
 
         <div className="grid gap-3 lg:grid-cols-2">
           {/* Vyplatí se to? — kumulativní náklady s bodem zlomu */}
@@ -730,16 +1082,16 @@ export default function FinancialsPage() {
                   <span className="size-2 shrink-0 rounded-full bg-red-500" />
                   Bez rekonstrukce
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-red-600 dark:text-red-400">
+                <p className="mt-0.5 font-semibold text-red-600 tabular-nums dark:text-red-400">
                   {fmtCzkShort(agg.cumWithoutEnd)}
                 </p>
               </div>
               <div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="size-2 shrink-0 rounded-full bg-blue-500" />
-                  S rekonstrukcí
+                  <span className="size-2 shrink-0 rounded-full bg-blue-500" />S
+                  rekonstrukcí
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-blue-600 dark:text-blue-400">
+                <p className="mt-0.5 font-semibold text-blue-600 tabular-nums dark:text-blue-400">
                   {fmtCzkShort(agg.cumWithEnd)}
                 </p>
               </div>
@@ -761,7 +1113,10 @@ export default function FinancialsPage() {
                 formatValue={fmtCzkShort}
                 marker={
                   agg.breakEvenPos !== null
-                    ? { position: agg.breakEvenPos, label: `Bod zlomu ${breakEvenLabel}` }
+                    ? {
+                        position: agg.breakEvenPos,
+                        label: `Bod zlomu ${breakEvenLabel}`,
+                      }
                     : null
                 }
               />
@@ -775,7 +1130,8 @@ export default function FinancialsPage() {
           >
             <p className="text-sm font-medium">Roční náklady</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Bez rekonstrukce rostou s cenami energií — úspora se každý rok zvětšuje
+              Bez rekonstrukce rostou s cenami energií — úspora se každý rok
+              zvětšuje
             </p>
             <div className="mt-4 flex gap-6">
               <div>
@@ -783,7 +1139,7 @@ export default function FinancialsPage() {
                   <span className="size-2 shrink-0 rounded-full bg-red-500" />
                   Za {horizon} let bez akce
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-red-600 dark:text-red-400">
+                <p className="mt-0.5 font-semibold text-red-600 tabular-nums dark:text-red-400">
                   {fmtCzkShort(agg.annualWithoutEnd)}
                 </p>
               </div>
@@ -792,7 +1148,7 @@ export default function FinancialsPage() {
                   <span className="size-2 shrink-0 rounded-full bg-blue-500" />
                   Po rekonstrukci
                 </p>
-                <p className="mt-0.5 font-semibold tabular-nums text-blue-600 dark:text-blue-400">
+                <p className="mt-0.5 font-semibold text-blue-600 tabular-nums dark:text-blue-400">
                   {fmtCzkShort(agg.annualWithEnd)}
                 </p>
               </div>
@@ -818,119 +1174,57 @@ export default function FinancialsPage() {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Rozpočet — čerpání, rozpad a položky                                */}
-      {/* ------------------------------------------------------------------ */}
+      {/* ================================================================== */}
+      {/* SEKCE 4 — Proč jednat teď: FOMO karty                                */}
+      {/* ================================================================== */}
       <div
         className="anim-in flex flex-col gap-3"
-        style={{ "--ai-y": "40px", "--ai-dur": "0.7s", "--ai-delay": "0.4s" } as React.CSSProperties}
+        style={
+          {
+            "--ai-y": "40px",
+            "--ai-dur": "0.7s",
+            "--ai-delay": "0.6s",
+          } as React.CSSProperties
+        }
       >
         <div className="flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
           <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Rozpočet — {scopeLabel}
+            Proč jednat teď
           </p>
         </div>
 
-        <div data-fin-block className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.4fr]">
-          {/* Čerpání rozpočtu — progress místo donutu */}
-          <div className="flex flex-col rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-            <p className="text-sm font-medium">Čerpání rozpočtu</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Kolik z rozpočtu už je proinvestováno
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {/* Inflace */}
+          <div
+            data-fin-block
+            className="flex flex-col gap-1.5 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 backdrop-blur-sm sm:p-5"
+          >
+            <TrendingUp className="size-4 text-amber-600 dark:text-amber-400" />
+            <p className="mt-1 text-xl font-semibold tabular-nums sm:text-2xl">
+              +{fmtCzkShort(fin.fomo.inflationCostPerYear)}
             </p>
-            <p className="mt-5 text-3xl font-bold tabular-nums">
-              {spentPct.toLocaleString("cs-CZ")} %
+            <p className="text-sm font-semibold">Inflace</p>
+            <p className="text-xs text-pretty text-muted-foreground">
+              Stejná rekonstrukce zdražuje ~{BUILD_INFLATION_PCT} % ročně. Za 2
+              roky o {fmtCzkShort(fin.fomo.inflationCostIn2Years)} víc.
             </p>
-            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
-                style={{ width: `${spentPct}%` }}
-              />
-            </div>
-            <div className="mt-2.5 flex items-baseline justify-between text-xs text-muted-foreground">
-              <span>
-                Vyčerpáno{" "}
-                <span className="font-medium text-foreground tabular-nums">
-                  {fmtCzkShort(agg.spent)}
-                </span>
-              </span>
-              <span className="tabular-nums">z {fmtCzkShort(agg.budget)}</span>
-            </div>
-            <div className="mt-auto flex items-baseline justify-between gap-2 border-t pt-3 text-sm">
-              <span className="text-muted-foreground">Navýšení fondu oprav</span>
-              <span className="font-semibold tabular-nums">
-                +{fmtCzk(agg.fundIncreasePerFlat)} / byt / měsíc
-              </span>
-            </div>
           </div>
 
-          {/* Rozpad nákladů */}
-          <div className="rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5">
-            <p className="text-sm font-medium">Rozpad nákladů</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {single ? "Hlavní položky projektu" : "Rozpočet po projektech"}
+          {/* Dotace NZÚ */}
+          <div
+            data-fin-block
+            className="flex flex-col gap-1.5 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 backdrop-blur-sm sm:p-5"
+          >
+            <Hourglass className="size-4 text-amber-600 dark:text-amber-400" />
+            <p className="mt-1 text-xl font-semibold tabular-nums sm:text-2xl">
+              0% úvěr
             </p>
-            <div className="mt-4">
-              <BreakdownBars data={agg.costBreakdown} formatValue={fmtCzkShort} />
-            </div>
-          </div>
-        </div>
-
-        {/* Položky rozpočtu — tabulka s hlavičkovým pruhem (vzor z landingu) */}
-        <div data-fin-block className="overflow-hidden rounded-2xl border bg-background/60 backdrop-blur-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/30 px-5 py-3.5">
-            <p className="text-sm font-semibold tracking-tight">Položky rozpočtu</p>
-            <p className="text-xs text-muted-foreground">
-              <span className="tabular-nums">{agg.costItems.length}</span> položek ·{" "}
-              <span className="tabular-nums">{fmtCzkShort(agg.budget)}</span>
+            <p className="text-sm font-semibold">Dotace NZÚ</p>
+            <p className="text-xs text-pretty text-muted-foreground">
+              Program je časově omezený a vyčerpatelný. Bezúročný úvěr je
+              dostupný teď.
             </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
-                  <th className="px-5 py-2.5 font-medium">Položka</th>
-                  {!single && <th className="px-5 py-2.5 font-medium">Projekt</th>}
-                  <th className="px-5 py-2.5 font-medium">Dodavatel</th>
-                  <th className="px-5 py-2.5 text-right font-medium">Částka</th>
-                  <th className="px-5 py-2.5 text-right font-medium">Podíl</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agg.costItems.map((row) => (
-                  <tr
-                    key={`${row.project}-${row.item}`}
-                    className="border-b border-border/40 transition-colors last:border-b-0 hover:bg-muted/30"
-                  >
-                    <td className="px-5 py-2.5 font-medium">{row.item}</td>
-                    {!single && (
-                      <td className="px-5 py-2.5">
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                          {row.project}
-                        </span>
-                      </td>
-                    )}
-                    <td className="px-5 py-2.5 text-muted-foreground">{row.supplier}</td>
-                    <td className="px-5 py-2.5 text-right tabular-nums">{fmtCzk(row.amount)}</td>
-                    <td className="px-5 py-2.5 text-right text-muted-foreground tabular-nums">
-                      {row.share.toLocaleString("cs-CZ")} %
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t bg-muted/30 font-medium">
-                  <td className="px-5 py-2.5">Celkem</td>
-                  {!single && <td />}
-                  <td />
-                  <td className="px-5 py-2.5 text-right tabular-nums">{fmtCzk(agg.budget)}</td>
-                  <td className="px-5 py-2.5 text-right text-muted-foreground tabular-nums">
-                    100 %
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
           </div>
         </div>
       </div>
