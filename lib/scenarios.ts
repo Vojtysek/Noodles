@@ -17,6 +17,7 @@ export const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
   "Vytápění": "vytapeni",
   "Rekuperace": "rekuperace",
   "Fotovoltaika": "fotovoltaika",
+  "Modernizace výtahu": "vytah",
 }
 
 /**

@@ -12,6 +12,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  Hammer,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/prehled", label: "Přehled", icon: House },
   { href: "/dashboard/rezidenti", label: "Rezidenti", icon: Users },
   { href: "/dashboard/financials", label: "Finance", icon: ChartColumn },
+  { href: "/dashboard/projects", label: "Projekty", icon: Hammer },
   { href: "/dashboard/exporty", label: "Exporty", icon: FileDown },
 ]
 
