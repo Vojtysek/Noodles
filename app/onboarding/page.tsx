@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useId } from "react"
 import { useRouter } from "next/navigation"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Button } from "@/components/ui/button"
 import {
   Search,
@@ -413,12 +414,93 @@ function useCountUp(target: number, durationMs = 700) {
   return display
 }
 
+// iOS-style segmented control. Refaktor čtyř duplicitních toggle dvojic.
+// `options` je dvojice [labelFalse, labelTrue]; `value` mapuje na labelTrue.
+function SegmentedToggle({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly [string, string]
+  value: boolean
+  onChange: (next: boolean) => void
+}) {
+  const reduceMotion = useReducedMotion()
+  const groupId = useId()
+  return (
+    <div
+      role="radiogroup"
+      className="flex gap-0.5 rounded-lg bg-muted/70 p-0.5"
+    >
+      {options.map((label, i) => {
+        const optionValue = i === 1
+        const active = value === optionValue
+        return (
+          <button
+            key={label}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(optionValue)}
+            className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all active:scale-[0.97] ${active ? "text-foreground" : "cursor-pointer text-muted-foreground hover:text-foreground"}`}
+          >
+            {active && (
+              <motion.div
+                layoutId={groupId}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : {
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 35,
+                      }
+                }
+                className="absolute inset-0 rounded-md bg-background shadow-sm"
+              />
+            )}
+            <span className="relative">{label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Variants pro směrový swipe mezi kroky průvodce.
+// `direction` 1 = vpřed (in zprava), -1 = zpět (in zleva).
+const stepVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 50 : -50,
+    opacity: 0,
+  }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -50 : 50,
+    opacity: 0,
+  }),
+}
+
+const reducedVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
+}
+
 export default function CalculatorPage() {
   const router = useRouter()
+  const reduceMotion = useReducedMotion()
   const [step, setStep] = useState(0)
+  const [direction, setDirection] = useState(1)
   const [splashPayload, setSplashPayload] = useState<BuildingPayload | null>(
     null
   )
+
+  // Změna kroku se směrem pro swipe animaci.
+  function goToStep(next: number) {
+    setDirection(next > step ? 1 : -1)
+    setStep(next)
+  }
 
   const [query, setQuery] = useState("")
   const [suggestions, setSuggestions] = useState<string[]>([])
@@ -565,16 +647,16 @@ export default function CalculatorPage() {
   async function handleCta() {
     if (step === 0) {
       if (building) {
-        setStep(1)
+        goToStep(1)
         return
       }
       if (query.trim()) {
         doSearch()
         return
       }
-      setStep(1)
+      goToStep(1)
     } else if (step === 1) {
-      setStep(2)
+      goToStep(2)
     } else if (step === 2) {
       if (selected.length === 0) return
       const year = building?.yearBuilt ?? null
@@ -667,22 +749,47 @@ export default function CalculatorPage() {
     </Button>
   )
 
+  const stepTransition = reduceMotion
+    ? { duration: 0.2 }
+    : { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const }
+
   return (
     <div className="flex min-h-svh flex-col overflow-hidden bg-background">
-      {/* ── Step 0: full-page centered layout ─────────────────── */}
-      {step === 0 && (
-        <div className="flex min-h-svh flex-col">
-          <div
+      {/* Persistentní zpět tlačítko — mimo animovaný kontejner */}
+      {step > 0 && (
+        <button
+          onClick={() => goToStep(step - 1)}
+          className="group flex items-center gap-1 px-6 pt-5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ChevronLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-0.5" />{" "}
+          Zpět
+        </button>
+      )}
+
+      {/* Perzistentní sloupec: animovaný obsah uvnitř, chrome (dots + CTA) vně */}
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-6 pt-3 pb-8">
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+          <motion.div
             key={step}
-            className="mx-auto flex w-full max-w-lg flex-1 animate-in flex-col justify-center gap-5 px-6 py-8 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] fade-in slide-in-from-bottom-4"
+            custom={direction}
+            variants={reduceMotion ? reducedVariants : stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={stepTransition}
+            className={`flex flex-1 flex-col gap-5 ${step === 0 ? "justify-center" : ""}`}
           >
             <div>
-              <h2 className="text-xl font-semibold">{STEP_META[0].title}</h2>
+              <h2 className="text-xl font-semibold">
+                {STEP_META[step].title}
+              </h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {STEP_META[0].desc}
+                {STEP_META[step].desc}
               </p>
             </div>
 
+            {/* Step 0 — Address */}
+            {step === 0 && (
             <div ref={wrapperRef} className="flex flex-col gap-3">
               <div className="relative">
                 <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -793,36 +900,7 @@ export default function CalculatorPage() {
                 </div>
               )}
             </div>
-
-            <div className="flex flex-col gap-3">
-              {progressDots}
-              {ctaButton}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Steps 1–3: same centered layout as step 0 ─────────── */}
-      {step > 0 && (
-        <>
-          <button
-            onClick={() => setStep((s) => s - 1)}
-            className="group flex items-center gap-1 px-6 pt-5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ChevronLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-0.5" />{" "}
-            Zpět
-          </button>
-
-          <div
-            key={step}
-            className="mx-auto flex w-full max-w-lg flex-1 animate-in flex-col gap-5 px-6 pt-3 pb-8 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] fade-in slide-in-from-bottom-4"
-          >
-            <div>
-              <h2 className="text-xl font-semibold">{STEP_META[step].title}</h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {STEP_META[step].desc}
-              </p>
-            </div>
+            )}
 
             {/* Step 1 — Energy tag */}
             {step === 1 &&
@@ -866,75 +944,35 @@ export default function CalculatorPage() {
                             Za posledních 15 let
                           </span>
                         </div>
-                        <div className="flex gap-1.5">
-                          {(["Ne", "Ano"] as const).map((label) => {
-                            const active =
-                              label === "Ano" ? insulated : !insulated
-                            return (
-                              <button
-                                key={label}
-                                onClick={() => setInsulated(label === "Ano")}
-                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                              >
-                                {label}
-                              </button>
-                            )
-                          })}
-                        </div>
+                        <SegmentedToggle
+                          options={["Ne", "Ano"]}
+                          value={insulated}
+                          onChange={setInsulated}
+                        />
                       </div>
                       <div className="flex items-center justify-between px-4 py-3">
                         <span className="text-sm">Okna</span>
-                        <div className="flex gap-1.5">
-                          {(["Původní", "Nová"] as const).map((label) => {
-                            const active =
-                              label === "Nová" ? newWindows : !newWindows
-                            return (
-                              <button
-                                key={label}
-                                onClick={() => setNewWindows(label === "Nová")}
-                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                              >
-                                {label}
-                              </button>
-                            )
-                          })}
-                        </div>
+                        <SegmentedToggle
+                          options={["Původní", "Nová"]}
+                          value={newWindows}
+                          onChange={setNewWindows}
+                        />
                       </div>
                       <div className="flex items-center justify-between px-4 py-3">
                         <span className="text-sm">Fotovoltaika</span>
-                        <div className="flex gap-1.5">
-                          {(["Ne", "Ano"] as const).map((label) => {
-                            const active =
-                              label === "Ano" ? photovolatic : !photovolatic
-                            return (
-                              <button
-                                key={label}
-                                onClick={() => setPhotovolatic(label === "Ano")}
-                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                              >
-                                {label}
-                              </button>
-                            )
-                          })}
-                        </div>
+                        <SegmentedToggle
+                          options={["Ne", "Ano"]}
+                          value={photovolatic}
+                          onChange={setPhotovolatic}
+                        />
                       </div>
                       <div className="flex items-center justify-between px-4 py-3">
                         <span className="text-sm">Tepelný zdroj</span>
-                        <div className="flex gap-1.5">
-                          {(["Centrální", "Osobní"] as const).map((label) => {
-                            const active =
-                              label === "Centrální" ? heater : !heater
-                            return (
-                              <button
-                                key={label}
-                                onClick={() => setHeater(label === "Centrální")}
-                                className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                              >
-                                {label}
-                              </button>
-                            )
-                          })}
-                        </div>
+                        <SegmentedToggle
+                          options={["Centrální", "Osobní"]}
+                          value={!heater}
+                          onChange={(v) => setHeater(!v)}
+                        />
                       </div>
                     </div>
 
@@ -1150,11 +1188,14 @@ export default function CalculatorPage() {
                       <div className="flex animate-in flex-col overflow-hidden rounded-xl border duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] fade-in slide-in-from-bottom-2">
                         {/* Souhrn: investice → bezúročná půjčka → měsíční splátka */}
                         <div className="flex flex-col divide-y divide-border border-t">
-                          <div className="flex flex-col items-center justify-between bg-primary/5 px-4 py-2.5">
-                            <p className="mb-4 font-medium text-primary">
-                              NZÚ Vám oproti Komerčnímu úvěru ušetří
+                          <div className="flex flex-col items-center justify-between rounded-xl bg-gradient-to-b from-primary/10 to-primary/5 px-4 py-6">
+                            <p className="mb-1.5 font-medium text-primary">
+                              NZÚ Vám oproti Komerčnímu úvěru{" "}
+                              <span className="font-semibold underline decoration-primary/40 decoration-2 underline-offset-4">
+                                ušetří
+                              </span>
                             </p>
-                            <span className="text-3xl font-semibold text-primary tabular-nums">
+                            <span className="text-4xl font-bold tracking-tight text-primary tabular-nums sm:text-5xl">
                               {Math.round(
                                 animatedComLoan - animatedLoan
                               ).toLocaleString("cs-CZ")}{" "}
@@ -1167,15 +1208,15 @@ export default function CalculatorPage() {
                   </div>
                 )
               })()}
+          </motion.div>
+        </AnimatePresence>
 
-            {/* Progress + CTA */}
-            <div className="mt-auto flex flex-col gap-3 pt-2">
-              {progressDots}
-              {ctaButton}
-            </div>
-          </div>
-        </>
-      )}
+        {/* Persistentní chrome — mimo AnimatePresence, aby se nepřemountoval */}
+        <div className="mt-6 flex flex-col gap-3 pt-2">
+          {progressDots}
+          {ctaButton}
+        </div>
+      </div>
       {splashPayload && (
         <ScenarioSplash
           buildingData={{
