@@ -170,7 +170,7 @@ function buildCardFromBuilding(data: BuildingData): SplashCard {
     // Fallback to the cheapest mock scenario when renovations can't be mapped.
     return buildCard(
       scenarios.find((s) => s.id === "nejnutnejsi")!,
-      "Varianta A — váš plán",
+      "Scénář A — váš plán",
       {
         src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
         alt: "Řemeslníci při opravě domu",
@@ -213,7 +213,7 @@ function buildCardFromBuilding(data: BuildingData): SplashCard {
     id: "custom",
     name: "Váš plán",
     tone: "emerald",
-    kicker: "Varianta A — váš plán",
+    kicker: "Scénář A — váš plán",
     photo: {
       src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
       alt: "Řemeslníci při opravě domu",
@@ -243,7 +243,7 @@ const SUSTAINABILITY_CARD: SplashCard = {
   id: "sustainability",
   name: "Energie nula",
   tone: "blue",
-  kicker: "Varianta B — udržitelnost na prvním místě",
+  kicker: "Scénář B — udržitelnost na prvním místě",
   photo: {
     src: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=1600&auto=format&fit=crop",
     alt: "Solární panely na střeše budovy",
@@ -347,7 +347,7 @@ export function ScenarioSplash({
       ? buildCardFromBuilding(buildingData)
       : buildCard(
           scenarios.find((s) => s.id === "nejnutnejsi")!,
-          "Varianta A — rychle a levně",
+          "Scénář A — rychle a levně",
           {
             src: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1600&auto=format&fit=crop",
             alt: "Řemeslníci při opravě domu",

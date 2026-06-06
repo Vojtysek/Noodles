@@ -469,7 +469,7 @@ export default function PrehledPage() {
       <div data-pr-reveal className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Varianta
+            Scénář
           </span>
           <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
             {dynamicScenarios.map((s) => {
@@ -629,7 +629,7 @@ export default function PrehledPage() {
             </>
           ) : (
             <>
-              Na horizontu {HORIZON} let se tato varianta čistě finančně nevrátí — její přínos je
+              Na horizontu {HORIZON} let se tento scénář čistě finančně nevrátí — její přínos je
               hlavně ve stavu a hodnotě domu.
             </>
           )}

@@ -371,7 +371,7 @@ export const scenarios: Scenario[] = [
   {
     id: "nejnutnejsi",
     name: "Váš plán",
-    tagline: "Dokončíme rozjetou střechu a nic dalšího. Nejlevnější a nejrychlejší varianta.",
+    tagline: "Dokončíme rozjetou střechu a nic dalšího. Nejlevnější a nejrychlejší scénář.",
     tone: "emerald",
     projectIds: ["strecha"],
   },
@@ -534,7 +534,7 @@ export type ExportHistoryItem = {
 export const exportHistory: ExportHistoryItem[] = [
   {
     id: "e1",
-    name: "Varianta A — stručný přehled",
+    name: "Scénář A — stručný přehled",
     type: "Stručný přehled",
     format: "PDF",
     project: "Váš plán",
@@ -552,7 +552,7 @@ export const exportHistory: ExportHistoryItem[] = [
   },
   {
     id: "e3",
-    name: "Varianta B — detailní report",
+    name: "Scénář B — detailní report",
     type: "Detailní report",
     format: "PDF",
     project: "Energie nula",
