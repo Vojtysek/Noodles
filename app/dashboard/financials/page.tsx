@@ -40,7 +40,7 @@ import {
   type ScenarioTone,
 } from "@/lib/mock-data"
 import { userProjects, userScenarios } from "@/lib/scenarios"
-import { calcReturn } from "./return"
+import { projectAnnualSavings, type SavingsGeometry } from "./return"
 
 const START_YEAR = 2026
 const HORIZONS = [10, 15, 20, 30]
@@ -69,26 +69,39 @@ type BuildingData = {
   selected_scenario: "custom" | "sustainability" | null
   costs_by_project: Record<string, number> | null
   units: number | null
+  zastavena_plocha: number | null
+  floors: number | null
   zakladni_kapital: number | null
   rent_years: number | null
 }
 
 function scaleProjectsToBuilding(
   baseProjects: Project[],
-  costsByProject: Record<string, number> | null
+  costsByProject: Record<string, number> | null,
+  geometry: SavingsGeometry | null
 ): Project[] {
-  if (!costsByProject) return baseProjects
-
   return baseProjects.map((p) => {
-    const projectCost = costsByProject[p.id]
-    if (!projectCost || projectCost <= 0) return p
+    // Roční úspora z fyzikálních formulí (return.ts). null = projekt bez vzorce.
+    const formulaSavings = geometry ? projectAnnualSavings(p.id, geometry) : null
+    const projectCost = costsByProject?.[p.id]
+
+    // Bez nákladů z kalkulace ponecháme základní rozpočet,
+    // jen případně přepíšeme úsporu spočtenou z formulí.
+    if (!projectCost || projectCost <= 0) {
+      return formulaSavings != null
+        ? { ...p, savingsPerYear: Math.round(formulaSavings) }
+        : p
+    }
 
     const sf = projectCost / p.budget
     return {
       ...p,
       budget: projectCost,
       spent: 0,
-      savingsPerYear: Math.round(p.savingsPerYear * sf),
+      savingsPerYear:
+        formulaSavings != null
+          ? Math.round(formulaSavings)
+          : Math.round(p.savingsPerYear * sf),
       fundIncreasePerFlat: Math.round(p.fundIncreasePerFlat * sf),
       baseline: {
         ...p.baseline,
@@ -171,7 +184,7 @@ export default function FinancialsPage() {
       supabase
         .from("buildings")
         .select(
-          "selected_renovations, total_cost, selected_scenario, costs_by_project, units, zakladni_kapital, rent_years"
+          "selected_renovations, total_cost, selected_scenario, costs_by_project, units, zastavena_plocha, floors, zakladni_kapital, rent_years"
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
@@ -197,14 +210,32 @@ export default function FinancialsPage() {
     [selectedRenovations]
   )
 
+  // Geometrie domu z RÚIAN dat — vstup pro fyzikální formule úspor (return.ts).
+  const geometry = useMemo<SavingsGeometry | null>(() => {
+    const footprint = buildingData?.zastavena_plocha
+    const floors = buildingData?.floors
+    if (!footprint || !floors || footprint <= 0 || floors <= 0) return null
+    const facade = footprint * floors
+    return {
+      footprint,
+      floors,
+      facade,
+      windowArea: facade * 0.15,
+      wallArea: facade * 0.85,
+      units: buildingData?.units ?? 0,
+    }
+  }, [buildingData])
+
   // Pouze projekty, které uživatel vybral, naškálované jeho náklady.
+  // Roční úspora se počítá z formulí v return.ts (fallback: škálovaný mock).
   const scaledProjects = useMemo(
     () =>
       scaleProjectsToBuilding(
         userProjects(selectedRenovations),
-        buildingData?.costs_by_project ?? null
+        buildingData?.costs_by_project ?? null,
+        geometry
       ),
-    [selectedRenovations, buildingData]
+    [selectedRenovations, buildingData, geometry]
   )
 
   const scaledProjectsByPriority = useMemo(
