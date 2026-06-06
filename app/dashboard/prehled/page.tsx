@@ -8,10 +8,18 @@ import { useGSAP } from "@gsap/react"
 import {
   ArrowRight,
   FileDown,
+  HeartPulse,
+  Leaf,
+  PlugZap,
+  Shield,
   SlidersHorizontal,
   Sparkles,
+  Thermometer,
+  TrendingUp,
   Users,
+  VolumeX,
   Wallet,
+  type LucideIcon,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -20,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { ComparisonLineChart, seriesCrossing } from "@/components/dashboard/charts"
 import { Roadmap, type RoadmapItem } from "@/components/dashboard/roadmap"
 import { Harmonogram } from "@/components/dashboard/harmonogram"
+import { ScenarioSplash } from "@/components/dashboard/scenario-splash"
 
 import { userScenarios } from "@/lib/scenarios"
 import {
@@ -29,6 +38,15 @@ import {
   type Scenario,
   type ScenarioTone,
 } from "@/lib/mock-data"
+import {
+  BENEFIT_CATEGORIES,
+  NON_FINANCIAL_BENEFITS,
+  groupBenefitsByCategory,
+  selectBenefits,
+  type BenefitCategory,
+  type NonFinancialBenefit,
+} from "@/lib/benefits"
+import { fetchNonFinancialBenefits } from "@/lib/benefits-db"
 
 type BuildingCalc = {
   id: string
@@ -89,6 +107,21 @@ const TONE_DOT: Record<ScenarioTone, string> = {
   emerald: "bg-emerald-500",
   amber: "bg-amber-500",
   blue: "bg-blue-500",
+}
+
+// Mapování názvů ikon z katalogu přínosů na konkrétní lucide komponenty.
+const BENEFIT_ICONS: Record<BenefitCategory, LucideIcon> = {
+  komfort: Thermometer,
+  zdravi: HeartPulse,
+  prostredi: Leaf,
+  hodnota: TrendingUp,
+  bezpecnost: Shield,
+  hluk: VolumeX,
+  nezavislost: PlugZap,
+}
+
+function projectShortName(projectId: string): string | undefined {
+  return projects.find((p) => p.id === projectId)?.shortName
 }
 
 function monthLabel(offsetMonths: number): string {
@@ -169,6 +202,8 @@ export default function PrehledPage() {
   // Dev spouštění: ?splash=1 v URL, nebo tlačítko vedle nadpisu (jen v dev buildu).
   const [splashOpen, setSplashOpen] = useState(false)
   const [buildingCalc, setBuildingCalc] = useState<BuildingCalc | null>(null)
+  // Katalog nefinančních přínosů — z DB, s fallbackem na statický katalog.
+  const [benefitCatalog, setBenefitCatalog] = useState<NonFinancialBenefit[]>(NON_FINANCIAL_BENEFITS)
   const rootRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -182,6 +217,8 @@ export default function PrehledPage() {
     ;(async () => {
       try {
         const supabase = createClient()
+        // Katalog přínosů z DB (fallback na statický uvnitř fetchNonFinancialBenefits).
+        setBenefitCatalog(await fetchNonFinancialBenefits(supabase))
         const {
           data: { user },
         } = await supabase.auth.getUser()
@@ -227,6 +264,16 @@ export default function PrehledPage() {
     }
     return computeScenario(scenario)
   }, [scenario, buildingCalc])
+
+  // Nefinanční přínosy aktivního scénáře — seskupené dle kategorie.
+  const benefitGroups = useMemo(() => {
+    if (!scenario) return []
+    const grouped = groupBenefitsByCategory(selectBenefits(benefitCatalog, scenario.projectIds))
+    return (Object.keys(grouped) as BenefitCategory[]).map((category) => ({
+      category,
+      benefits: grouped[category]!,
+    }))
+  }, [scenario, benefitCatalog])
 
   const finishLabel = result ? monthLabel(result.totalMonths).replace("od ", "") : ""
 
@@ -478,6 +525,79 @@ export default function PrehledPage() {
           />
         </div>
       </div>
+
+      {/* Co tím získáte navíc — nefinanční přínosy */}
+      {benefitGroups.length > 0 && (
+        <div
+          data-pr-reveal
+          className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
+        >
+          {/* Ručně kreslené srdíčko v rohu */}
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute top-3 right-4 size-16 text-blue-500/30"
+            viewBox="0 0 64 64"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M32 52 C32 52 12 40 12 26 C12 18 18 14 24 14 C28 14 31 16 32 20 C33 16 36 14 40 14 C46 14 52 18 52 26 C52 40 32 52 32 52 Z" />
+          </svg>
+          <p className="text-sm font-medium">Co tím získáte navíc</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a hodnota domu.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {benefitGroups.map(({ category, benefits }) => {
+              const meta = BENEFIT_CATEGORIES[category]
+              const Icon = BENEFIT_ICONS[category]
+              return (
+                <div
+                  key={category}
+                  className="rounded-xl border bg-background/40 p-4"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                      <Icon className="size-4" />
+                    </span>
+                    <p className="text-sm font-semibold">{meta.label}</p>
+                  </div>
+                  <ul className="mt-3 flex flex-col gap-3">
+                    {benefits.map((benefit) => {
+                      const shortName =
+                        benefit.projectId === null
+                          ? "Celý dům"
+                          : projectShortName(benefit.projectId)
+                      return (
+                        <li key={benefit.id}>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-medium">{benefit.title}</p>
+                            {shortName && (
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                {shortName}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {benefit.description}
+                          </p>
+                          {benefit.meetingPitch && (
+                            <p className="mt-1 text-xs italic text-muted-foreground">
+                              „{benefit.meetingPitch}"
+                            </p>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Vyplatí se to? */}
       <div

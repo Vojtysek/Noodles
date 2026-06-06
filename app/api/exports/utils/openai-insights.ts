@@ -13,7 +13,11 @@ export interface InsightsResult {
  *
  * @throws Error when OPENAI_API_KEY is missing or the API call fails
  */
-export async function generateInsights(persona: Persona, scenario: Scenario): Promise<InsightsResult> {
+export async function generateInsights(
+  persona: Persona,
+  scenario: Scenario,
+  benefits: Array<{ title: string; description: string; meetingPitch?: string }> = []
+): Promise<InsightsResult> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not set')
@@ -27,6 +31,18 @@ export async function generateInsights(persona: Persona, scenario: Scenario): Pr
   const motivations = persona.structured?.motivations?.join(', ') || '—'
   const objections = persona.structured?.objections?.join(', ') || '—'
   const traits = persona.structured?.traits?.join(', ') || '—'
+
+  const benefitsBlock =
+    benefits.length > 0
+      ? benefits
+          .slice(0, 5)
+          .map((b) =>
+            b.meetingPitch
+              ? `- ${b.title}: ${b.description}\n  Jak to říct na schůzi: „${b.meetingPitch}"`
+              : `- ${b.title}: ${b.description}`
+          )
+          .join('\n')
+      : '—'
 
   const completion = await client.chat.completions.create({
     model: 'gpt-4o-mini',
@@ -48,8 +64,11 @@ Roční úspory: ${aggregates.savingsPerYear.toLocaleString('cs-CZ')} Kč
 Návratnost: ${aggregates.paybackYears} let
 Úspora energie: ${aggregates.energySavingPct} %
 
+Nefinanční přínosy (seřazené dle relevance pro tuto personu — využij ty nejrelevantnější):
+${benefitsBlock}
+
 Vygeneruj:
-1. 3 personalizované argumenty PROČ tato persona by měla souhlasit s rekonstrukcí (každý 1–2 věty, konkrétní, data-driven, šité na míru jejím motivacím)
+1. 3 personalizované argumenty PROČ tato persona by měla souhlasit s rekonstrukcí (každý 1–2 věty, konkrétní, data-driven, šité na míru jejím motivacím). Tam, kde to dává smysl, přirozeně zapracuj relevantní nefinanční přínosy výše.
 2. 2 přímé odpovědi na její hlavní námitky (konkrétní řešení nebo alternativa, buduj důvěru)
 
 Odpověz jako JSON: { "arguments": ["...", "...", "..."], "counterpoints": ["...", "..."] }`,

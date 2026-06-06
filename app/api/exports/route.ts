@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
           tagline: context.scenarioTagline,
           tone: 'emerald',
           projectIds: context.projects.map((p) => p.id as any),
-        })
+        }, context.benefits.map((b) => ({ title: b.title, description: b.description, meetingPitch: b.meetingPitch })))
         context.personaArguments = insights.personaArguments
         context.counterpoints = insights.counterpoints
       } catch (err) {

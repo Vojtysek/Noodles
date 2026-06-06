@@ -92,6 +92,49 @@ function drawBullet(doc: DocType, text: string, indent = MARGIN + 14, color = PR
   doc.moveDown(0.3)
 }
 
+/** Add a new page when the next block would overflow the printable area. */
+function ensureSpace(doc: DocType, needed: number) {
+  if (doc.y + needed > doc.page.height - 60) {
+    doc.addPage()
+    doc.y = MARGIN
+  }
+}
+
+/** Render a single benefit: small category tag, bold-ish title, one-line description. */
+function drawBenefit(
+  doc: DocType,
+  benefit: {
+    categoryLabel: string
+    title: string
+    description: string
+    projectName?: string
+    meetingPitch?: string
+  },
+  options?: { withPitch?: boolean }
+) {
+  ensureSpace(doc, 48)
+  const x = MARGIN + 14
+  const width = CONTENT_WIDTH - 14
+  const y = doc.y
+  doc.circle(x - 7, y + 5, 2.5).fillColor(GREEN).fill()
+
+  // Category tag
+  doc.fontSize(7).fillColor(GREEN).font('Geist').text(benefit.categoryLabel.toUpperCase(), x, y, { width })
+  // Title
+  doc.fontSize(10).fillColor(DARK).font('Geist').text(benefit.title, x, doc.y, { width })
+  // Description
+  doc.fontSize(9).fillColor(MID).font('Geist').text(benefit.description, x, doc.y, { width, lineGap: 1 })
+  if (benefit.projectName) {
+    doc.fontSize(8).fillColor(MUTED).font('Geist').text(benefit.projectName, x, doc.y, { width })
+  }
+  // Jak to říct na schůzi — citovaná formulace
+  if (options?.withPitch && benefit.meetingPitch) {
+    doc.fontSize(8.5).fillColor(MUTED).font('Geist')
+      .text(`„${benefit.meetingPitch}"`, x, doc.y, { width, lineGap: 1, oblique: true })
+  }
+  doc.moveDown(0.5)
+}
+
 function drawPageHeader(doc: DocType, title: string, subtitle: string, date: string) {
   doc.rect(MARGIN, 40, 4, 58).fillColor(PRIMARY).fill()
   doc.fontSize(20).fillColor(DARK).font('Geist').text(title, MARGIN + 14, 42, { width: CONTENT_WIDTH - 14 })
@@ -148,11 +191,14 @@ function layoutOverallBrief(doc: DocType, ctx: CompiledData) {
     doc.moveDown(0.2)
   })
 
-  heading2(doc, 'Klíčové přínosy')
-  drawBullet(doc, 'Nižší energetické náklady a vyšší komfort bydlení')
-  drawBullet(doc, 'Zvýšení hodnoty nemovitosti a fondu oprav')
-  drawBullet(doc, 'Ekologičtější domácnost, nižší uhlíková stopa')
-  drawBullet(doc, 'Dlouhodobá investice s garantovanou návratností')
+  heading2(doc, 'Co tím získáte navíc')
+  const topBenefits = ctx.benefits.slice(0, 6)
+  if (topBenefits.length > 0) {
+    topBenefits.forEach((b) => drawBenefit(doc, b))
+  } else {
+    drawBullet(doc, 'Nižší energetické náklady a vyšší komfort bydlení')
+    drawBullet(doc, 'Zvýšení hodnoty nemovitosti a fondu oprav')
+  }
 }
 
 // ─── Layout: persona ──────────────────────────────────────────────────────────
@@ -191,6 +237,11 @@ function layoutPersona(doc: DocType, ctx: CompiledData) {
   if (ctx.personaObjections && ctx.personaObjections.length > 0) {
     heading3(doc, 'Hlavní námitky')
     ctx.personaObjections.forEach((o) => drawBullet(doc, o, MARGIN + 14, '#dc2626'))
+  }
+
+  if (ctx.benefits && ctx.benefits.length > 0) {
+    heading2(doc, 'Co osloví právě jeho/ji')
+    ctx.benefits.slice(0, 5).forEach((b) => drawBenefit(doc, b, { withPitch: true }))
   }
 
   // OpenAI-generated arguments and counterpoints
@@ -285,6 +336,34 @@ function layoutOverallDetail(doc: DocType, ctx: CompiledData) {
       doc.y = tableY + 10
     }
   })
+
+  // ── Non-financial benefits, grouped by category ────────────────────────────
+  if (ctx.benefits && ctx.benefits.length > 0) {
+    doc.addPage()
+    doc.y = MARGIN
+    heading2(doc, 'Nefinanční přínosy')
+    muted(doc, 'Kvalitativní důvody pro rekonstrukci nad rámec úspor a návratnosti')
+    doc.moveDown(0.3)
+
+    // Preserve compiled order while grouping by category
+    const order: string[] = []
+    const grouped: Record<string, typeof ctx.benefits> = {}
+    ctx.benefits.forEach((b) => {
+      if (!grouped[b.categoryLabel]) {
+        grouped[b.categoryLabel] = []
+        order.push(b.categoryLabel)
+      }
+      grouped[b.categoryLabel].push(b)
+    })
+
+    order.forEach((categoryLabel) => {
+      ensureSpace(doc, 40)
+      heading3(doc, categoryLabel)
+      grouped[categoryLabel].forEach((b) =>
+        drawBenefit(doc, { categoryLabel: b.categoryLabel, title: b.title, description: b.description, projectName: b.projectName })
+      )
+    })
+  }
 }
 
 // ─── Layout: presentation ─────────────────────────────────────────────────────
@@ -338,7 +417,17 @@ function layoutPresentation(doc: DocType, ctx: CompiledData) {
     }
   })
 
-  // Slide 3: Talking points
+  // Slide 3: Non-financial benefits
+  if (ctx.benefits && ctx.benefits.length > 0) {
+    doc.addPage()
+    doc.y = MARGIN
+    heading2(doc, 'Co rekonstrukce přinese navíc')
+    muted(doc, 'Nefinanční přínosy nad rámec úspor energií')
+    doc.moveDown(0.3)
+    ctx.benefits.slice(0, 6).forEach((b) => drawBenefit(doc, b, { withPitch: true }))
+  }
+
+  // Slide 4: Talking points
   doc.addPage()
   doc.y = MARGIN
   heading2(doc, 'Hlavní argumenty pro schůzi')

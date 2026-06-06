@@ -12,6 +12,14 @@ import { createClient } from '@/lib/supabase/server'
 import { ARCHETYPES, isArchetypeId } from '@/lib/archetypes'
 import { PERSONA_TYPES } from '@/lib/persona-types'
 import type { PersonaType } from '@/lib/persona-types'
+import {
+  selectBenefits,
+  rankBenefitsForPersona,
+  BENEFIT_CATEGORIES,
+  NON_FINANCIAL_BENEFITS,
+  type BenefitCategory,
+} from '@/lib/benefits'
+import { fetchNonFinancialBenefits } from '@/lib/benefits-db'
 
 export interface CompiledData {
   // Scenario info
@@ -39,6 +47,18 @@ export interface CompiledData {
     energySavingPct: number
     durationMonths: number
     costItems: Array<{ item: string; supplier: string; amount: number; share: number }>
+  }>
+
+  // Non-financial benefits (ranked for persona export, impact-sorted otherwise)
+  benefits: Array<{
+    id: string
+    category: BenefitCategory
+    categoryLabel: string
+    title: string
+    description: string
+    impact: number
+    projectName: string
+    meetingPitch?: string
   }>
 
   // Persona fields (populated only for persona export)
@@ -97,6 +117,30 @@ export async function compileData(
 
   const aggregates = aggregateScenario(scenario.projectIds as ProjectId[])
 
+  // ── Non-financial benefits ──────────────────────────────────────────────────
+  // Katalog načteme z DB (renovation_benefits); createClient může mimo request
+  // kontext vyhodit výjimku — proto try/catch a fallback na statický katalog.
+  let benefitCatalog = NON_FINANCIAL_BENEFITS
+  try {
+    const supabase = await createClient()
+    benefitCatalog = await fetchNonFinancialBenefits(supabase)
+  } catch {
+    benefitCatalog = NON_FINANCIAL_BENEFITS
+  }
+
+  const projectNameById = new Map(projects.map((p) => [p.id, p.name]))
+  const rawBenefits = selectBenefits(benefitCatalog, scenario.projectIds as ProjectId[])
+  const compiledBenefits = rawBenefits.map((b) => ({
+    id: b.id,
+    category: b.category,
+    categoryLabel: BENEFIT_CATEGORIES[b.category].label,
+    title: b.title,
+    description: b.description,
+    impact: b.impact,
+    projectName: b.projectId === null ? 'Celý dům' : projectNameById.get(b.projectId) ?? b.projectId,
+    meetingPitch: b.meetingPitch,
+  }))
+
   // ── Base compiled data ──────────────────────────────────────────────────────
   const compiled: CompiledData = {
     scenarioName: scenario.name,
@@ -120,6 +164,7 @@ export async function compileData(
       durationMonths: p.durationMonths,
       costItems: p.costItems,
     })),
+    benefits: compiledBenefits,
     generatedDate: new Date().toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long', day: 'numeric' }),
     documentTitle: getDocumentTitle(exportType, scenario.name),
   }
@@ -137,6 +182,19 @@ export async function compileData(
       compiled.personaMotivations = persona.structured?.motivations ?? []
       compiled.personaObjections = persona.structured?.objections ?? []
       compiled.personaRejects = persona.structured?.rejects ?? []
+
+      // Re-rank benefits so the persona's preferred categories come first
+      const rankedBenefits = rankBenefitsForPersona(rawBenefits, persona.personaType)
+      compiled.benefits = rankedBenefits.map((b) => ({
+        id: b.id,
+        category: b.category,
+        categoryLabel: BENEFIT_CATEGORIES[b.category].label,
+        title: b.title,
+        description: b.description,
+        impact: b.impact,
+        projectName: b.projectId === null ? 'Celý dům' : projectNameById.get(b.projectId) ?? b.projectId,
+        meetingPitch: b.meetingPitch,
+      }))
     }
   }
 
