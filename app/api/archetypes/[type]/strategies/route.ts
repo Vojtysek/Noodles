@@ -20,9 +20,10 @@ export async function GET(
 
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("archetype_strategies")
-    .select("scenario_key, strategies")
-    .eq("archetype", type);
+    .from("persona_strategies")
+    .select("project_id, strategies")
+    .eq("archetype", type)
+    .is("persona_id", null);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -30,7 +31,7 @@ export async function GET(
 
   const result: Record<string, StrategyPoint[]> = {};
   for (const row of data ?? []) {
-    result[row.scenario_key as string] = row.strategies as StrategyPoint[];
+    result[row.project_id as string] = row.strategies as StrategyPoint[];
   }
 
   return Response.json(result);
@@ -99,10 +100,10 @@ export async function POST(
 
   const supabase = await createClient();
   const { error: upsertError } = await supabase
-    .from("archetype_strategies")
+    .from("persona_strategies")
     .upsert(
-      { archetype: type, scenario_key: key, strategies: raw.strategies },
-      { onConflict: "archetype,scenario_key" }
+      { archetype: type, persona_id: null, project_id: key, strategies: raw.strategies },
+      { onConflict: "archetype,project_id" }
     );
 
   if (upsertError) {
