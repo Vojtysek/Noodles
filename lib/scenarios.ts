@@ -40,14 +40,14 @@ export function buildDynamicScenarios(selectedRenovations: string[]): Scenario[]
       tone: "emerald",
       projectIds: matchedIds,
     },
-    {
-      id: "kompletni-obnova",
-      name: "Energie nula",
-      tagline:
-        "Všechny čtyři scénáře najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
-      tone: "blue",
-      projectIds: ["strecha", "okna", "fasada", "vytah"],
-    },
+    // {
+    //   id: "kompletni-obnova",
+    //   name: "Energie nula",
+    //   tagline:
+    //     "Všechny čtyři scénáře najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
+    //   tone: "blue",
+    //   projectIds: ["strecha", "okna", "fasada", "vytah"],
+    // },
   ]
 }
 
