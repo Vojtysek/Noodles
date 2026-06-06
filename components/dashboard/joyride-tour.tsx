@@ -19,13 +19,11 @@ const STORAGE_KEY = "noodles_tour_seen"
 const STEP_ROUTES: Record<number, string> = {
   0: "/dashboard/prehled",
   1: "/dashboard/prehled",
-  2: "/dashboard/prehled",
-  3: "/dashboard/prehled",
-  4: "/dashboard/rezidenti",
-  5: "/dashboard/rezidenti",
-  6: "/dashboard/financials",
-  7: "/dashboard/projects",
-  8: "/dashboard/exporty",
+  2: "/dashboard/rezidenti",
+  3: "/dashboard/rezidenti",
+  4: "/dashboard/financials",
+  5: "/dashboard/projects",
+  6: "/dashboard/exporty",
 }
 
 const STEPS: Step[] = [
@@ -43,20 +41,6 @@ const STEPS: Step[] = [
     title: "Základní informace budovy",
     content:
       "Energetická třída, počet bytových jednotek, odhadovaná měsíční splátka na byt a roční úspora na energiích — vše na jednom místě.",
-  },
-  {
-    target: '[data-joyride="prehled-harmonogram"]',
-    skipBeacon: true,
-    title: "Harmonogram",
-    content:
-      "Časová osa rekonstrukcí pro vybraný scénář — vidíte pořadí projektů, délku každé fáze a celkový termín dokončení.",
-  },
-  {
-    target: '[data-joyride="prehled-benefits"]',
-    skipBeacon: true,
-    title: "Přínosy",
-    content:
-      "Nefinanční přínosy rekonstrukcí rozdělené do kategorií: komfort, zdraví, hodnota nemovitosti, bezpečnost a další.",
   },
   {
     target: '[data-joyride="rezidenti-archetypes"]',
