@@ -13,6 +13,7 @@ import {
   Sun,
   Moon,
   Hammer,
+  Receipt,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/financials", label: "Finance", icon: ChartColumn, joyrideId: "nav-finance" },
   { href: "/dashboard/projects", label: "Projekty", icon: Hammer, joyrideId: "nav-projekty" },
   { href: "/dashboard/exporty", label: "Exporty", icon: FileDown, joyrideId: "nav-exporty" },
+  { href: "/dashboard/faktury", label: "Faktury", icon: Receipt },
 ]
 
 export function DashboardSidebar() {

@@ -13,6 +13,7 @@ import {
   FileDown,
   FileText,
   Presentation,
+  Sparkles,
   UserRound,
 } from "lucide-react"
 import { motion, useAnimation } from "motion/react"
@@ -429,10 +430,7 @@ export default function Page() {
           >
             <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 rounded-full bg-background/95 py-2 pr-2 pl-5 shadow-lg backdrop-blur">
               <Link href="/" className="flex items-center gap-2 font-semibold">
-                <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Building2 className="size-4" />
-                </span>
-                Noodles
+                Reno
               </Link>
               <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
                 <a
@@ -610,120 +608,108 @@ export default function Page() {
                 Rezidenti
               </p>
               <h3 className="mt-1.5 text-xl font-semibold tracking-tight">
-                Víte, kdo bude na schůzi proti — dřív, než se tam postaví
+                Připravte si argumenty na každý typ souseda
               </h3>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                AI z vašich poznámek pochopí námitky a motivace každého souseda,
-                takže víte, s kým a o čem mluvit.
+                AI zná šest typů sousedů — pochopí jejich námitky i motivace a
+                připraví argumenty na míru vybranému scénáři. Na schůzi vás tak
+                nikdo nezaskočí.
               </p>
-              <div className="mt-6 flex flex-col">
+
+              {/* Galerie archetypů */}
+              <div className="mt-6 grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {[
-                  {
-                    initials: "MK",
-                    color: "bg-emerald-500",
-                    name: "Marek Kolář",
-                    note: "„Hlavně ať se začne co nejdřív.“",
-                    label: "Podporuje",
-                    pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-                  },
-                  {
-                    initials: "PV",
-                    color: "bg-amber-500",
-                    name: "Petra Veselá",
-                    note: "„Nejdřív chci vidět návratnost.“",
-                    label: "Váhá",
-                    pill: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-                  },
-                  {
-                    initials: "AH",
-                    color: "bg-rose-500",
-                    name: "Anna Horáková",
-                    note: "„Bojím se zvýšení záloh.“",
-                    label: "Proti",
-                    pill: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
-                  },
-                ].map((resident) => (
+                  { name: "Skrblík", img: "/personas/skrblik.png", active: true },
+                  { name: "Investor", img: "/personas/investor.png" },
+                  { name: "Technik", img: "/personas/technik.png" },
+                  { name: "Ekolog", img: "/personas/ekolog.png" },
+                  { name: "Lhostejný", img: "/personas/lhostejny.png" },
+                  { name: "Nováček", img: "/personas/novacek.png" },
+                ].map((a) => (
                   <div
-                    key={resident.initials}
-                    className="flex items-center gap-3 border-b border-border/40 py-2.5 last:border-b-0"
+                    key={a.name}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 text-center transition-colors ${
+                      a.active
+                        ? "border-primary/60 bg-primary/5"
+                        : "border-border/50 bg-background/40"
+                    }`}
                   >
-                    <span
-                      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ${resident.color}`}
-                    >
-                      {resident.initials}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {resident.name}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {resident.note}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${resident.pill}`}
-                    >
-                      {resident.label}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={a.img}
+                      alt={a.name}
+                      className="aspect-square w-full rounded-lg object-cover"
+                    />
+                    <span className="w-full truncate text-[11px] font-medium">
+                      {a.name}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 rounded-lg bg-primary/5 px-3.5 py-2.5 text-xs leading-relaxed text-primary">
-                ✦ AI tip: Anně ukažte rozpočet s fixními zálohami — její námitka
-                je o cashflow, ne o renovaci samotné.
-              </div>
+
+              {/* Detail vybraného archetypu */}
               <div className="mt-auto pt-6">
                 <div className="flex flex-col gap-4 rounded-xl bg-muted/40 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ring-1 ring-black/[0.04] ring-inset dark:shadow-none dark:ring-white/[0.04]">
-                  <div className="flex items-center justify-between">
-                    <div data-avatar-row className="flex -space-x-2">
-                      {["JN", "MK", "PV", "AH", "TS"].map((initials, i) => (
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/personas/skrblik.png"
+                      alt="Skrblík"
+                      className="size-10 shrink-0 rounded-full object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">Skrblík</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        Každá koruna se počítá
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Námitky */}
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+                      Námitky
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        "Zvýšení fondu oprav",
+                        "Příliš drahé řešení",
+                        "„Nešlo by to levněji?“",
+                      ].map((o) => (
                         <span
-                          key={initials}
-                          className={`flex size-9 items-center justify-center rounded-full border-2 border-background text-xs font-semibold text-white ${
-                            [
-                              "bg-emerald-500",
-                              "bg-emerald-600",
-                              "bg-amber-500",
-                              "bg-rose-500",
-                              "bg-emerald-500",
-                            ][i]
-                          }`}
+                          key={o}
+                          className="rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs text-muted-foreground"
                         >
-                          {initials}
+                          {o}
                         </span>
                       ))}
-                      <span className="flex size-9 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium text-muted-foreground">
-                        +19
-                      </span>
-                    </div>
-                    <span
-                      data-count="16"
-                      data-suffix=" z 24 pro"
-                      className="text-xs text-muted-foreground tabular-nums"
-                    >
-                      16 z 24 pro
-                    </span>
-                  </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-                    <div data-fill-bar className="flex h-full">
-                      <div className="w-[67%] bg-emerald-500" />
-                      <div className="w-[21%] bg-amber-500" />
-                      <div className="w-[12%] bg-rose-500" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      Podporuje
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-amber-500" />
-                      Váhá
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-rose-500" />
-                      Proti
-                    </span>
+
+                  {/* Argumentační strategie */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="size-3.5 text-primary" />
+                      <p className="text-[11px] font-medium tracking-wider text-primary uppercase">
+                        Argumentační strategie
+                      </p>
+                    </div>
+                    {[
+                      "Ukažte návratnost s dotací NZÚ — ne celkovou cenu.",
+                      "Rozložte náklady do fondu oprav, ať záloha nevyskočí nárazově.",
+                    ].map((point, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 rounded-lg bg-background px-3.5 py-2.5"
+                      >
+                        <span className="mt-px flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground tabular-nums">
+                          {i + 1}
+                        </span>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          {point}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
