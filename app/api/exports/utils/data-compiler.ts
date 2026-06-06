@@ -7,7 +7,7 @@ import {
   type Persona,
   type ProjectId,
 } from '@/lib/mock-data'
-import { aggregateScenario, isProjectId } from '@/lib/scenarios'
+import { aggregateScenario, isProjectId, userScenarios } from '@/lib/scenarios'
 import { createClient } from '@/lib/supabase/server'
 import { ARCHETYPES, isArchetypeId } from '@/lib/archetypes'
 import { PERSONA_TYPES } from '@/lib/persona-types'
@@ -90,7 +90,38 @@ export async function compileData(
   scenarioId?: string
 ): Promise<CompiledData> {
   // ── Resolve scenario ────────────────────────────────────────────────────────
-  const allScenarios = mockScenarios
+  // Scénáře odvozujeme z renovací vybraných v onboardingu (tabulka buildings).
+  // Mock scénáře slouží jen jako fallback bez přihlášení / bez kalkulace.
+  // createClient může mimo request kontext vyhodit výjimku — proto try/catch.
+  let supabase: Awaited<ReturnType<typeof createClient>> | null = null
+  try {
+    supabase = await createClient()
+  } catch {
+    supabase = null
+  }
+
+  let builtScenarios: Scenario[] = []
+  if (supabase) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('buildings')
+          .select('selected_renovations')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        builtScenarios = userScenarios(
+          (data?.selected_renovations as string[] | undefined) ?? []
+        )
+      }
+    } catch {}
+  }
+
+  const allScenarios = builtScenarios.length > 0 ? builtScenarios : mockScenarios
   const defaultScenario = allScenarios[0]
   const targetScenarioId = scenarioId || defaultScenario.id
 
@@ -117,14 +148,14 @@ export async function compileData(
   const aggregates = aggregateScenario(scenario.projectIds as ProjectId[])
 
   // ── Non-financial benefits ──────────────────────────────────────────────────
-  // Katalog načteme z DB (renovation_benefits); createClient může mimo request
-  // kontext vyhodit výjimku — proto try/catch a fallback na statický katalog.
+  // Katalog načteme z DB (renovation_benefits) s fallbackem na statický katalog.
   let benefitCatalog = NON_FINANCIAL_BENEFITS
-  try {
-    const supabase = await createClient()
-    benefitCatalog = await fetchNonFinancialBenefits(supabase)
-  } catch {
-    benefitCatalog = NON_FINANCIAL_BENEFITS
+  if (supabase) {
+    try {
+      benefitCatalog = await fetchNonFinancialBenefits(supabase)
+    } catch {
+      benefitCatalog = NON_FINANCIAL_BENEFITS
+    }
   }
 
   const projectNameById = new Map(projects.map((p) => [p.id, p.name]))

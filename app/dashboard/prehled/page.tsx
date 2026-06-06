@@ -549,7 +549,7 @@ export default function PrehledPage() {
           <p className="mt-0.5 text-xs text-muted-foreground">
             Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a hodnota domu.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mt-4 flex flex-col gap-3">
             {benefitGroups.map(({ category, benefits }) => {
               const meta = BENEFIT_CATEGORIES[category]
               const Icon = BENEFIT_ICONS[category]
@@ -583,11 +583,6 @@ export default function PrehledPage() {
                           <p className="mt-0.5 text-xs text-muted-foreground">
                             {benefit.description}
                           </p>
-                          {benefit.meetingPitch && (
-                            <p className="mt-1 text-xs italic text-muted-foreground">
-                              „{benefit.meetingPitch}"
-                            </p>
-                          )}
                         </li>
                       )
                     })}
