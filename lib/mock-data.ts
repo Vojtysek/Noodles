@@ -1,7 +1,16 @@
 // Mock data pro dashboard — pouze FE vrstva, bez napojení na Supabase / AI.
-import { PersonaType } from '@/lib/persona-types'
+import { PersonaType } from "@/lib/persona-types"
 
-export type ProjectId = "fasada" | "okna" | "strecha" | "vytah" | "zaluzie" | "tepelne-cerpadlo" | "vytapeni" | "rekuperace" | "fotovoltaika"
+export type ProjectId =
+  | "fasada"
+  | "okna"
+  | "strecha"
+  | "vytah"
+  | "zaluzie"
+  | "tepelne-cerpadlo"
+  | "vytapeni"
+  | "rekuperace"
+  | "fotovoltaika"
 
 export type Project = {
   id: ProjectId
@@ -61,11 +70,36 @@ export const projects: Project[] = [
       { year: "2040", value: 280_000 },
     ],
     costItems: [
-      { item: "Izolační desky EPS 150 mm", supplier: "Izolace Praha s.r.o.", amount: 3_100_000, share: 37 },
-      { item: "Lešení vč. pronájmu", supplier: "Stav-Lešení a.s.", amount: 1_350_000, share: 16 },
-      { item: "Montážní práce", supplier: "Fasády CZ s.r.o.", amount: 1_050_000, share: 12.5 },
-      { item: "Silikonová omítka", supplier: "Fasády CZ s.r.o.", amount: 1_500_000, share: 18 },
-      { item: "Projekt a stavební dozor", supplier: "Ing. Malý", amount: 600_000, share: 7 },
+      {
+        item: "Izolační desky EPS 150 mm",
+        supplier: "Izolace Praha s.r.o.",
+        amount: 3_100_000,
+        share: 37,
+      },
+      {
+        item: "Lešení vč. pronájmu",
+        supplier: "Stav-Lešení a.s.",
+        amount: 1_350_000,
+        share: 16,
+      },
+      {
+        item: "Montážní práce",
+        supplier: "Fasády CZ s.r.o.",
+        amount: 1_050_000,
+        share: 12.5,
+      },
+      {
+        item: "Silikonová omítka",
+        supplier: "Fasády CZ s.r.o.",
+        amount: 1_500_000,
+        share: 18,
+      },
+      {
+        item: "Projekt a stavební dozor",
+        supplier: "Ing. Malý",
+        amount: 600_000,
+        share: 7,
+      },
       { item: "Rezerva 10 %", supplier: "—", amount: 800_000, share: 9.5 },
     ],
   },
@@ -99,10 +133,30 @@ export const projects: Project[] = [
       { year: "2040", value: 840_000 },
     ],
     costItems: [
-      { item: "Plastová okna 6komorová", supplier: "Okna Bohemia s.r.o.", amount: 2_900_000, share: 59 },
-      { item: "Montáž vč. demontáže", supplier: "Okna Bohemia s.r.o.", amount: 1_100_000, share: 22.5 },
-      { item: "Vnitřní + vnější parapety", supplier: "Okna Bohemia s.r.o.", amount: 320_000, share: 6.5 },
-      { item: "Začištění a malby", supplier: "Malby Dvořák", amount: 180_000, share: 3.5 },
+      {
+        item: "Plastová okna 6komorová",
+        supplier: "Okna Bohemia s.r.o.",
+        amount: 2_900_000,
+        share: 59,
+      },
+      {
+        item: "Montáž vč. demontáže",
+        supplier: "Okna Bohemia s.r.o.",
+        amount: 1_100_000,
+        share: 22.5,
+      },
+      {
+        item: "Vnitřní + vnější parapety",
+        supplier: "Okna Bohemia s.r.o.",
+        amount: 320_000,
+        share: 6.5,
+      },
+      {
+        item: "Začištění a malby",
+        supplier: "Malby Dvořák",
+        amount: 180_000,
+        share: 3.5,
+      },
       { item: "Rezerva", supplier: "—", amount: 400_000, share: 8.5 },
     ],
   },
@@ -136,9 +190,24 @@ export const projects: Project[] = [
       { year: "2044", value: 40_000 },
     ],
     costItems: [
-      { item: "Střešní krytina + hydroizolace", supplier: "Střechy Novák s.r.o.", amount: 1_700_000, share: 53 },
-      { item: "Klempířské prvky a žlaby", supplier: "Klempířství Beneš", amount: 600_000, share: 19 },
-      { item: "Pokrývačské práce", supplier: "Střechy Novák s.r.o.", amount: 650_000, share: 20 },
+      {
+        item: "Střešní krytina + hydroizolace",
+        supplier: "Střechy Novák s.r.o.",
+        amount: 1_700_000,
+        share: 53,
+      },
+      {
+        item: "Klempířské prvky a žlaby",
+        supplier: "Klempířství Beneš",
+        amount: 600_000,
+        share: 19,
+      },
+      {
+        item: "Pokrývačské práce",
+        supplier: "Střechy Novák s.r.o.",
+        amount: 650_000,
+        share: 20,
+      },
       { item: "Rezerva", supplier: "—", amount: 250_000, share: 8 },
     ],
   },
@@ -172,9 +241,24 @@ export const projects: Project[] = [
       { year: "2054", value: 60_000 },
     ],
     costItems: [
-      { item: "Výtahová jednotka vč. kabiny", supplier: "Výtahy Schindler CZ", amount: 1_800_000, share: 69 },
-      { item: "Stavební úpravy šachty", supplier: "Stavby Kolář s.r.o.", amount: 450_000, share: 17.5 },
-      { item: "Revize, certifikace, zkoušky", supplier: "TÜV SÜD Czech", amount: 150_000, share: 6 },
+      {
+        item: "Výtahová jednotka vč. kabiny",
+        supplier: "Výtahy Schindler CZ",
+        amount: 1_800_000,
+        share: 69,
+      },
+      {
+        item: "Stavební úpravy šachty",
+        supplier: "Stavby Kolář s.r.o.",
+        amount: 450_000,
+        share: 17.5,
+      },
+      {
+        item: "Revize, certifikace, zkoušky",
+        supplier: "TÜV SÜD Czech",
+        amount: 150_000,
+        share: 6,
+      },
       { item: "Rezerva", supplier: "—", amount: 200_000, share: 7.5 },
     ],
   },
@@ -206,8 +290,18 @@ export const projects: Project[] = [
       { year: "2046", value: 0 },
     ],
     costItems: [
-      { item: "Žaluzie vč. pohonů", supplier: "Stínění CZ s.r.o.", amount: 1_100_000, share: 69 },
-      { item: "Montáž a zapojení", supplier: "Stínění CZ s.r.o.", amount: 350_000, share: 22 },
+      {
+        item: "Žaluzie vč. pohonů",
+        supplier: "Stínění CZ s.r.o.",
+        amount: 1_100_000,
+        share: 69,
+      },
+      {
+        item: "Montáž a zapojení",
+        supplier: "Stínění CZ s.r.o.",
+        amount: 350_000,
+        share: 22,
+      },
       { item: "Rezerva", supplier: "—", amount: 150_000, share: 9 },
     ],
   },
@@ -240,9 +334,24 @@ export const projects: Project[] = [
       { year: "2035", value: 100_000 },
     ],
     costItems: [
-      { item: "TČ vzduch/voda 60 kW", supplier: "Daikin Czech s.r.o.", amount: 1_800_000, share: 59 },
-      { item: "Rozvodové potrubí a armatury", supplier: "Topenáři Praha s.r.o.", amount: 750_000, share: 24.5 },
-      { item: "Projekt a revize", supplier: "Ing. Svoboda", amount: 250_000, share: 8 },
+      {
+        item: "TČ vzduch/voda 60 kW",
+        supplier: "Daikin Czech s.r.o.",
+        amount: 1_800_000,
+        share: 59,
+      },
+      {
+        item: "Rozvodové potrubí a armatury",
+        supplier: "Topenáři Praha s.r.o.",
+        amount: 750_000,
+        share: 24.5,
+      },
+      {
+        item: "Projekt a revize",
+        supplier: "Ing. Svoboda",
+        amount: 250_000,
+        share: 8,
+      },
       { item: "Rezerva", supplier: "—", amount: 250_000, share: 8.5 },
     ],
   },
@@ -274,8 +383,18 @@ export const projects: Project[] = [
       { year: "2035", value: 50_000 },
     ],
     costItems: [
-      { item: "Kotel a regulační systém", supplier: "Viessmann CZ s.r.o.", amount: 620_000, share: 60 },
-      { item: "Termostatické hlavice a rozvody", supplier: "Topenáři Praha s.r.o.", amount: 280_000, share: 27 },
+      {
+        item: "Kotel a regulační systém",
+        supplier: "Viessmann CZ s.r.o.",
+        amount: 620_000,
+        share: 60,
+      },
+      {
+        item: "Termostatické hlavice a rozvody",
+        supplier: "Topenáři Praha s.r.o.",
+        amount: 280_000,
+        share: 27,
+      },
       { item: "Rezerva", supplier: "—", amount: 130_000, share: 13 },
     ],
   },
@@ -307,9 +426,24 @@ export const projects: Project[] = [
       { year: "2034", value: 40_000 },
     ],
     costItems: [
-      { item: "Rekuperační jednotky Zehnder", supplier: "Zehnder Group CZ", amount: 550_000, share: 55 },
-      { item: "Vzduchovody a tvarovky", supplier: "VZT Montáže s.r.o.", amount: 220_000, share: 22 },
-      { item: "Montáž a zprovoznění", supplier: "VZT Montáže s.r.o.", amount: 110_000, share: 11 },
+      {
+        item: "Rekuperační jednotky Zehnder",
+        supplier: "Zehnder Group CZ",
+        amount: 550_000,
+        share: 55,
+      },
+      {
+        item: "Vzduchovody a tvarovky",
+        supplier: "VZT Montáže s.r.o.",
+        amount: 220_000,
+        share: 22,
+      },
+      {
+        item: "Montáž a zprovoznění",
+        supplier: "VZT Montáže s.r.o.",
+        amount: 110_000,
+        share: 11,
+      },
       { item: "Rezerva", supplier: "—", amount: 120_000, share: 12 },
     ],
   },
@@ -342,17 +476,39 @@ export const projects: Project[] = [
       { year: "2031", value: 200_000 },
     ],
     costItems: [
-      { item: "FV panely 40 kWp", supplier: "SolarEdge Technologies", amount: 600_000, share: 50 },
-      { item: "Střídač a baterie", supplier: "SolarEdge Technologies", amount: 150_000, share: 12.5 },
-      { item: "Montáž na střechu", supplier: "SolarFix CZ s.r.o.", amount: 280_000, share: 23 },
-      { item: "Projekt, revize, připojení", supplier: "Ing. Horák", amount: 100_000, share: 8.5 },
+      {
+        item: "FV panely 40 kWp",
+        supplier: "SolarEdge Technologies",
+        amount: 600_000,
+        share: 50,
+      },
+      {
+        item: "Střídač a baterie",
+        supplier: "SolarEdge Technologies",
+        amount: 150_000,
+        share: 12.5,
+      },
+      {
+        item: "Montáž na střechu",
+        supplier: "SolarFix CZ s.r.o.",
+        amount: 280_000,
+        share: 23,
+      },
+      {
+        item: "Projekt, revize, připojení",
+        supplier: "Ing. Horák",
+        amount: 100_000,
+        share: 8.5,
+      },
       { item: "Rezerva", supplier: "—", amount: 70_000, share: 6 },
     ],
   },
 ]
 
 /** Projekty seřazené podle dopadu — používat všude, kde se projekty vypisují. */
-export const projectsByPriority = [...projects].sort((a, b) => a.priority - b.priority)
+export const projectsByPriority = [...projects].sort(
+  (a, b) => a.priority - b.priority
+)
 
 // ---------------------------------------------------------------------------
 // Scénáře — předpřipravené kombinace projektů pro stránku Přehled.
@@ -375,14 +531,16 @@ export const scenarios: Scenario[] = [
   {
     id: "nejnutnejsi",
     name: "Váš plán",
-    tagline: "Dokončíme rozjetou střechu a nic dalšího. Nejlevnější a nejrychlejší scénář.",
+    tagline:
+      "Dokončíme rozjetou střechu a nic dalšího. Nejlevnější a nejrychlejší scénář.",
     tone: "emerald",
     projectIds: ["strecha"],
   },
   {
     id: "kompletni",
     name: "Energie nula",
-    tagline: "Všechny čtyři projekty najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
+    tagline:
+      "Všechny čtyři projekty najednou. Nejdražší cesta, ale dům bude hotový na desítky let.",
     tone: "blue",
     projectIds: ["strecha", "okna", "fasada", "vytah"],
   },
@@ -392,7 +550,8 @@ export const scenarios: Scenario[] = [
 export function fmtDuration(months: number): string {
   const years = Math.floor(months / 12)
   const rest = months % 12
-  const monthWord = (n: number) => (n === 1 ? "měsíc" : n < 5 ? "měsíce" : "měsíců")
+  const monthWord = (n: number) =>
+    n === 1 ? "měsíc" : n < 5 ? "měsíce" : "měsíců"
   const yearWord = (n: number) => (n === 1 ? "rok" : n < 5 ? "roky" : "let")
   if (years === 0) return `${rest} ${monthWord(rest)}`
   const yearPart = years === 1 ? "rok" : `${years} ${yearWord(years)}`
