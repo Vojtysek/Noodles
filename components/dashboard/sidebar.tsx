@@ -21,11 +21,11 @@ import { createClient } from "@/lib/supabase/client"
 import { signout } from "@/app/login/actions"
 
 const NAV_ITEMS = [
-  { href: "/dashboard/prehled", label: "Přehled", icon: House },
-  { href: "/dashboard/rezidenti", label: "Rezidenti", icon: Users },
-  { href: "/dashboard/financials", label: "Finance", icon: ChartColumn },
-  { href: "/dashboard/projects", label: "Projekty", icon: Hammer },
-  { href: "/dashboard/exporty", label: "Exporty", icon: FileDown },
+  { href: "/dashboard/prehled", label: "Přehled", icon: House, joyrideId: "nav-prehled" },
+  { href: "/dashboard/rezidenti", label: "Rezidenti", icon: Users, joyrideId: "nav-rezidenti" },
+  { href: "/dashboard/financials", label: "Finance", icon: ChartColumn, joyrideId: "nav-finance" },
+  { href: "/dashboard/projects", label: "Projekty", icon: Hammer, joyrideId: "nav-projekty" },
+  { href: "/dashboard/exporty", label: "Exporty", icon: FileDown, joyrideId: "nav-exporty" },
 ]
 
 export function DashboardSidebar() {
@@ -98,6 +98,7 @@ export function DashboardSidebar() {
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
               )}
               style={{ "--sb-i": 2 + i } as React.CSSProperties}
+              data-joyride={item.joyrideId}
             >
               {active && (
                 <span
