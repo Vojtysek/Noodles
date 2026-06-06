@@ -6,6 +6,7 @@ import {
   type ProjectId,
   type Scenario,
 } from "@/lib/mock-data"
+import { scenarioEnergySavingPct, REFERENCE_GEOMETRY } from "@/app/dashboard/financials/calc"
 
 /** Mapování názvů renovací z kalkulačky (tabulka buildings) na projekty. */
 export const RENOVATION_LABEL_TO_PROJECT: Record<string, ProjectId> = {
@@ -115,7 +116,7 @@ export function aggregateScenario(projectIds: readonly ProjectId[]): ScenarioAgg
     savingsPerYear,
     paybackYears: savingsPerYear > 0 ? Math.round((budget / savingsPerYear) * 10) / 10 : 0,
     fundIncreasePerFlat: selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0),
-    energySavingPct: selected.reduce((sum, p) => sum + p.energySavingPct, 0),
+    energySavingPct: scenarioEnergySavingPct(projectIds, REFERENCE_GEOMETRY),
     projectNames: selected.map((p) => p.name),
   }
 }

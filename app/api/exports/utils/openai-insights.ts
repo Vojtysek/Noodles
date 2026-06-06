@@ -1,10 +1,20 @@
 import { OpenAI } from 'openai'
 import type { Persona, Scenario } from '@/lib/mock-data'
-import { aggregateScenario, isProjectId } from '@/lib/scenarios'
 
 export interface InsightsResult {
   personaArguments: string[]
   counterpoints: string[]
+}
+
+/** Already-correct aggregates from the real financial model (Finance page). */
+export interface InsightsAggregates {
+  budget: number
+  savingsPerYear: number
+  breakEvenYear: number | null
+  savingsPctOfCosts: number
+  fundMonthlyPerUnit: number
+  energySavingMonthlyPerUnit: number
+  units: number
 }
 
 /**
@@ -16,6 +26,7 @@ export interface InsightsResult {
 export async function generateInsights(
   persona: Persona,
   scenario: Scenario,
+  aggregates: InsightsAggregates,
   benefits: Array<{ title: string; description: string; meetingPitch?: string }> = []
 ): Promise<InsightsResult> {
   const apiKey = process.env.OPENAI_API_KEY
@@ -24,9 +35,6 @@ export async function generateInsights(
   }
 
   const client = new OpenAI({ apiKey })
-
-  const projectIds = scenario.projectIds.filter(isProjectId)
-  const aggregates = aggregateScenario(projectIds)
 
   const motivations = persona.structured?.motivations?.join(', ') || '—'
   const objections = persona.structured?.objections?.join(', ') || '—'
@@ -59,17 +67,21 @@ Motivace: ${motivations}
 Námitky: ${objections}
 
 Scénář rekonstrukce: ${scenario.name} — ${scenario.tagline}
-Celkový rozpočet: ${aggregates.budget.toLocaleString('cs-CZ')} Kč
-Roční úspory: ${aggregates.savingsPerYear.toLocaleString('cs-CZ')} Kč
-Návratnost: ${aggregates.paybackYears} let
-Úspora energie: ${aggregates.energySavingPct} %
+Celková investice (celý dům): ${aggregates.budget.toLocaleString('cs-CZ')} Kč
+Roční úspora na energiích (celý dům): ${aggregates.savingsPerYear.toLocaleString('cs-CZ')} Kč
+Úspora na energiích na byt: ~${aggregates.energySavingMonthlyPerUnit.toLocaleString('cs-CZ')} Kč/měsíc
+Příspěvek do fondu (splátka) na byt: ~${aggregates.fundMonthlyPerUnit.toLocaleString('cs-CZ')} Kč/měsíc po dobu splácení
+Roční náklady domu klesnou o ${aggregates.savingsPctOfCosts} %
+Investice se vrátí v roce ${aggregates.breakEvenYear ?? 'za horizontem 15 let'}
 
 Nefinanční přínosy (seřazené dle relevance pro tuto personu — využij ty nejrelevantnější):
 ${benefitsBlock}
 
+Piš přímo této osobě, jako bys jí psal osobní dopis. Oslovuj ji ve druhé osobě (vykání: Vy, vám, váš byt). Text bude tato osoba číst sama doma — nepiš o ní ve třetí osobě, nepiš pokyny pro někoho jiného. Buď vřelý, uctivý a osobní, ale zároveň konkrétní a opřený o data výše.
+
 Vygeneruj:
-1. 3 personalizované argumenty PROČ tato persona by měla souhlasit s rekonstrukcí (každý 1–2 věty, konkrétní, data-driven, šité na míru jejím motivacím). Tam, kde to dává smysl, přirozeně zapracuj relevantní nefinanční přínosy výše.
-2. 2 přímé odpovědi na její hlavní námitky (konkrétní řešení nebo alternativa, buduj důvěru)
+1. 3 osobní důvody, proč je tato rekonstrukce výhodná právě pro vás (každý 1–2 věty, konkrétní, data-driven, navázané na to, na čem této osobě záleží). Tam, kde to dává smysl, přirozeně zohledni relevantní nefinanční přínosy výše.
+2. 2 vstřícné odpovědi na obavy, které byste mohli mít (nejprve s pochopením uznej obavu, pak nabídni konkrétní řešení nebo ujištění a buduj důvěru). Píšeš přímo tomu, kdo tu obavu má.
 
 Odpověz jako JSON: { "arguments": ["...", "...", "..."], "counterpoints": ["...", "..."] }`,
       },

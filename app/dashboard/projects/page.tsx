@@ -188,10 +188,10 @@ export default function ProjectsPage() {
             </p>
           </div>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Projekty
+            Výběr projektů
           </h1>
           <p className="mt-1.5 text-sm text-white/60">
-            Vyberte rekonstrukce pro váš dům.
+            Upravte výběr rekonstrukcí pro váš dům.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-medium tabular-nums">

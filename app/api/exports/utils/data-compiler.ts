@@ -8,6 +8,13 @@ import {
   type ProjectId,
 } from '@/lib/mock-data'
 import { aggregateScenario, isProjectId, userScenarios } from '@/lib/scenarios'
+import {
+  computeFinancials,
+  projectEnergySavingPct,
+  buildSavingsGeometry,
+  REFERENCE_GEOMETRY,
+} from '@/app/dashboard/financials/calc'
+import { computeFinance } from '@/lib/finance-model'
 import { createClient } from '@/lib/supabase/server'
 import { ARCHETYPES, isArchetypeId } from '@/lib/archetypes'
 import { PERSONA_TYPES } from '@/lib/persona-types'
@@ -35,6 +42,15 @@ export interface CompiledData {
   paybackYears: number
   totalFundIncreasePerFlat: number
   totalEnergySavingPct: number
+
+  // Real financial model (shared with Finance dashboard page)
+  breakEvenYear?: number | null
+  savingsPctOfCosts?: number
+  fundMonthlyPerUnit?: number
+  energySavingMonthlyPerUnit?: number
+  netMonthlyPerUnit?: number
+  units?: number
+  horizonYears?: number
 
   // Full project list
   projects: Array<{
@@ -100,7 +116,18 @@ export async function compileData(
     supabase = null
   }
 
+  type BuildingRow = {
+    selected_renovations: string[] | null
+    costs_by_project: Record<string, number> | null
+    units: number | null
+    zastavena_plocha: number | null
+    floors: number | null
+    zakladni_kapital: number | null
+    rent_years: number | null
+  }
+
   let builtScenarios: Scenario[] = []
+  let building: BuildingRow | null = null
   if (supabase) {
     try {
       const {
@@ -109,13 +136,16 @@ export async function compileData(
       if (user) {
         const { data } = await supabase
           .from('buildings')
-          .select('selected_renovations')
+          .select(
+            'selected_renovations, costs_by_project, units, zastavena_plocha, floors, zakladni_kapital, rent_years'
+          )
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle()
+        building = (data as BuildingRow | null) ?? null
         builtScenarios = userScenarios(
-          (data?.selected_renovations as string[] | undefined) ?? []
+          (building?.selected_renovations as string[] | undefined) ?? []
         )
       }
     } catch {}
@@ -146,6 +176,40 @@ export async function compileData(
   }
 
   const aggregates = aggregateScenario(scenario.projectIds as ProjectId[])
+
+  // ── Real financial model — IDENTICAL to the Finance dashboard page ──────────
+  // Single source of truth: computeFinancials replicates the Finance page's
+  // `agg` math; computeFinance gives the per-flat repayment/saving figures.
+  const fin0 = computeFinancials({
+    projects: selectedProjects,
+    costsByProject: building?.costs_by_project ?? null,
+    footprint: building?.zastavena_plocha ?? null,
+    floors: building?.floors ?? null,
+    units: building?.units ?? null,
+    horizon: 15,
+  })
+
+  // Geometrie pro per-projekt energetická % — reálný dům, jinak referenční.
+  const energyGeometry =
+    buildSavingsGeometry(
+      building?.zastavena_plocha ?? null,
+      building?.floors ?? null,
+      building?.units ?? null
+    ) ?? REFERENCE_GEOMETRY
+
+  // Doba splácení dle ceny renovace — stejné pravidlo jako v onboardingu/Finance:
+  // do 1,5 mil. Kč max 10 let, nad 1,5 mil. Kč max 15 let.
+  let termYears = building?.rent_years && building.rent_years > 0 ? building.rent_years : 10
+  const maxTerm = fin0.budget >= 1_500_000 ? 15 : 10
+  if (termYears > maxTerm) termYears = maxTerm
+
+  const fin = computeFinance({
+    budget: fin0.budget,
+    units: building?.units ?? 0,
+    savingsPerYear: fin0.savingsPerYear,
+    termYears,
+    zakladniKapital: building?.zakladni_kapital ?? 0,
+  })
 
   // ── Non-financial benefits ──────────────────────────────────────────────────
   // Katalog načteme z DB (renovation_benefits) s fallbackem na statický katalog.
@@ -178,11 +242,21 @@ export async function compileData(
     scenarioId: scenario.id,
     totalProjects: selectedProjects.length,
     projectNames: aggregates.projectNames,
-    totalBudget: aggregates.budget,
-    totalSavingsPerYear: aggregates.savingsPerYear,
-    paybackYears: aggregates.paybackYears,
-    totalFundIncreasePerFlat: aggregates.fundIncreasePerFlat,
-    totalEnergySavingPct: aggregates.energySavingPct,
+    totalBudget: fin0.budget,
+    totalSavingsPerYear: fin0.savingsPerYear,
+    // Roky do bodu zlomu (návratnosti) z reálné modelace.
+    paybackYears: fin0.breakEvenYearIndex !== null ? Math.round(fin0.breakEvenYearIndex) : 0,
+    totalFundIncreasePerFlat: fin0.fundIncreasePerFlat,
+    // % snížení ročních nákladů (NE fiktivní „úspora energie").
+    totalEnergySavingPct: fin0.savingsPct,
+    // Reálný finanční model — sdílený se stránkou Finance.
+    breakEvenYear: fin0.breakEvenYear,
+    savingsPctOfCosts: fin0.savingsPct,
+    fundMonthlyPerUnit: fin.repayment.monthlyPerUnit,
+    energySavingMonthlyPerUnit: fin.repayment.energySavingMonthlyPerUnit,
+    netMonthlyPerUnit: fin.repayment.netMonthlyPerUnit,
+    units: building?.units ?? 0,
+    horizonYears: 15,
     projects: selectedProjects.map((p) => ({
       id: p.id,
       name: p.name,
@@ -190,7 +264,7 @@ export async function compileData(
       savingsPerYear: p.savingsPerYear,
       paybackYears: p.paybackYears,
       fundIncreasePerFlat: p.fundIncreasePerFlat,
-      energySavingPct: p.energySavingPct,
+      energySavingPct: projectEnergySavingPct(p.id, energyGeometry) ?? 0,
       durationMonths: p.durationMonths,
       costItems: p.costItems,
     })),

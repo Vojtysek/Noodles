@@ -176,8 +176,8 @@ function layoutOverallBrief(doc: DocType, ctx: CompiledData) {
   doc.y = row1Y + boxH + 8
 
   const row2Y = doc.y
-  drawMetricBox(doc, MARGIN, row2Y, boxW, boxH, 'Návratnost', `${ctx.paybackYears} let`, PRIMARY)
-  drawMetricBox(doc, MARGIN + boxW + 5, row2Y, boxW, boxH, 'Úspora energie', `${ctx.totalEnergySavingPct} %`, GREEN)
+  drawMetricBox(doc, MARGIN, row2Y, boxW, boxH, 'Bod zlomu', (ctx as any).breakEvenYear ? `rok ${(ctx as any).breakEvenYear}` : `${ctx.paybackYears} let`, PRIMARY)
+  drawMetricBox(doc, MARGIN + boxW + 5, row2Y, boxW, boxH, 'Nižší roční náklady', `${ctx.totalEnergySavingPct} %`, GREEN)
   drawMetricBox(doc, MARGIN + (boxW + 5) * 2, row2Y, boxW, boxH, 'Fond na byt +', czkFull(ctx.totalFundIncreasePerFlat), DARK)
   doc.y = row2Y + boxH + 12
 
@@ -211,11 +211,16 @@ function layoutPersona(doc: DocType, ctx: CompiledData) {
     `Informace k plánované rekonstrukci — ${ctx.scenarioName}`,
     ctx.generatedDate
   )
-  
+
+  body(
+    doc,
+    'rádi bychom Vám srozumitelně shrnuli, co pro Vás plánovaná rekonstrukce našeho domu znamená — jaké přínosy přinese právě Vám, kolik ušetříte a co to znamená pro Váš byt. Vše si můžete v klidu projít.'
+  )
+  doc.moveDown(0.4)
 
   if (ctx.benefits && ctx.benefits.length > 0) {
-    heading2(doc, 'Co osloví právě jeho/ji')
-    ctx.benefits.slice(0, 5).forEach((b) => drawBenefit(doc, b, { withPitch: true }))
+    heading2(doc, 'Co vám rekonstrukce přinese')
+    ctx.benefits.slice(0, 5).forEach((b) => drawBenefit(doc, b, { withPitch: false }))
   }
 
   // OpenAI-generated arguments and counterpoints
@@ -236,12 +241,25 @@ function layoutPersona(doc: DocType, ctx: CompiledData) {
   }
 
   heading2(doc, 'Co to znamená pro váš byt')
-  metricRow(doc, 'Roční úspory na energiích', czk(ctx.totalSavingsPerYear), true)
-  metricRow(doc, 'Návratnost investice', `${ctx.paybackYears} let`)
-  metricRow(doc, 'Úspora energie', `${ctx.totalEnergySavingPct} %`)
-  metricRow(doc, 'Změna příspěvku do fondu', `+${czkFull(ctx.totalFundIncreasePerFlat)} / měsíc`)
+  const units = (ctx as any).units ?? 0
+  const perFlat = units > 0
+  if (perFlat && (ctx as any).energySavingMonthlyPerUnit != null) {
+    metricRow(doc, 'Vaše úspora na energiích', `${czkFull((ctx as any).energySavingMonthlyPerUnit)} / měsíc`, true)
+  }
+  if (perFlat && (ctx as any).fundMonthlyPerUnit != null) {
+    metricRow(doc, 'Příspěvek na splátku (do fondu)', `${czkFull((ctx as any).fundMonthlyPerUnit)} / měsíc po dobu splácení`)
+  }
+  const beYear = (ctx as any).breakEvenYear
+  metricRow(doc, 'Investice se vrátí', beYear ? `v roce ${beYear}` : `za horizontem ${(ctx as any).horizonYears ?? 15} let`)
+  metricRow(doc, 'Roční náklady domu klesnou o', `${(ctx as any).savingsPctOfCosts ?? ctx.totalEnergySavingPct} %`)
   doc.moveDown(0.5)
-  muted(doc, `Celkový rozpočet rekonstrukce: ${czk(ctx.totalBudget)} — sdíleno napříč všemi byty.`)
+  // Kontext za celý dům
+  heading3(doc, 'Za celý dům')
+  metricRow(doc, 'Celková investice', czk(ctx.totalBudget))
+  metricRow(doc, 'Roční úspora na energiích', czk(ctx.totalSavingsPerYear), true)
+  muted(doc, units > 0 ? `Sdíleno napříč ${units} byty.` : 'Náklady i úspory jsou za celý dům.')
+  doc.moveDown(0.3)
+  muted(doc, 'Máte-li jakékoli otázky, rádi Vám je zodpovíme. Děkujeme, že čtete a podílíte se na rozhodování o našem domě.')
 }
 
 // ─── Layout: overall-detail ───────────────────────────────────────────────────
@@ -252,8 +270,8 @@ function layoutOverallDetail(doc: DocType, ctx: CompiledData) {
   heading2(doc, 'Shrnutí')
   metricRow(doc, 'Celkový rozpočet', czk(ctx.totalBudget))
   metricRow(doc, 'Roční úspory energií', czk(ctx.totalSavingsPerYear), true)
-  metricRow(doc, 'Průměrná návratnost', `${ctx.paybackYears} let`)
-  metricRow(doc, 'Celková úspora energie', `${ctx.totalEnergySavingPct} %`)
+  metricRow(doc, 'Bod zlomu', (ctx as any).breakEvenYear ? `rok ${(ctx as any).breakEvenYear}` : `${ctx.paybackYears} let`)
+  metricRow(doc, 'Nižší roční náklady', `${ctx.totalEnergySavingPct} %`)
   metricRow(doc, 'Zvýšení fondu na byt', `+${czkFull(ctx.totalFundIncreasePerFlat)}`)
   metricRow(doc, 'Projektů celkem', String(ctx.totalProjects))
 
@@ -354,8 +372,8 @@ function layoutPresentation(doc: DocType, ctx: CompiledData) {
   doc.y = row1Y + boxH + 8
 
   const row2Y = doc.y
-  drawMetricBox(doc, MARGIN, row2Y, boxW, boxH, 'Průměrná návratnost', `${ctx.paybackYears} let`, PRIMARY)
-  drawMetricBox(doc, MARGIN + boxW + 10, row2Y, boxW, boxH, 'Celková úspora energie', `${ctx.totalEnergySavingPct} %`, GREEN)
+  drawMetricBox(doc, MARGIN, row2Y, boxW, boxH, 'Bod zlomu', (ctx as any).breakEvenYear ? `rok ${(ctx as any).breakEvenYear}` : `${ctx.paybackYears} let`, PRIMARY)
+  drawMetricBox(doc, MARGIN + boxW + 10, row2Y, boxW, boxH, 'Nižší roční náklady', `${ctx.totalEnergySavingPct} %`, GREEN)
   doc.y = row2Y + boxH + 10
 
   metricRow(doc, 'Zvýšení fondu oprav na byt', `+${czkFull(ctx.totalFundIncreasePerFlat)}`)
@@ -403,10 +421,10 @@ function layoutPresentation(doc: DocType, ctx: CompiledData) {
   doc.addPage()
   doc.y = MARGIN
   heading2(doc, 'Hlavní argumenty pro schůzi')
-  drawBullet(doc, `Celková investice ${czk(ctx.totalBudget)} se vrátí za ${ctx.paybackYears} let prostřednictvím úspor energie.`)
+  drawBullet(doc, `Celková investice ${czk(ctx.totalBudget)} se vrátí ${(ctx as any).breakEvenYear ? ('v roce ' + (ctx as any).breakEvenYear) : ('za ' + ctx.paybackYears + ' let')} prostřednictvím úspor energie.`)
   drawBullet(doc, `Každý rok ušetříme ${czk(ctx.totalSavingsPerYear)} na energiích — peníze zůstávají v domě.`)
   drawBullet(doc, `Fond oprav se zvýší průměrně o ${czkFull(ctx.totalFundIncreasePerFlat)} na byt — přiměřený krok.`)
-  drawBullet(doc, `Celková úspora energií ${ctx.totalEnergySavingPct} % zlepší energetický štítek budovy.`)
+  drawBullet(doc, `O ${ctx.totalEnergySavingPct} % nižší roční náklady na provoz domu.`)
   drawBullet(doc, 'Bez rekonstrukce porostou náklady na opravy každý rok — čekání je dražší než akce.')
 
   heading2(doc, 'Příprava na časté dotazy')

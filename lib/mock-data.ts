@@ -15,6 +15,10 @@ export type Project = {
   savingsPerYear: number
   paybackYears: number
   fundIncreasePerFlat: number
+  /** % úspory z dnešních nákladů domu na energie — odvozeno z fyzikálních
+   *  formulí v app/dashboard/financials/calc.ts pro referenční dům
+   *  (projectEnergySavingPct / REFERENCE_GEOMETRY). Živé pohledy s konkrétní
+   *  geometrií RÚIAN přepočítávají per dům. NEvymýšlet ručně. */
   energySavingPct: number
   /** Odhadovaná délka realizace v měsících. */
   durationMonths: number
@@ -37,7 +41,7 @@ export const projects: Project[] = [
     savingsPerYear: 620_000,
     paybackYears: 13.5,
     fundIncreasePerFlat: 850,
-    energySavingPct: 32,
+    energySavingPct: 26,
     durationMonths: 9,
     baseline: { annualCost: 1_350_000, costGrowthPct: 6 },
     costBreakdown: [
@@ -76,7 +80,7 @@ export const projects: Project[] = [
     savingsPerYear: 410_000,
     paybackYears: 12,
     fundIncreasePerFlat: 520,
-    energySavingPct: 21,
+    energySavingPct: 8,
     durationMonths: 4,
     baseline: { annualCost: 980_000, costGrowthPct: 6 },
     costBreakdown: [
@@ -113,7 +117,7 @@ export const projects: Project[] = [
     savingsPerYear: 180_000,
     paybackYears: 17.8,
     fundIncreasePerFlat: 380,
-    energySavingPct: 9,
+    energySavingPct: 6,
     durationMonths: 5,
     baseline: { annualCost: 540_000, costGrowthPct: 5 },
     costBreakdown: [
@@ -149,7 +153,7 @@ export const projects: Project[] = [
     savingsPerYear: 95_000,
     paybackYears: 27.4,
     fundIncreasePerFlat: 310,
-    energySavingPct: 4,
+    energySavingPct: 1,
     durationMonths: 3,
     baseline: { annualCost: 320_000, costGrowthPct: 8 },
     costBreakdown: [
@@ -185,7 +189,7 @@ export const projects: Project[] = [
     savingsPerYear: 80_000,
     paybackYears: 20,
     fundIncreasePerFlat: 190,
-    energySavingPct: 5,
+    energySavingPct: 2,
     durationMonths: 2,
     baseline: { annualCost: 180_000, costGrowthPct: 4 },
     costBreakdown: [
@@ -218,7 +222,7 @@ export const projects: Project[] = [
     savingsPerYear: 350_000,
     paybackYears: 8.7,
     fundIncreasePerFlat: 380,
-    energySavingPct: 45,
+    energySavingPct: 29,
     durationMonths: 3,
     baseline: { annualCost: 850_000, costGrowthPct: 9 },
     costBreakdown: [
@@ -253,7 +257,7 @@ export const projects: Project[] = [
     savingsPerYear: 120_000,
     paybackYears: 8.6,
     fundIncreasePerFlat: 130,
-    energySavingPct: 15,
+    energySavingPct: 10,
     durationMonths: 2,
     baseline: { annualCost: 480_000, costGrowthPct: 7 },
     costBreakdown: [
@@ -286,7 +290,7 @@ export const projects: Project[] = [
     savingsPerYear: 130_000,
     paybackYears: 7.7,
     fundIncreasePerFlat: 120,
-    energySavingPct: 18,
+    energySavingPct: 17,
     durationMonths: 4,
     baseline: { annualCost: 300_000, costGrowthPct: 5 },
     costBreakdown: [
@@ -320,7 +324,7 @@ export const projects: Project[] = [
     savingsPerYear: 280_000,
     paybackYears: 4.3,
     fundIncreasePerFlat: 150,
-    energySavingPct: 22,
+    energySavingPct: 13,
     durationMonths: 2,
     baseline: { annualCost: 550_000, costGrowthPct: 8 },
     costBreakdown: [

@@ -26,6 +26,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
+import { computeFinance } from "@/lib/finance-model"
 import { cn } from "@/lib/utils"
 import {
   ComparisonLineChart,
@@ -58,7 +59,7 @@ import {
   projectAnnualSavings,
   buildSavingsGeometry,
   type SavingsGeometry,
-} from "@/app/dashboard/financials/return"
+} from "@/app/dashboard/financials/calc"
 
 type BuildingCalc = {
   id: string
@@ -70,6 +71,7 @@ type BuildingCalc = {
   total_cost: number
   final_rent: number
   rent_years: number
+  zakladni_kapital: number | null
   capped_by_max: boolean
   costs_by_project: Record<string, number> | null
   zastavena_plocha: number | null
@@ -147,7 +149,12 @@ function monthLabel(offsetMonths: number): string {
 function computeScenario(
   scenario: Scenario,
   projectCostOverrides?: Record<string, number>,
-  geometry?: SavingsGeometry | null
+  geometry?: SavingsGeometry | null,
+  financing?: {
+    units: number
+    termYears: number
+    zakladniKapital: number
+  } | null
 ) {
   const selected = scenario.projectIds
     .map((id) => projects.find((p) => p.id === id)!)
@@ -170,8 +177,19 @@ function computeScenario(
     const formula = geometry ? projectAnnualSavings(p.id, geometry) : null
     return sum + (formula != null ? formula : p.savingsPerYear * scale)
   }, 0)
+  // Zvýšení fondu oprav na byt = reálná měsíční splátka úvěru na byt
+  // (computeFinance, stejný model jako tab Finance). Fallback: škálovaný mock,
+  // když neznáme počet bytů / dobu splácení.
   const fundIncreasePerFlat =
-    selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0) * scale
+    financing && financing.units > 0 && financing.termYears > 0
+      ? computeFinance({
+          budget,
+          units: financing.units,
+          savingsPerYear,
+          termYears: financing.termYears,
+          zakladniKapital: financing.zakladniKapital,
+        }).repayment.monthlyPerUnit
+      : selected.reduce((sum, p) => sum + p.fundIncreasePerFlat, 0) * scale
   const totalMonths = selected.reduce((sum, p) => sum + p.durationMonths, 0)
   const annualCost =
     selected.reduce((sum, p) => sum + p.baseline.annualCost, 0) * scale
@@ -282,7 +300,8 @@ export default function PrehledPage() {
             setSplashOpen(true)
           }
         }
-      } catch {} finally {
+      } catch {
+      } finally {
         setLoading(false)
       }
     })()
@@ -303,11 +322,29 @@ export default function PrehledPage() {
     [buildingCalc]
   )
 
+  // Finanční vstupy pro reálný výpočet splátky / fondu oprav (computeFinance).
+  const financing = useMemo(
+    () =>
+      buildingCalc
+        ? {
+            units: buildingCalc.units ?? 0,
+            termYears: buildingCalc.rent_years ?? 0,
+            zakladniKapital: buildingCalc.zakladni_kapital ?? 0,
+          }
+        : null,
+    [buildingCalc]
+  )
+
   const result = useMemo(() => {
     if (!scenario) return null
     if (scenario.id === "vase-vybrane") {
       if (buildingCalc?.costs_by_project) {
-        return computeScenario(scenario, buildingCalc.costs_by_project, geometry)
+        return computeScenario(
+          scenario,
+          buildingCalc.costs_by_project,
+          geometry,
+          financing
+        )
       }
       if (buildingCalc?.total_cost) {
         const mockTotal = scenario.projectIds.reduce((sum, id) => {
@@ -321,11 +358,11 @@ export default function PrehledPage() {
             (projects.find((p) => p.id === id)?.budget ?? 0) * scale,
           ])
         )
-        return computeScenario(scenario, overrides, geometry)
+        return computeScenario(scenario, overrides, geometry, financing)
       }
     }
-    return computeScenario(scenario, undefined, geometry)
-  }, [scenario, buildingCalc, geometry])
+    return computeScenario(scenario, undefined, geometry, financing)
+  }, [scenario, buildingCalc, geometry, financing])
 
   // Nefinanční přínosy aktivního scénáře — seskupené dle kategorie.
   const benefitGroups = useMemo(() => {
@@ -424,8 +461,14 @@ export default function PrehledPage() {
   if (loading) {
     return (
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
-        <div aria-hidden className="pointer-events-none absolute -top-32 -left-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]" />
-        <div aria-hidden className="pointer-events-none absolute top-1/3 -right-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-32 -left-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-1/3 -right-40 -z-10 size-[28rem] rounded-full bg-blue-500/12 blur-[130px]"
+        />
         <div className="relative isolate min-h-[15rem] overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-900 sm:min-h-[17rem]">
           <div className="relative flex h-full min-h-[15rem] flex-col justify-between gap-6 p-6 sm:min-h-[17rem] sm:p-8">
             <div>
@@ -472,7 +515,15 @@ export default function PrehledPage() {
               router.replace("/dashboard/prehled")
             }
           }}
-          onSelect={(id) => setScenarioId(id)}
+          onContinue={() => {
+            setSplashOpen(false)
+            if (
+              new URLSearchParams(window.location.search).get("from") ===
+              "onboarding"
+            ) {
+              router.replace("/dashboard/prehled")
+            }
+          }}
           buildingData={
             buildingCalc
               ? {
@@ -482,7 +533,6 @@ export default function PrehledPage() {
                 }
               : undefined
           }
-          buildingId={buildingCalc?.id}
         />
       )}
 
@@ -572,23 +622,6 @@ export default function PrehledPage() {
                   </p>
                 </div>
               )}
-              {result && result.fundIncreasePerFlat > 0 && (
-                <div
-                  data-hero-chip
-                  className="flex items-center gap-2.5 rounded-xl bg-zinc-950/60 px-3.5 py-2.5 ring-1 ring-white/15 backdrop-blur-md"
-                >
-                  <HandCoins className="size-4 shrink-0 text-blue-300" />
-                  <p className="text-sm text-white/90">
-                    <span
-                      data-count-chip-czk={Math.round(result.fundIncreasePerFlat)}
-                      className="font-semibold tabular-nums"
-                    >
-                      +{fmtCzk(Math.round(result.fundIncreasePerFlat))}
-                    </span>{" "}
-                    <span className="text-white/60">fond oprav / byt / měsíc</span>
-                  </p>
-                </div>
-              )}
             </div>
           ) : (
             /* Bez kalkulace — výzva ke spočítání úspor */
@@ -669,7 +702,10 @@ export default function PrehledPage() {
             data-pr-reveal
             className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5 lg:rounded-br-[3rem]"
           >
-            <TrendingUp aria-hidden className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500" />
+            <TrendingUp
+              aria-hidden
+              className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500"
+            />
             <p className="text-sm font-medium">Vyplatí se to?</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {result.breakEvenYear !== null ? (
@@ -718,7 +754,10 @@ export default function PrehledPage() {
             data-pr-reveal
             className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
           >
-            <CalendarDays aria-hidden className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500" />
+            <CalendarDays
+              aria-hidden
+              className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500"
+            />
             <p className="text-sm font-medium">Harmonogram — {scenario.name}</p>
             <div className="mt-6">
               <Harmonogram
@@ -735,7 +774,10 @@ export default function PrehledPage() {
               data-pr-reveal
               className="relative overflow-hidden rounded-2xl border bg-background/60 p-4 backdrop-blur-sm sm:p-5"
             >
-              <Sparkles aria-hidden className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500" />
+              <Sparkles
+                aria-hidden
+                className="pointer-events-none absolute top-4 right-4 size-12 text-blue-500"
+              />
               <p className="text-sm font-medium">Zlepšení kvality života</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Nefinanční přínosy vybraných rekonstrukcí — komfort, zdraví a
