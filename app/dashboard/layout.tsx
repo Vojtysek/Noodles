@@ -1,4 +1,4 @@
-import { DashboardSidebar } from "@/components/dashboard/sidebar"
+import { DashboardTopNav } from "@/components/dashboard/topnav"
 import { JoyrideTour } from "@/components/dashboard/joyride-tour"
 import { PendingBuildingBridge } from "@/components/onboarding/pending-building-bridge"
 
@@ -8,7 +8,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }>) {
   return (
-    <div className="relative flex min-h-svh">
+    <div className="relative flex min-h-svh flex-col">
       <PendingBuildingBridge />
       {/* Shared ambient atmosphere behind all dashboard pages */}
       <div
@@ -19,10 +19,11 @@ export default function DashboardLayout({
         aria-hidden
         className="pointer-events-none fixed -right-1/4 -bottom-1/4 -z-10 size-[40rem] rounded-full bg-blue-500/5 blur-[120px]"
       />
-      <DashboardSidebar />
-      <main className="min-w-0 flex-1 overflow-x-hidden p-6 pt-20 lg:p-8 lg:pt-8">
+      <DashboardTopNav />
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 lg:px-8 lg:py-10">
         {children}
       </main>
+      <JoyrideTour />
     </div>
   )
 }
