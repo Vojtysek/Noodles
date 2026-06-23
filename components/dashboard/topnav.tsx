@@ -87,11 +87,11 @@ export function DashboardTopNav() {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-sidebar-primary/30 to-transparent"
         />
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-4 px-4 lg:px-8">
+        <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 lg:px-8">
           {/* Brand */}
           <Link
             href="/dashboard/pruvodce"
-            className="flex shrink-0 items-center gap-2"
+            className="flex w-fit items-center gap-2 justify-self-start"
           >
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
               R
@@ -99,8 +99,8 @@ export function DashboardTopNav() {
             <span className="text-base font-semibold tracking-tight">Reno</span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden flex-1 items-center gap-1 lg:flex">
+          {/* Desktop nav — centered in the bar */}
+          <nav className="hidden items-center gap-1 justify-self-center lg:flex">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href)
               return (
@@ -135,7 +135,7 @@ export function DashboardTopNav() {
           </nav>
 
           {/* Right cluster */}
-          <div className="ml-auto flex items-center gap-1.5 lg:ml-0">
+          <div className="flex items-center gap-1.5 justify-self-end">
             <ThemeToggle />
             <div
               className="hidden size-9 items-center justify-center rounded-full bg-sidebar-primary/15 text-sm font-semibold text-sidebar-primary sm:flex"

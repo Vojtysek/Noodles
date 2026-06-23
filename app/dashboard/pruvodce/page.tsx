@@ -183,7 +183,7 @@ export default function PruvodcePage() {
   if (loading) return <PruvodceSkeleton />
 
   return (
-    <div ref={rootRef} className="relative mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div ref={rootRef} className="relative mx-auto flex w-full max-w-6xl flex-col gap-8">
       {/* Ambient blobs */}
       <div
         aria-hidden
@@ -327,7 +327,7 @@ function InviteForm() {
 
 function PruvodceSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <div className="mx-auto h-12 w-full max-w-xl animate-pulse rounded-full bg-muted/50" />
       <div className="h-64 w-full animate-pulse rounded-3xl bg-muted/50" />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
