@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils"
 const STORAGE_KEY = "noodles_tour_seen"
 
 const STEP_ROUTES: Record<number, string> = {
-  0: "/dashboard/prehled",
-  1: "/dashboard/prehled",
+  0: "/dashboard/pruvodce",
+  1: "/dashboard/pruvodce",
   2: "/dashboard/rezidenti",
   3: "/dashboard/rezidenti",
   4: "/dashboard/financials",

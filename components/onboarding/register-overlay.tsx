@@ -64,7 +64,7 @@ export function RegisterOverlay({
         } catch {
           // leave payload for the bridge to retry
         }
-        router.push("/dashboard/prehled?from=onboarding");
+        router.push("/dashboard/pruvodce?from=onboarding");
         return;
       }
       // No session → email confirmation required. Keep payload; bridge attaches later.

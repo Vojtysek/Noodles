@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
   // Logged in + visiting login → send to dashboard.
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard/prehled";
+    url.pathname = "/dashboard/pruvodce";
     url.search = "";
     const redirectResponse = NextResponse.redirect(url);
     supabaseResponse.cookies.getAll().forEach((cookie) => {

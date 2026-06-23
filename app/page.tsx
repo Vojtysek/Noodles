@@ -320,7 +320,7 @@ export default function Page() {
       .then(({ data }) => setLoggedIn(!!data.user))
   }, [])
 
-  const appHref = loggedIn ? "/dashboard/prehled" : "/onboarding"
+  const appHref = loggedIn ? "/dashboard/pruvodce" : "/onboarding"
 
   useGSAP(
     () => {

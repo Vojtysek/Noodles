@@ -7,8 +7,7 @@ import {
   Users,
   ChartColumn,
   FileDown,
-  Building2,
-  House,
+  Compass,
   LogOut,
   Sun,
   Moon,
@@ -24,7 +23,7 @@ import { createClient } from "@/lib/supabase/client"
 import { signout } from "@/app/login/actions"
 
 const NAV_ITEMS = [
-  { href: "/dashboard/prehled", label: "Přehled", icon: House, joyrideId: "nav-prehled" },
+  { href: "/dashboard/pruvodce", label: "Průvodce", icon: Compass, joyrideId: "nav-pruvodce" },
   { href: "/dashboard/rezidenti", label: "Rezidenti", icon: Users, joyrideId: "nav-rezidenti" },
   { href: "/dashboard/financials", label: "Finance", icon: ChartColumn, joyrideId: "nav-finance" },
   { href: "/dashboard/projects", label: "Projekty", icon: Hammer, joyrideId: "nav-projekty" },

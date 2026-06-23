@@ -32,7 +32,7 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard/prehled");
+  redirect("/dashboard/pruvodce");
 }
 
 export async function signup(formData: FormData) {
@@ -57,7 +57,7 @@ export async function signup(formData: FormData) {
   // If a session is returned, email confirmation is disabled — log straight in.
   if (data.session) {
     revalidatePath("/", "layout");
-    redirect("/dashboard/prehled");
+    redirect("/dashboard/pruvodce");
   }
 
   redirect(

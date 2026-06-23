@@ -22,7 +22,7 @@ export default async function OnboardingLayout({
       .maybeSingle();
 
     if (building) {
-      redirect("/dashboard/prehled");
+      redirect("/dashboard/pruvodce");
     }
   }
 

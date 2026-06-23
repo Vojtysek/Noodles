@@ -713,7 +713,7 @@ export default function CalculatorPage() {
         } catch {
           // continue to dashboard even if save fails
         }
-        router.push("/dashboard/prehled?from=onboarding")
+        router.push("/dashboard/pruvodce?from=onboarding")
       } else {
         // Not logged in → show the scenario splash first; registration
         // happens only after they pick a path.
