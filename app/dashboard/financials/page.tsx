@@ -7,13 +7,6 @@ import {
   TrendingDown,
   TrendingUp,
   CalendarClock,
-  HandCoins,
-  CircleCheck,
-  Star,
-  ChevronDown,
-  ChevronUp,
-  Flame,
-  Percent,
   Hourglass,
 } from "lucide-react"
 
@@ -126,7 +119,6 @@ function AnimatedCzk({
 export default function FinancialsPage() {
   const [horizon, setHorizon] = useState(15)
   const [termYears, setTermYears] = useState(10)
-  const [mixOpen, setMixOpen] = useState(false)
   const [buildingData, setBuildingData] = useState<BuildingData | null>(null)
   const [loaded, setLoaded] = useState(false)
 
@@ -335,7 +327,7 @@ export default function FinancialsPage() {
       icon: TrendingDown,
       label: "Roční úspora",
       value: fmtCzkShort(agg.savingsPerYear),
-      sub: `−${savingsPct.toLocaleString("cs-CZ")} % ročních nákladů`,
+      sub: "za rok na energiích",
       accent: "text-emerald-600 dark:text-emerald-400",
     },
     {
@@ -349,13 +341,6 @@ export default function FinancialsPage() {
         breakEvenYearNum !== null
           ? `rok, kdy se investice vrátí`
           : "mimo zvolený horizont",
-      accent: null,
-    },
-    {
-      icon: HandCoins,
-      label: "Fond oprav",
-      value: `+${fmtCzk(fin.repayment.monthlyPerUnit)}`,
-      sub: "na byt měsíčně po dobu splácení",
       accent: null,
     },
   ]
@@ -414,8 +399,8 @@ export default function FinancialsPage() {
         </div>
 
         {/* KPI skeleton */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 md:grid-cols-4 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-3 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60">
+          {[1, 2, 3].map((i) => (
             <div
               key={i}
               className="flex flex-col gap-2 lg:px-6 lg:first:pl-0 lg:last:pr-0"
@@ -559,12 +544,7 @@ export default function FinancialsPage() {
               </p>
               <p className="mt-2 text-xs text-white/50">
                 {profitable ? (
-                  <>
-                    za {horizon} let oproti nečinnosti
-                    {breakEvenYearNum !== null && (
-                      <> · vyplatí se od roku {breakEvenYearNum}</>
-                    )}
-                  </>
+                  <>za {horizon} let oproti nečinnosti</>
                 ) : (
                   <>na horizontu {horizon} let — zkuste delší horizont</>
                 )}
@@ -633,32 +613,8 @@ export default function FinancialsPage() {
           } as React.CSSProperties
         }
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6 sm:gap-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-              Scénář
-            </span>
-            <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
-              {userScenarioList.map((s) => (
-                <span
-                  key={s.id}
-                  aria-pressed
-                  className="flex items-center gap-2 rounded-full bg-background px-3.5 py-1.5 text-sm font-medium text-foreground shadow"
-                >
-                  <span
-                    className={cn(
-                      "size-2 shrink-0 rounded-full",
-                      TONE_DOT[s.tone]
-                    )}
-                  />
-                  {s.name}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="flex items-center gap-3">
               <span className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                 Horizont
               </span>
@@ -704,67 +660,11 @@ export default function FinancialsPage() {
               </div>
             </div>
           </div>
-        </div>
 
         {/* Tagline + rozpočet vašeho plánu */}
         <p className="text-xs text-muted-foreground">
-          {activeScenario?.tagline}{" "}
-          <span className="font-medium text-foreground tabular-nums">
-            Celkem {fmtCzkShort(agg.budget)}.
-          </span>
+          {activeScenario?.tagline}
         </p>
-
-        {/* Vaše vybrané projekty (jen pro náhled) */}
-        <div className="flex flex-col gap-2.5">
-          <button
-            type="button"
-            onClick={() => setMixOpen((v) => !v)}
-            aria-expanded={mixOpen}
-            className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Vaše vybrané projekty
-            {mixOpen ? (
-              <ChevronUp className="size-3.5" />
-            ) : (
-              <ChevronDown className="size-3.5" />
-            )}
-          </button>
-
-          {mixOpen && (
-            <div className="flex flex-col gap-2.5 rounded-2xl border bg-muted/30 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {selected.length}{" "}
-                  {selected.length === 1 ? "projekt" : "projektů"} ve vašem
-                  plánu
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                {scaledProjectsByPriority.map((p) => {
-                  return (
-                    <div
-                      key={p.id}
-                      className="flex flex-col gap-1.5 rounded-2xl border border-primary/60 bg-primary/5 p-3 text-left shadow-lg ring-3 ring-primary/15"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
-                          {p.priority === 1 && (
-                            <Star className="size-3 shrink-0 fill-amber-400 text-amber-400" />
-                          )}
-                          <p className="text-sm font-medium">{p.shortName}</p>
-                        </div>
-                        <CircleCheck className="size-4 shrink-0 text-primary" />
-                      </div>
-                      <p className="text-xs text-muted-foreground tabular-nums">
-                        {fmtCzkShort(p.budget)}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -772,7 +672,7 @@ export default function FinancialsPage() {
       {/* ------------------------------------------------------------------ */}
       <dl
         data-joyride="finance-main"
-        className="anim-in grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-4 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60"
+        className="anim-in grid grid-cols-2 gap-x-4 gap-y-6 rounded-2xl border bg-background/60 p-5 backdrop-blur-sm sm:p-6 lg:grid-cols-3 lg:gap-x-0 lg:gap-y-0 lg:divide-x lg:divide-border/60"
         style={
           {
             "--ai-y": "32px",
@@ -1010,9 +910,6 @@ export default function FinancialsPage() {
         <p className="text-sm text-muted-foreground">
           Po splacení (za {termYears} let) zůstává domu celá úspora{" "}
           {fmtCzkShort(agg.savingsPerYear)} ročně.
-          {breakEvenYearNum !== null && (
-            <> Investice se vrací od roku {breakEvenYearNum}.</>
-          )}
         </p>
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2">
