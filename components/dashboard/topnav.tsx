@@ -91,12 +91,9 @@ export function DashboardTopNav() {
           {/* Brand */}
           <Link
             href="/dashboard/pruvodce"
-            className="flex w-fit items-center gap-2 justify-self-start"
+            className="flex w-fit items-center justify-self-start"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-              R
-            </span>
-            <span className="text-base font-semibold tracking-tight">Reno</span>
+            <img src="/reno-logo.svg" alt="Reno" className="h-10 w-auto rounded-lg" />
           </Link>
 
           {/* Desktop nav — centered in the bar */}
@@ -185,7 +182,7 @@ export function DashboardTopNav() {
         )}
       >
         <div className="flex items-center justify-between px-4 py-4">
-          <span className="text-sm font-semibold tracking-tight">Reno</span>
+          <img src="/reno-logo.svg" alt="Reno" className="h-9 w-auto rounded-lg" />
           <button
             type="button"
             onClick={() => setOpen(false)}

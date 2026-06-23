@@ -7,7 +7,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { useGSAP } from "@gsap/react"
 import {
   ArrowUpRight,
-  Building2,
   Check,
   ChevronDown,
   FileDown,
@@ -517,8 +516,8 @@ export default function Page() {
             className="absolute inset-x-0 top-0 z-20 px-4 pt-5 sm:px-6"
           >
             <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 rounded-full bg-background/95 py-2 pr-2 pl-5 shadow-lg backdrop-blur">
-              <Link href="/" className="flex items-center gap-2 font-semibold">
-                Reno
+              <Link href="/" className="flex items-center font-semibold">
+                <img src="/reno-logo.svg" alt="Reno" className="h-10 w-auto rounded-lg" />
               </Link>
               <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
                 <a
@@ -1145,11 +1144,8 @@ export default function Page() {
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-2">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Building2 className="size-4" />
-              </span>
-              Noodles
+            <Link href="/" className="flex items-center font-semibold">
+              <img src="/reno-logo.svg" alt="Reno" className="h-12 w-auto rounded-lg" />
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
               Od výpočtu úspor přes přesvědčení sousedů až po sledování průběhu
