@@ -296,10 +296,6 @@ export default function FinancialsPage() {
   // Popisek jednotky u měsíčních částek — na byt, jen když známe počet bytů.
   const perLabel = hasUnits ? "/ byt / měsíc" : "/ měsíc"
 
-  const savingsPct = agg.savingsPct
-  const afterBarPct = Math.round(
-    (agg.annualWithNow / agg.annualWithoutNow) * 100
-  )
   const profitable = agg.lossAtHorizon > 0
   const scopeLabel = activeScenario
     ? activeScenario.name
@@ -363,29 +359,12 @@ export default function FinancialsPage() {
         />
 
         {/* Hero skeleton */}
-        <div className="relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950">
-          <div className="grid gap-6 p-6 sm:gap-8 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
-            {/* Left section skeleton */}
-            <div>
-              <div className="mb-2 h-3 w-24 animate-pulse rounded bg-muted" />
-              <div className="mb-4 h-8 w-32 animate-pulse rounded bg-muted" />
-              <div className="mb-6 h-3 w-48 animate-pulse rounded bg-muted" />
-              <div className="mt-7 space-y-2">
-                <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-                <div className="h-12 w-40 animate-pulse rounded bg-muted" />
-                <div className="h-2 w-56 animate-pulse rounded bg-muted" />
-              </div>
-            </div>
-
-            {/* Right section skeleton */}
-            <div className="flex flex-col gap-4 rounded-2xl bg-muted/30 p-5">
-              <div className="h-3 w-32 animate-pulse rounded bg-muted" />
-              <div className="space-y-3">
-                <div className="h-8 w-full animate-pulse rounded bg-muted" />
-                <div className="h-8 w-full animate-pulse rounded bg-muted" />
-              </div>
-              <div className="h-3 w-48 animate-pulse rounded bg-muted" />
-            </div>
+        <div className="relative isolate overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] via-primary/[0.03] to-transparent p-6 sm:p-8 md:p-10">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="h-6 w-32 animate-pulse rounded-full bg-muted" />
+            <div className="h-9 w-40 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
+            <div className="mt-3 h-28 w-64 max-w-full animate-pulse rounded-2xl bg-muted" />
           </div>
         </div>
 
@@ -504,97 +483,97 @@ export default function FinancialsPage() {
       {/* Hero — verdikt na první pohled (tmavý pruh jako na Přehledu)        */}
       {/* ------------------------------------------------------------------ */}
       <div
-        className="anim-in relative isolate overflow-hidden rounded-[2rem] rounded-br-[5rem] bg-zinc-950 text-white"
+        className="anim-in relative isolate overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] via-primary/[0.03] to-transparent p-6 sm:p-7"
         style={{ "--ai-y": "-20px", "--ai-dur": "0.6s" } as React.CSSProperties}
       >
-        {/* Barevné záře — amber (nečinnost) vlevo, blue (rekonstrukce) vpravo */}
+        {/* Měkká záře v rohu */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 -left-24 -z-10 size-80 rounded-full bg-red-500/15 blur-[100px]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-16 -bottom-28 -z-10 size-96 rounded-full bg-blue-500/20 blur-[110px]"
+          className="pointer-events-none absolute -top-24 -right-16 -z-10 size-72 rounded-full bg-primary/15 blur-[100px]"
         />
 
-        <div className="grid gap-6 p-6 sm:gap-8 sm:p-8 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-12">
-          {/* Levá část — titulek + hlavní číslo */}
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span aria-hidden className="h-px w-7 bg-blue-300/70" />
-            </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+          {/* Levá část — titulek + verdikt */}
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Finance
             </h1>
-            <p className="mt-1.5 text-sm text-white/60">
+            <p className="mt-1.5 max-w-md text-sm text-muted-foreground">
               Rekonstrukce vs. nečinnost — kolik vás stojí každá cesta.
             </p>
 
-            <div className="mt-7">
-              <p className="text-sm text-white/70">
-                {profitable ? "Rekonstrukce ušetří" : "Do návratnosti chybí"}
+            <div className="mt-5">
+              <p className="text-sm text-muted-foreground">
+                {profitable
+                  ? "Rekonstrukce ušetří za "
+                  : "Do návratnosti chybí na horizontu "}
+                <span className="font-semibold text-foreground">
+                  {horizon} let
+                </span>
               </p>
               <p
                 className={cn(
-                  "mt-1 text-4xl font-bold tracking-tight sm:text-5xl",
-                  profitable ? "text-blue-300" : "text-amber-300"
+                  "mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl",
+                  profitable
+                    ? "text-primary"
+                    : "text-amber-600 dark:text-amber-400"
                 )}
               >
                 <AnimatedCzk value={Math.abs(agg.lossAtHorizon)} />
               </p>
-              <p className="mt-2 text-xs text-white/50">
-                {profitable ? (
-                  <>za {horizon} let oproti nečinnosti</>
-                ) : (
-                  <>na horizontu {horizon} let — zkuste delší horizont</>
-                )}
-              </p>
+              {!profitable && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  zkuste delší horizont
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Pravá část — skleněná karta Dnes / Potom (vzor z landingu) */}
-          <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/15 backdrop-blur-md">
+          {/* Pravá část — roční náklady domu Dnes / Potom */}
+          <div className="w-full shrink-0 rounded-2xl border bg-background/70 p-4 backdrop-blur-sm sm:w-80">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-white/70">
+              <span className="text-xs font-medium text-muted-foreground">
                 Roční náklady domu
               </span>
-              <span className="rounded-md bg-blue-400/15 px-1.5 py-0.5 text-xs font-medium text-blue-300 tabular-nums">
-                −{savingsPct.toLocaleString("cs-CZ")} %
+              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary tabular-nums">
+                −{agg.savingsPct.toLocaleString("cs-CZ")} %
               </span>
             </div>
-            <div className="flex flex-col gap-2.5">
+            <div className="mt-3 flex flex-col gap-2.5">
               <div className="flex items-center gap-3">
-                <span className="w-10 shrink-0 text-[11px] text-white/50">
+                <span className="w-10 shrink-0 text-[11px] text-muted-foreground">
                   Dnes
                 </span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-full rounded-full bg-white/35" />
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full w-full rounded-full bg-muted-foreground/40" />
                 </div>
-                <span className="w-20 shrink-0 text-right text-xs text-white/70 tabular-nums">
+                <span className="w-20 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
                   {fmtCzkShort(agg.annualWithoutNow)}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="w-10 shrink-0 text-[11px] text-white/50">
+                <span className="w-10 shrink-0 text-[11px] text-muted-foreground">
                   Potom
                 </span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-blue-400 transition-[width] duration-700 ease-out"
-                    style={{ width: `${afterBarPct}%` }}
+                    className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+                    style={{
+                      width: `${Math.round((agg.annualWithNow / agg.annualWithoutNow) * 100)}%`,
+                    }}
                   />
                 </div>
-                <span className="w-20 shrink-0 text-right text-xs font-medium text-blue-300 tabular-nums">
+                <span className="w-20 shrink-0 text-right text-xs font-medium text-primary tabular-nums">
                   {fmtCzkShort(agg.annualWithNow)}
                 </span>
               </div>
             </div>
-            <p className="text-xs text-pretty text-white/60">
+            <p className="mt-3 text-xs text-pretty text-muted-foreground">
               Úspora{" "}
-              <span className="font-semibold text-blue-300 tabular-nums">
+              <span className="font-semibold text-primary tabular-nums">
                 {fmtCzk(agg.savingsPerYear)} ročně
               </span>{" "}
-              po dokončení vybraných projektů
+              po dokončení projektů
             </p>
           </div>
         </div>
