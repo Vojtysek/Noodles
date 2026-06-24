@@ -15,11 +15,17 @@ const ACCENT: Record<string, string> = {
 export function ArticlesSection() {
   return (
     <section>
-      <div className="mb-1.5 flex items-center gap-2">
-        <BookOpen className="size-5 text-primary" />
-        <h2 className="text-base font-semibold">Chcete se dozvědět víc?</h2>
+      <div className="mb-5 border-t border-border/60 pt-8">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <BookOpen className="size-5" />
+          </span>
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            Chcete se dozvědět víc?
+          </h2>
+        </div>
       </div>
-      <p className="mb-4 max-w-2xl text-sm text-muted-foreground">
+      <p className="mb-5 max-w-2xl text-sm text-muted-foreground">
         Projděte si průvodce klíčovými tématy — financováním, dotacemi i tím,
         jak získat sousedy na svou stranu.
       </p>

@@ -45,7 +45,7 @@ export const ARTICLES: Article[] = [
         ],
       },
       {
-        heading: "Úvěr pro SVJ: bez ručení bytem",
+        heading: "Úvěr pro SVJ",
         paragraphs: [
           "Úvěr pro společenství vlastníků je jiný produkt než hypotéka jednotlivce. Ručí se jím budoucími příjmy fondu oprav, nikoli konkrétními byty — žádný z vlastníků tedy neručí svým bytem.",
           "Banky tyto úvěry poskytují běžně a rády, protože jde o nízkorizikové financování s předvídatelným splácením. Splátka se rozpočítá na jednotky a hradí se měsíčně spolu s příspěvkem do fondu oprav.",

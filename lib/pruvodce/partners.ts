@@ -15,7 +15,7 @@ export type PartnerId = "bank" | "energy" | "designer" | "firms" | "legal"
 
 /** Odkaz na úvěry pro SVJ a bytová družstva u České spořitelny. */
 export const CSAS_LOANS_URL =
-  "https://www.csas.cz/cs/firmy/uvery/uver-pro-bytova-druzstva-a-svj"
+  "https://www.csas.cz/cs/osobni-finance/pujcky/uvery-usporne-bydleni"
 
 export type Partner = {
   id: PartnerId
@@ -43,7 +43,7 @@ export const PARTNERS: Record<PartnerId, Partner> = {
     name: "Financování přes Českou spořitelnu",
     tagline: "Úvěr pro SVJ za nejlepší sazby na trhu.",
     description:
-      "Dotaci Nová zelená úsporám čerpáte formou bezúročného úvěru. Doplňkové financování zařídíme přes Českou spořitelnu — bez ručení bytem.",
+      "Dotaci Nová zelená úsporám čerpáte formou bezúročného úvěru. Doplňkové financování zařídíme přes Českou spořitelnu.",
     cta: "Získat nabídku financování",
     icon: Landmark,
     accent: "blue",

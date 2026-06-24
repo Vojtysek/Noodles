@@ -142,7 +142,7 @@ export const WIZARD_STEPS: WizardStep[] = [
     duration: "2–4 týdny",
     description:
       "Dotaci Nová zelená úsporám dnes čerpáte formou bezúročného úvěru. Jako partner České spořitelny vám pomůžeme zajistit financování celé rekonstrukce za nejlepší sazby na trhu — dotace i úvěr na jednom místě.",
-    highlights: ["Dotace formou bezúročného úvěru", "Bez ručení bytem"],
+    highlights: ["Dotace formou bezúročného úvěru"],
     checklist: [
       "Spočítejte potřebnou výši financování po odečtení dotace",
       "Získejte nezávaznou nabídku od České spořitelny",

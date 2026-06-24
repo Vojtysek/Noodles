@@ -20,11 +20,17 @@ export function PartnerServices({
 }) {
   return (
     <section id="pomocnici" className="scroll-mt-24">
-      <div className="mb-4 flex items-center gap-2">
-        <LifeBuoy className="size-5 text-primary" />
-        <h2 className="text-base font-semibold">Pomocníci na cestě</h2>
+      <div className="mb-5 border-t border-border/60 pt-8">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <LifeBuoy className="size-5" />
+          </span>
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            Pomocníci na cestě
+          </h2>
+        </div>
       </div>
-      <p className="mb-4 max-w-2xl text-sm text-muted-foreground">
+      <p className="mb-5 max-w-2xl text-sm text-muted-foreground">
         Nemusíte na nic sami. Ke každému kroku vám rádi doporučíme prověřené
         partnery, kteří proces zrychlí a sejmou z vás starosti.
       </p>
