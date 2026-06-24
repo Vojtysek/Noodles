@@ -44,7 +44,7 @@ const steps = [
   {
     title: "Prohlédněte si čísla",
     description:
-      "Noodles spočítá náklady, úspory energií a návratnost. Vše přehledně v grafech, kterým rozumí každý.",
+      "Reno spočítá náklady, úspory energií a návratnost. Vše přehledně v grafech, kterým rozumí každý.",
   },
   {
     title: "Přesvědčte sousedy",
@@ -198,9 +198,9 @@ const landingScenarios = [
 
 const faqs = [
   {
-    question: "Co je Noodles?",
+    question: "Co je Reno?",
     answer:
-      "Noodles je aplikace, která provází celým životním cyklem renovace bytového domu — od výpočtu úspor a získání podpory sousedů, přes schválení na schůzi SVJ, až po sledování průběhu a skutečných výsledků rekonstrukce.",
+      "Reno je aplikace, která provází celým životním cyklem renovace bytového domu — od výpočtu úspor a získání podpory sousedů, přes schválení na schůzi SVJ, až po sledování průběhu a skutečných výsledků rekonstrukce.",
   },
   {
     question: "Pro koho je aplikace určená?",
@@ -210,7 +210,7 @@ const faqs = [
   {
     question: "Co se děje po schválení renovace?",
     answer:
-      "Po schválení na schůzi vám Noodles pomůže sledovat harmonogram prací, čerpání fondu oprav a skutečné úspory energie v čase — takže víte, jestli vše probíhá podle plánu.",
+      "Po schválení na schůzi vám Reno pomůže sledovat harmonogram prací, čerpání fondu oprav a skutečné úspory energie v čase — takže víte, jestli vše probíhá podle plánu.",
   },
   {
     question: "Kolik to stojí?",
@@ -225,7 +225,7 @@ const faqs = [
   {
     question: "Jak funguje sledování rezidentů?",
     answer:
-      "Ke každému rezidentovi si zapíšete, jak se k renovaci staví. Noodles z vašich poznámek vytvoří přehled postojů a pomůže vám připravit materiály přizpůsobené každému sousedovi.",
+      "Ke každému rezidentovi si zapíšete, jak se k renovaci staví. Reno z vašich poznámek vytvoří přehled postojů a pomůže vám připravit materiály přizpůsobené každému sousedovi.",
   },
 ]
 
@@ -684,7 +684,7 @@ export default function Page() {
             </h2>
             <p className="mt-3 text-lg text-pretty text-muted-foreground">
               Renovace neztroskotá na číslech, ale na schůzi. A po schválení
-              přichází další výzva — sledovat průběh. Noodles vás provede každým
+              přichází další výzva — sledovat průběh. Reno vás provede každým
               krokem.
             </p>
           </div>
@@ -1003,7 +1003,7 @@ export default function Page() {
               Porovnejte varianty, vyberte svou cestu
             </h2>
             <p className="mt-3 text-lg text-pretty text-muted-foreground">
-              Každý dům je jiný. Noodles vám ukáže, jak různé kombinace projektů
+              Každý dům je jiný. Reno vám ukáže, jak různé kombinace projektů
               ovlivní náklady, úspory i hlasování SVJ.
             </p>
           </div>
@@ -1199,7 +1199,7 @@ export default function Page() {
         </div>
         <div className="border-t">
           <p className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-muted-foreground sm:px-6">
-            © 2026 Noodles. Uvedené výpočty jsou orientační a nenahrazují
+            © 2026 Reno. Uvedené výpočty jsou orientační a nenahrazují
             projektovou dokumentaci ani odborné posouzení.
           </p>
         </div>
