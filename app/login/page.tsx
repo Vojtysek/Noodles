@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useTransition } from "react"
+import { Suspense, useTransition } from "react"
 import { useSearchParams } from "next/navigation"
 import { Building2, Loader2, Lock, Mail } from "lucide-react"
 
@@ -15,9 +15,7 @@ function LoginCard() {
   const message = searchParams.get("message")
   const fromOnboarding = searchParams.get("from") === "onboarding"
 
-  const [mode, setMode] = useState<Mode>(
-    searchParams.get("mode") === "signup" ? "signup" : "login"
-  )
+  const mode: Mode = fromOnboarding ? "signup" : "login"
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(formData: FormData) {
@@ -59,34 +57,6 @@ function LoginCard() {
                 ? "Přihlaste se ke svému účtu"
                 : "Vytvořte si nový účet"}
           </p>
-        </div>
-
-        {/* Mode toggle */}
-        <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted/40 p-1">
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            className={
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-all " +
-              (mode === "login"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground")
-            }
-          >
-            Přihlášení
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("signup")}
-            className={
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-all " +
-              (mode === "signup"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground")
-            }
-          >
-            Registrace
-          </button>
         </div>
 
         {error && (
@@ -151,24 +121,6 @@ function LoginCard() {
             {mode === "login" ? "Přihlásit se" : "Zaregistrovat se"}
           </Button>
         </form>
-
-        {mode === "login" && (
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Byli jste pozváni?{" "}
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              Zaregistrujte se zde
-            </button>
-          </p>
-        )}
-        {mode === "signup" && !fromOnboarding && (
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Použijte email, na který jste byli pozváni.
-          </p>
-        )}
       </div>
     </div>
   )
