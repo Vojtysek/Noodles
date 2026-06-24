@@ -516,8 +516,8 @@ export default function Page() {
             className="absolute inset-x-0 top-0 z-20 px-4 pt-5 sm:px-6"
           >
             <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 rounded-full bg-background/95 py-2 pr-2 pl-5 shadow-lg backdrop-blur">
-              <Link href="/" className="flex items-center font-semibold">
-                <img src="/reno-logo.svg" alt="Reno" className="h-10 w-auto rounded-lg" />
+              <Link href="/" className="-ml-2 flex items-center font-semibold">
+                <img src="/reno-logo.svg" alt="Reno" className="h-10 w-auto rounded-full" />
               </Link>
               <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
                 <a
