@@ -84,7 +84,7 @@ export const WIZARD_STEPS: WizardStep[] = [
       "Pro schválení potřebujete nadpoloviční většinu vlastníků",
     ],
     tip: "Pošlete sousedům podklady do schránky pár dní předem — na schůzi pak řešíte rozhodnutí, ne základní fakta.",
-    action: { label: "Vytvořit podklady pro schůzi", href: "/dashboard/exporty" },
+    action: { label: "Vytvořit podklady pro schůzi", href: "/dashboard/materialy" },
     secondaryAction: { label: "Vytvořit argumentaci", href: "/dashboard/rezidenti" },
     partner: "legal",
   },
@@ -187,7 +187,7 @@ export const WIZARD_STEPS: WizardStep[] = [
       "Připravte odpovědi na časté námitky vlastníků",
     ],
     tip: "Mějte po ruce argumenty na cenu, délku stavby a omezení provozu — předejdete zdržení hlasování.",
-    action: { label: "Připravit prezentaci na schůzi", href: "/dashboard/exporty" },
+    action: { label: "Připravit prezentaci na schůzi", href: "/dashboard/materialy" },
     partner: "legal",
   },
   {

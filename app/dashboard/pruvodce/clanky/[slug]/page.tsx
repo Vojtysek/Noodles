@@ -28,7 +28,7 @@ export default async function ArticlePage({
   const Icon = article.icon
 
   return (
-    <article className="mx-auto w-full max-w-2xl">
+    <article className="mx-auto w-full">
       <Link
         href="/dashboard/pruvodce"
         className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"

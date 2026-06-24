@@ -612,7 +612,7 @@ export const exportTypes: ExportType[] = [
   },
   {
     id: "persona",
-    title: "Personalizovaný export",
+    title: "Personalizovaný materiál",
     description:
       "Výběr dat a argumentů upravený pro konkrétní personu — připravený k přímému předložení danému rezidentovi.",
     format: "PDF",
@@ -707,7 +707,7 @@ export const exportHistory: ExportHistoryItem[] = [
   {
     id: "e2",
     name: "Argumenty pro paní Novákovou",
-    type: "Personalizovaný export",
+    type: "Personalizovaný materiál",
     format: "PDF",
     project: "Energie nula",
     createdAt: "2026-05-28",

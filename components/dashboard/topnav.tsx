@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/rezidenti", label: "Rezidenti", icon: Users, joyrideId: "nav-rezidenti" },
   { href: "/dashboard/financials", label: "Finance", icon: ChartColumn, joyrideId: "nav-finance" },
   { href: "/dashboard/projects", label: "Projekty", icon: Hammer, joyrideId: "nav-projekty" },
-  { href: "/dashboard/exporty", label: "Exporty", icon: FileDown, joyrideId: "nav-exporty" },
+  { href: "/dashboard/materialy", label: "Materiály", icon: FileDown, joyrideId: "nav-exporty" },
   { href: "/dashboard/faktury", label: "Faktury", icon: Receipt },
 ]
 

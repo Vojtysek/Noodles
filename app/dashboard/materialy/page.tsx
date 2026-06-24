@@ -227,7 +227,7 @@ export default function ExportyPage() {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `export-${selectedTypeId}-${new Date().toISOString().split('T')[0]}.pdf`
+      link.download = `material-${selectedTypeId}-${new Date().toISOString().split('T')[0]}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -318,7 +318,7 @@ export default function ExportyPage() {
           </p>
         </div>
         <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-          Exporty
+          Materiály
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           PDF a prezentace připravené pro různé situace — nástěnka, osobní
@@ -340,7 +340,7 @@ export default function ExportyPage() {
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
           1
         </span>
-        <p className="text-sm font-medium">Co exportovat</p>
+        <p className="text-sm font-medium">Co vytvořit</p>
       </div>
       <div
         className="anim-in rounded-2xl border bg-gradient-to-br from-primary/8 to-primary/[0.02] px-4 py-4"
@@ -465,7 +465,7 @@ export default function ExportyPage() {
         </span>
         <p className="text-sm font-medium">Pro koho dokument je</p>
       </div>
-      <div data-joyride="exporty-cards" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-joyride="exporty-cards" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
         {exportTypes.map((exp, i) => {
           const Icon = TYPE_ICONS[exp.id] ?? FileText
           const selected = exp.id === selectedTypeId
@@ -724,7 +724,7 @@ export default function ExportyPage() {
         <div className="mb-3 flex items-center gap-2.5">
           <span aria-hidden className="h-px w-5 bg-muted-foreground/40" />
           <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            Poslední exporty
+            Poslední materiály
           </p>
         </div>
         {exportHistory.length === 0 ? (
@@ -732,7 +732,7 @@ export default function ExportyPage() {
             <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
               <Download className="size-5" />
             </div>
-            <p className="text-sm font-medium">Zatím jste nic nevyexportovali</p>
+            <p className="text-sm font-medium">Zatím jste nic nevytvořili</p>
             <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
               Až vygenerujete dokument výše, najdete ho tady připravený ke
               stažení.
