@@ -19,6 +19,7 @@ import {
   Wind,
   Sun,
   Star,
+  type LucideIcon,
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
@@ -47,7 +48,7 @@ type BuildingData = {
 type RenovationType = {
   id: string
   label: string
-  icon: React.ElementType
+  icon: LucideIcon
   available: boolean
 }
 
