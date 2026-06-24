@@ -23,7 +23,7 @@ const STEP_ROUTES: Record<number, string> = {
   3: "/dashboard/rezidenti",
   4: "/dashboard/financials",
   5: "/dashboard/projects",
-  6: "/dashboard/exporty",
+  6: "/dashboard/materialy",
 }
 
 const STEPS: Step[] = [
@@ -73,7 +73,7 @@ const STEPS: Step[] = [
   {
     target: '[data-joyride="exporty-cards"]',
     skipBeacon: true,
-    title: "Exporty — materiály pro sousedy",
+    title: "Materiály pro sousedy",
     content: (
       <div className="flex flex-col gap-2 text-sm">
         <p>Čtyři typy dokumentů připravených ke stažení:</p>
@@ -83,7 +83,7 @@ const STEPS: Step[] = [
             nebo hromadný e-mail
           </li>
           <li>
-            <strong>Personalizovaný export</strong> (PDF, 3–4 strany) —
+            <strong>Personalizovaný materiál</strong> (PDF, 3–4 strany) —
             argumenty šité na míru konkrétnímu rezidentovi
           </li>
           <li>

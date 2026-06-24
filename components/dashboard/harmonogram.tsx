@@ -55,10 +55,10 @@ const PRE_STEPS: HarmonogramStep[] = [
         text: "Pro schválení renovace potřebujete nadpoloviční většinu vlastníků na schůzi SVJ.",
       },
       {
-        text: "Dejte rezidentům export s argumenty před schůzkou do schránky — každý si ho může doma a v klidu prostudovat.",
+        text: "Dejte rezidentům materiál s argumenty před schůzkou do schránky — každý si ho může doma a v klidu prostudovat.",
         action: {
-          label: "Vytvořit export pro rezidenty",
-          href: "/dashboard/exporty",
+          label: "Vytvořit materiál pro rezidenty",
+          href: "/dashboard/materialy",
         },
       },
     ],
@@ -75,8 +75,8 @@ const PRE_STEPS: HarmonogramStep[] = [
       {
         text: "Pošlete projektantovi stručné informace o domu a plánovaných projektech — ušetříte čas při přípravě dokumentace.",
         action: {
-          label: "Vytvořit export pro projektanta",
-          href: "/dashboard/exporty",
+          label: "Vytvořit materiál pro projektanta",
+          href: "/dashboard/materialy",
         },
       },
     ],
@@ -133,10 +133,10 @@ const PRE_STEPS: HarmonogramStep[] = [
         text: "Na druhé schůzi odsouhlaste výběr stavební firmy, konečné ceny a harmonogram prací.",
       },
       {
-        text: "Připravte odpovědi na nejčastější námitky — cena, délka stavby, rušení klidu. Export pro rezidenty pomůže s argumentací.",
+        text: "Připravte odpovědi na nejčastější námitky — cena, délka stavby, rušení klidu. Materiál pro rezidenty pomůže s argumentací.",
         action: {
-          label: "Vytvořit export pro rezidenty",
-          href: "/dashboard/exporty",
+          label: "Vytvořit materiál pro rezidenty",
+          href: "/dashboard/materialy",
         },
       },
     ],

@@ -108,7 +108,7 @@ export function ActiveStepCard({
               <StepActionButton
                 action={{
                   label: "Sdílet výsledky s vlastníky",
-                  href: "/dashboard/exporty",
+                  href: "/dashboard/materialy",
                 }}
                 tone="finish"
                 onOpenFinancing={onOpenFinancing}

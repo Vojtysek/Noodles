@@ -49,7 +49,7 @@ const steps = [
   {
     title: "Přesvědčte sousedy",
     description:
-      "Sledujte postoje rezidentů, připravte si argumenty a exportujte přehledné materiály přímo na schůzi SVJ.",
+      "Sledujte postoje rezidentů, připravte si argumenty a vytvořte přehledné materiály přímo na schůzi SVJ.",
   },
   {
     title: "Sledujte průběh",
@@ -796,7 +796,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Exporty — materiály pro schůzi SVJ */}
+            {/* Materiály — podklady pro schůzi SVJ */}
             <div
               data-reveal
               className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] ring-1 ring-black/[0.06] dark:ring-white/[0.06]"
@@ -804,7 +804,7 @@ export default function Page() {
               <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3">
                 <FileDown className="size-3.5 shrink-0 text-primary" />
                 <span className="text-xs font-medium text-muted-foreground">
-                  Exporty · připraveno
+                  Materiály · připraveno
                 </span>
               </div>
               <div className="flex flex-1 flex-col gap-2 p-5">
@@ -1168,10 +1168,10 @@ export default function Page() {
                 Kalkulačka
               </Link>
               <Link
-                href="/dashboard/exporty"
+                href="/dashboard/materialy"
                 className="text-muted-foreground transition-colors hover:text-foreground"
               >
-                Exporty
+                Materiály
               </Link>
             </div>
             <div className="flex flex-col gap-2">
